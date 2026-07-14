@@ -219,8 +219,8 @@
     name: 'Calculadora de Nota Fiscal',
     category: 'negocios',
     categoryLabel: 'Negócios',
-    description: 'Simule descontos e retenções de impostos em notas fiscais de serviço.',
-    url: 'https://quickbooks.intuit.com/br/calculadora-de-nota-fiscal/',
+    description: 'Simule ISS, IR, PIS, COFINS e retenções em notas fiscais de serviço.',
+    url: 'https://techmenezes.com/calculadora-nota-fiscal-servicos.html',
     tags: ['#Impostos', '#NotaFiscal', '#Finanças', '#Cálculo']
   },
   {
