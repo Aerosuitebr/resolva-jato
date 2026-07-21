@@ -1,4 +1,4 @@
-import { emptyAddress } from '@/components/shared/address-fields';
+import { emptyAddress } from '@/lib/address';
 import { formatCurrencyInput } from '@/lib/formatters';
 import { createDefaultSignature } from '@/lib/signatures/types';
 import type { ProposalData, ProposalItem, ProposalTemplateId } from './types';

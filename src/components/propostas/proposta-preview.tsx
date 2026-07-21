@@ -1,6 +1,6 @@
 ﻿/* eslint-disable @next/next/no-img-element */
 import { DigitalSignatureDisplay } from '@/components/shared/digital-signature-display';
-import { formatAddressLine } from '@/components/shared/address-fields';
+import { formatAddressLine } from '@/lib/address';
 import { formatCurrency } from '@/lib/formatters';
 import type { ProposalData } from '@/lib/propostas/types';
 import { formatDate } from '@/lib/utils';

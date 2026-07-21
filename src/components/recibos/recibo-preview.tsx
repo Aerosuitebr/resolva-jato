@@ -1,4 +1,4 @@
-﻿import { formatAddressLine } from '@/components/shared/address-fields';
+﻿import { formatAddressLine } from '@/lib/address';
 import { DigitalSignatureDisplay } from '@/components/shared/digital-signature-display';
 import { getDocumentFontStack } from '@/lib/documents/fonts';
 import { currencyToWords, formatCurrency } from '@/lib/formatters';

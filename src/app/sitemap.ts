@@ -3,7 +3,14 @@ import type { MetadataRoute } from 'next';
 const SITE_URL = 'https://resolvajato.com.br';
 
 /** Slugs das páginas públicas de SEO por ferramenta (fora de /ferramentas, que exige login). */
-const seoToolSlugs: string[] = ['gerador-de-curriculo'];
+const seoToolSlugs: string[] = [
+  'gerador-de-curriculo',
+  'gerador-de-contrato',
+  'documentos-juridicos-online',
+  'documentos-contabeis-online',
+  'gerador-de-proposta-comercial',
+  'gerador-de-recibo'
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

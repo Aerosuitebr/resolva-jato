@@ -118,22 +118,22 @@ export const recibosSeoContent: SeoPageContent = {
     {
       name: 'Contratos',
       description: 'Formalize o serviço ou negociação antes de emitir o recibo.',
-      href: '/ferramentas/contratos'
+      href: '/gerador-de-contrato'
     },
     {
       name: 'Cobrança Pix',
       description: 'Gere o QR Code Pix para receber e depois emita o recibo do pagamento.',
-      href: '/ferramentas/pix'
+      href: '/cadastro?next=/ferramentas/pix'
     },
     {
       name: 'Orçamentos',
       description: 'Envie o orçamento e receba a aprovação do cliente antes da cobrança.',
-      href: '/ferramentas/orcamentos'
+      href: '/cadastro?next=/ferramentas/orcamentos'
     },
     {
       name: 'Propostas Comerciais',
       description: 'Feche negócios com uma proposta visual profissional.',
-      href: '/ferramentas/propostas'
+      href: '/gerador-de-proposta-comercial'
     }
   ],
   seo: {

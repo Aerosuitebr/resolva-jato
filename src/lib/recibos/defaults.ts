@@ -1,4 +1,4 @@
-import { emptyAddress } from '@/components/shared/address-fields';
+import { emptyAddress } from '@/lib/address';
 import { createDefaultSignature } from '@/lib/signatures/types';
 import type { ReceiptData, ReceiptParty, ReceiptTemplateId } from './types';
 

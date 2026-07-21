@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 import { Lock, Mail, User } from 'lucide-react';
 import { PasswordStrength } from '@/components/auth/password-strength';
 import { AuthReturnBanner } from '@/components/auth/auth-return-banner';
-import { TurnstileWidget } from '@/components/auth/turnstile-widget';
+import { TurnstileWidget, type TurnstileWidgetHandle } from '@/components/auth/turnstile-widget';
 import { AuthShell } from '@/components/brand/auth-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ function CadastroForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get('next'));
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,12 +42,19 @@ function CadastroForm() {
       return;
     }
 
+    if (!turnstileToken) {
+      setError('Confirme o captcha para continuar.');
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await registerUser({ name, email, password, turnstileToken });
       setDoneEmail(result.email);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Não foi possível criar a conta.');
+      setTurnstileToken('');
+      turnstileRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -117,7 +125,7 @@ function CadastroForm() {
           <PasswordStrength password={password} />
         </div>
       </div>
-      <TurnstileWidget onToken={setTurnstileToken} />
+      <TurnstileWidget ref={turnstileRef} onToken={setTurnstileToken} />
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       <Button
         type="submit"

@@ -118,22 +118,22 @@ export const propostasSeoContent: SeoPageContent = {
     {
       name: 'Orçamentos',
       description: 'Envie um orçamento simples com link para aprovação do cliente.',
-      href: '/ferramentas/orcamentos'
+      href: '/cadastro?next=/ferramentas/orcamentos'
     },
     {
       name: 'Contratos',
       description: 'Formalize o negócio depois que a proposta for aprovada.',
-      href: '/ferramentas/contratos'
+      href: '/gerador-de-contrato'
     },
     {
       name: 'Recibos',
       description: 'Comprove os pagamentos recebidos após o fechamento.',
-      href: '/ferramentas/recibos'
+      href: '/gerador-de-recibo'
     },
     {
       name: 'Cobrança Pix',
       description: 'Gere um QR Code Pix para receber o pagamento combinado na proposta.',
-      href: '/ferramentas/pix'
+      href: '/cadastro?next=/ferramentas/pix'
     }
   ],
   seo: {

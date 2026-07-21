@@ -13,3 +13,5 @@ tsconfig.tsbuildinfo
 /generated/prisma
 .env.git
 bun.lock
+task.md
+

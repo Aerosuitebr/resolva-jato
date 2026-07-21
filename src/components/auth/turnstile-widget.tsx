@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 declare global {
@@ -24,17 +24,30 @@ declare global {
 
 const SCRIPT_ID = 'cf-turnstile-script';
 
-export function TurnstileWidget({
-  onToken,
-  className
-}: {
-  onToken: (token: string) => void;
-  className?: string;
-}) {
+export type TurnstileWidgetHandle = {
+  reset: () => void;
+};
+
+export const TurnstileWidget = forwardRef<
+  TurnstileWidgetHandle,
+  {
+    onToken: (token: string) => void;
+    className?: string;
+  }
+>(function TurnstileWidget({ onToken, className }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [missingKey, setMissingKey] = useState(false);
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || '';
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      onToken('');
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current);
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!siteKey) {
@@ -90,4 +103,4 @@ export function TurnstileWidget({
   }
 
   return <div ref={containerRef} className={cn('flex justify-center', className)} />;
-}
+});

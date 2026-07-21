@@ -118,22 +118,22 @@ export const contabeisSeoContent: SeoPageContent = {
     {
       name: 'Documentos Jurídicos',
       description: 'Procuração, honorários e notificação extrajudicial em PDF.',
-      href: '/ferramentas/juridicos'
+      href: '/documentos-juridicos-online'
     },
     {
       name: 'Contratos',
       description: 'Aluguel, prestação de serviços, trabalho, compra e venda ou comodato.',
-      href: '/ferramentas/contratos'
+      href: '/gerador-de-contrato'
     },
     {
       name: 'Recibos',
       description: 'Comprove pagamentos de honorários e serviços contábeis.',
-      href: '/ferramentas/recibos'
+      href: '/gerador-de-recibo'
     },
     {
       name: 'Cobrança Pix',
       description: 'Cobre mensalidades e serviços com QR Code Pix, sem taxa de API.',
-      href: '/ferramentas/pix'
+      href: '/cadastro?next=/ferramentas/pix'
     }
   ],
   seo: {

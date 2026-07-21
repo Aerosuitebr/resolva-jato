@@ -151,22 +151,22 @@ export const curriculoSeoContent: SeoPageContent = {
     {
       name: 'Lattes Inteligente',
       description: 'Gere seu currículo Lattes formatado para uso acadêmico e programas de pós.',
-      href: '/ferramentas/curriculo-lattes'
+      href: '/cadastro?next=/ferramentas/curriculo-lattes'
     },
     {
       name: 'Capas de Trabalho',
       description: 'Monte capas no padrão ABNT para trabalhos acadêmicos e TCCs.',
-      href: '/ferramentas/trabalhos'
+      href: '/cadastro?next=/ferramentas/trabalhos'
     },
     {
       name: 'Contratos',
       description: 'Formalize trabalhos freelance ou PJ com um contrato profissional em minutos.',
-      href: '/ferramentas/contratos'
+      href: '/gerador-de-contrato'
     },
     {
       name: 'Propostas Comerciais',
       description: 'Envie propostas com visual profissional para conquistar novos clientes.',
-      href: '/ferramentas/propostas'
+      href: '/gerador-de-proposta-comercial'
     }
   ],
   seo: {

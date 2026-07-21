@@ -120,22 +120,22 @@ export const juridicosSeoContent: SeoPageContent = {
     {
       name: 'Contratos',
       description: 'Aluguel, prestação de serviços, trabalho, compra e venda ou comodato.',
-      href: '/ferramentas/contratos'
+      href: '/gerador-de-contrato'
     },
     {
       name: 'Docs Contábeis e Despacho',
       description: 'Procuração, e-CAC, residência e cartas para rotina fiscal.',
-      href: '/ferramentas/contabeis'
+      href: '/documentos-contabeis-online'
     },
     {
       name: 'Recibos',
       description: 'Comprove pagamentos e honorários com um recibo profissional.',
-      href: '/ferramentas/recibos'
+      href: '/gerador-de-recibo'
     },
     {
       name: 'Propostas Comerciais',
       description: 'Apresente serviços jurídicos com uma proposta visual profissional.',
-      href: '/ferramentas/propostas'
+      href: '/gerador-de-proposta-comercial'
     }
   ],
   seo: {

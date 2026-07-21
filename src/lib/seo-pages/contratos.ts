@@ -119,22 +119,22 @@ export const contratosSeoContent: SeoPageContent = {
     {
       name: 'Documentos Jurídicos',
       description: 'Procuração, honorários e notificação extrajudicial em PDF.',
-      href: '/ferramentas/juridicos'
+      href: '/documentos-juridicos-online'
     },
     {
       name: 'Propostas Comerciais',
       description: 'Envie propostas com visual profissional antes de fechar o contrato.',
-      href: '/ferramentas/propostas'
+      href: '/gerador-de-proposta-comercial'
     },
     {
       name: 'Recibos',
       description: 'Comprove pagamentos relacionados ao contrato firmado.',
-      href: '/ferramentas/recibos'
+      href: '/gerador-de-recibo'
     },
     {
       name: 'Orçamentos',
       description: 'Envie o orçamento e receba a aprovação do cliente antes de contratar.',
-      href: '/ferramentas/orcamentos'
+      href: '/cadastro?next=/ferramentas/orcamentos'
     }
   ],
   seo: {

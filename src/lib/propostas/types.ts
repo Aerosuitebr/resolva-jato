@@ -1,4 +1,4 @@
-import type { AddressValue } from '@/components/shared/address-fields';
+import type { AddressValue } from '@/lib/address';
 import type { DigitalSignature } from '@/lib/signatures/types';
 
 export type ProposalStatus = 'rascunho' | 'enviada' | 'aprovada';

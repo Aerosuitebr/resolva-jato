@@ -32,7 +32,7 @@ export function JuridicoLivePreview() {
 
   const checklist = [
     { label: 'Outorgante / cliente', done: partyAName.trim().length > 2 },
-    { label: 'Outorgado / parte contrária', done: partyBName.trim().length > 2 },
+    { label: 'Outorgado / advogado', done: partyBName.trim().length > 2 },
     { label: 'Objeto da peça', done: objectDescription.trim().length > 5 },
     { label: 'Modelo escolhido', done: true }
   ];
