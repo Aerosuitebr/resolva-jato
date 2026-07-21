@@ -21,7 +21,8 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif']
+        sans: ['var(--rj-font-body)', 'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        display: ['var(--rj-font-display)', 'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif']
       },
       boxShadow: {
         rj: '0 4px 24px rgba(0,0,0,0.08)'

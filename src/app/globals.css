@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Dancing+Script:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Great+Vibes&family=Playfair+Display:ital,wght@1,500;1,600&family=Sora:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Dancing+Script:wght@500;600;700&family=Great+Vibes&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@1,500;1,600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -40,8 +40,8 @@
   --rj-hero-to: #0c4a6e;
   --rj-sidebar-width: 300px;
   --rj-sidebar-collapsed: 76px;
-  --rj-font-display: 'Sora', ui-sans-serif, sans-serif;
-  --rj-font-body: 'DM Sans', ui-sans-serif, sans-serif;
+  --rj-font-display: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --rj-font-body: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
   /* Chrome sticky stack: banner + header + doc actions */
   --rj-banner-h: 2rem;
@@ -74,7 +74,8 @@ body {
   background: var(--rj-page-bg);
   color: hsl(var(--foreground));
   font-family: var(--rj-font-body);
-  font-feature-settings: "ss01", "ss02";
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  letter-spacing: -0.011em;
 }
 
 .rj-display {
