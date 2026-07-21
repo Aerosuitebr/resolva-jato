@@ -11,3 +11,5 @@ tsconfig.tsbuildinfo
 .env.production
 .env*.local
 /generated/prisma
+.env.git
+bun.lock
