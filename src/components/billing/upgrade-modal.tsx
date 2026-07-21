@@ -96,7 +96,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
               titleClassName="text-white"
               textClassName="text-slate-400"
             />
-            <TrustSeals tone="dark" className="mt-6 lg:grid-cols-4" />
+            <TrustSeals variant="billing" tone="dark" className="mt-6 lg:grid-cols-3" />
 
             {nextReleaseAtLabel ? (
               <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-slate-400">

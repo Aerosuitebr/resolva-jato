@@ -1,31 +1,37 @@
-import { CreditCard, Lock, ShieldCheck, Sparkles } from 'lucide-react';
+import { CreditCard, Lock, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const SEALS = [
+const FREE_SEALS = [
+  { icon: Zap, label: 'Sem cartão de crédito', detail: 'Comece na hora' },
+  { icon: Lock, label: 'Dados protegidos', detail: 'HTTPS / SSL' },
+  { icon: Sparkles, label: 'Ferramentas grátis', detail: 'Qualidade profissional' }
+] as const;
+
+const BILLING_SEALS = [
   { icon: ShieldCheck, label: 'Pagamento seguro', detail: 'Mercado Pago' },
   { icon: Lock, label: 'Dados protegidos', detail: 'HTTPS / SSL' },
-  { icon: CreditCard, label: 'Cancele quando quiser', detail: 'Sem fidelidade' },
-  { icon: Sparkles, label: 'Ferramentas grátis', detail: 'Qualidade profissional' }
+  { icon: CreditCard, label: 'Cancele quando quiser', detail: 'Sem fidelidade' }
 ] as const;
 
 export function TrustSeals({
   className,
-  tone = 'light'
+  tone = 'light',
+  variant = 'free'
 }: {
   className?: string;
   tone?: 'light' | 'dark';
+  /** `free` na home/SEO; `billing` em planos e upgrade Premium. */
+  variant?: 'free' | 'billing';
 }) {
   const isDark = tone === 'dark';
+  const seals = variant === 'billing' ? BILLING_SEALS : FREE_SEALS;
 
   return (
     <ul
-      className={cn(
-        'grid gap-3 sm:grid-cols-2 lg:grid-cols-4',
-        className
-      )}
+      className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', className)}
       aria-label="Selos de confiança"
     >
-      {SEALS.map(({ icon: Icon, label, detail }) => (
+      {seals.map(({ icon: Icon, label, detail }) => (
         <li
           key={label}
           className={cn(

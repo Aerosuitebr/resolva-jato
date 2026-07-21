@@ -58,7 +58,7 @@ export function PricingPage() {
           );
         })}
       </div>
-      <TrustSeals className="mt-10" />
+      <TrustSeals variant="billing" className="mt-10" />
     </section>
   );
 }
