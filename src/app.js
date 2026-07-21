@@ -1,2873 +1,1247 @@
-﻿import { resources } from './resources.js';
-import {
-  applyRemoteUsageState,
-  canCreateAppointment,
-  canCreateClient,
-  canDownloadDocument,
-  getCurrentPlan,
-  getCurrentPlanId,
-  getUsageState,
-  hasFeature,
-  setCurrentPlanId,
-  trackUsage
-} from './billing.js';
-import {
-  initPlansUi,
-  openUpgradeModal,
-  pushProfessionalToCloud,
-  renderProfessionalPlanBar,
-  showToast,
-  updateUsageMeters
-} from './plans-ui.js';
-import { exportLocalBackup, getSession, isCloudReady, loginAccount, pullCloudData, registerAccount } from './account.js';
-
-const grid = document.querySelector('#resource-grid');
-const emptyState = document.querySelector('#empty-state');
-const searchInput = document.querySelector('#search');
-const resultCount = document.querySelector('#result-count');
-const filterButtons = [...document.querySelectorAll('.filter-button')];
-const resourceViewButtons = [...document.querySelectorAll('[data-resource-view]')];
-const themeToggles = [...document.querySelectorAll('.theme-toggle')];
-const newsletterForm = document.querySelector('.newsletter-form');
-const proposalForm = document.querySelector('#proposal-form');
-const clearProposalButton = document.querySelector('#clear-proposal');
-const downloadProposalButton = document.querySelector('#download-proposal');
-const proposalPreviewText = document.querySelector('#proposal-preview-text');
-const proposalPreviewCard = document.querySelector('#proposal-preview-card');
-const proposalValueInput = document.querySelector('#proposal-value');
-const clientForm = document.querySelector('#client-form');
-const clientList = document.querySelector('#client-list');
-const clientCount = document.querySelector('#client-count');
-const clientWhatsappInput = document.querySelector('#client-whatsapp');
-const saveClientButton = document.querySelector('#save-client');
-const appointmentForm = document.querySelector('#appointment-form');
-const appointmentList = document.querySelector('#appointment-list');
-const appointmentClientSelect = document.querySelector('#appointment-client');
-const appointmentNewClientField = document.querySelector('#appointment-new-client-field');
-const saveAppointmentButton = document.querySelector('#save-appointment');
-const receiptForm = document.querySelector('#receipt-form');
-const receiptValueInput = document.querySelector('#receipt-value');
-const receiptContactType = document.querySelector('#receipt-contact-type');
-const receiptContactInput = document.querySelector('#receipt-contact');
-const receiptContactFeedback = document.querySelector('#receipt-contact-feedback');
-const receiptPreviewText = document.querySelector('#receipt-preview-text');
-const receiptPreviewCard = document.querySelector('#receipt-preview-card');
-const downloadReceiptButton = document.querySelector('#download-receipt');
-const workOrderForm = document.querySelector('#work-order-form');
-const workOrderPreviewText = document.querySelector('#work-order-preview-text');
-const workOrderPreviewCard = document.querySelector('#work-order-preview-card');
-const downloadWorkOrderButton = document.querySelector('#download-work-order');
-const checklistForm = document.querySelector('#checklist-form');
-const checklistPreviewText = document.querySelector('#checklist-preview-text');
-const checklistPreviewCard = document.querySelector('#checklist-preview-card');
-const downloadChecklistButton = document.querySelector('#download-checklist');
-const pricingForm = document.querySelector('#pricing-form');
-const pricingIncomeInput = document.querySelector('#pricing-income');
-const pricingCostsInput = document.querySelector('#pricing-costs');
-const pricingPreviewText = document.querySelector('#pricing-preview-text');
-const pricingPreviewCard = document.querySelector('#pricing-preview-card');
-const copyPricingSummaryButton = document.querySelector('#copy-pricing-summary');
-const pixForm = document.querySelector('#pix-form');
-const pixKeyType = document.querySelector('#pix-key-type');
-const pixKeyInput = document.querySelector('#pix-key');
-const pixKeyFeedback = document.querySelector('#pix-key-feedback');
-const pixValueInput = document.querySelector('#pix-value');
-const pixWhatsappInput = document.querySelector('#pix-whatsapp');
-const pixPreviewText = document.querySelector('#pix-preview-text');
-const pixPreviewCard = document.querySelector('#pix-preview-card');
-const copyPixCodeButton = document.querySelector('#copy-pix-code');
-const sendPixWhatsappButton = document.querySelector('#send-pix-whatsapp');
-const warrantyForm = document.querySelector('#warranty-form');
-const warrantyPreviewText = document.querySelector('#warranty-preview-text');
-const warrantyPreviewCard = document.querySelector('#warranty-preview-card');
-const downloadWarrantyButton = document.querySelector('#download-warranty');
-const budgetForm = document.querySelector('#budget-form');
-const budgetValueInput = document.querySelector('#budget-value');
-const budgetPreviewText = document.querySelector('#budget-preview-text');
-const budgetPreviewCard = document.querySelector('#budget-preview-card');
-const downloadBudgetButton = document.querySelector('#download-budget');
-const contractForm = document.querySelector('#contract-form');
-const contractValueInput = document.querySelector('#contract-value');
-const contractPreviewText = document.querySelector('#contract-preview-text');
-const contractPreviewCard = document.querySelector('#contract-preview-card');
-const downloadContractButton = document.querySelector('#download-contract');
-const viewScreens = [...document.querySelectorAll('[data-view]')];
-const viewButtons = [...document.querySelectorAll('[data-view-target]')];
-const tabButtons = [...document.querySelectorAll('[data-tab-target]')];
-const tabPanels = [...document.querySelectorAll('[data-tab-panel]')];
-const tabList = document.querySelector('.tab-list');
-const tabScrollButtons = [...document.querySelectorAll('[data-tab-scroll]')];
-const clientProFields = document.querySelector('#client-pro-fields');
-const clientProLock = document.querySelector('#client-pro-lock');
-const appointmentCalendar = document.querySelector('#appointment-calendar');
-const appointmentCalendarWrap = document.querySelector('#appointment-calendar-wrap');
-const proposalPremiumFields = document.querySelector('#proposal-premium-fields');
-const proposalPremiumLock = document.querySelector('#proposal-premium-lock');
-const proposalLogoInput = document.querySelector('#proposal-logo');
-const proposalSignatureInput = document.querySelector('#proposal-signature');
-const proposalLogoPreview = document.querySelector('#proposal-logo-preview');
-const proposalSignaturePreview = document.querySelector('#proposal-signature-preview');
-const proposalClientWhatsappInput = document.querySelector('#proposal-client-whatsapp');
-const proposalSendActions = document.querySelector('#proposal-send-actions');
-const sendProposalEmailButton = document.querySelector('#send-proposal-email');
-const sendProposalWhatsappButton = document.querySelector('#send-proposal-whatsapp');
-const accessForm = document.querySelector('#access-form');
-const accessNameField = document.querySelector('#access-name-field');
-const accessToggleModeButton = document.querySelector('#access-toggle-mode');
-const accessSubmitButton = document.querySelector('#access-submit');
-const accessFeedback = document.querySelector('#access-feedback');
-
-let activeCategory = 'todos';
-let query = '';
-let proposalReady = false;
-let currentView = 'home';
-let currentTab = 'proposta';
-let calendarCursor = new Date();
-let selectedCalendarDay = null;
-
-const storageKey = 'resolva-jato-profissional';
-const themeStorageKey = 'resolva-jato-theme';
-const resourceViewStorageKey = 'resolva-jato-resource-view';
-const maxReminderDelay = 2147483647;
-const viewHashes = {
-  home: '#top',
-  login: '#login',
-  planos: '#planos',
-  profissional: '#profissional'
-};
-const viewHeadings = {
-  home: '#hero-title',
-  login: '#access-title',
-  planos: '#plans-title',
-  profissional: '#professional-title'
-};
-
-const professionalState = loadProfessionalState();
-const appointmentReminderTimers = new Map();
-let resourceView = localStorage.getItem(resourceViewStorageKey) || 'grid';
-
-function getViewFromHash() {
-  const hash = window.location.hash.replace('#', '');
-  return ['profissional', 'planos', 'login'].includes(hash) ? hash : 'home';
-}
-
-currentView = getViewFromHash();
-
-const reminderLabels = {
-  none: 'Sem alerta',
-  0: 'Alerta na hora',
-  10: 'Alerta 10 min antes',
-  30: 'Alerta 30 min antes',
-  60: 'Alerta 1 hora antes'
-};
-
-const normalize = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-const searchPlaceholders = {
-  todos: 'Buscar por MEI, ABNT, currículo, PDF...',
-  estudos: 'Buscar por ABNT, certificado, artigos, cronograma...',
-  negocios: 'Buscar por MEI, nota fiscal, contrato, WhatsApp...',
-  'utilidade-publica': 'Buscar por assinatura, CPF, Pix, certidão...',
-  saude: 'Buscar por SUS, clínica da família, hospital, vacina, remédio...',
-  ferramentas: 'Buscar por PDF, imagem, senha, arquivo, e-mail...',
-  'inteligencia-artificial': 'Buscar por ChatGPT, Gemini, imagem, vídeo, código, música...'
-};
-
-function loadProfessionalState() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(storageKey));
-    return {
-      proposal: stored?.proposal || {},
-      clients: Array.isArray(stored?.clients) ? stored.clients : [],
-      appointments: Array.isArray(stored?.appointments) ? stored.appointments : []
-    };
-  } catch {
-    return {
-      proposal: {},
-      clients: [],
-      appointments: []
-    };
+const resources = [
+  {
+    id: 'contrato',
+    title: 'Contrato de prestação de serviços',
+    category: 'documentos',
+    categoryLabel: 'Documentos',
+    plan: 'free',
+    time: '4 min',
+    description: 'Gere contrato com escopo, prazo, pagamento e responsabilidades.',
+    tags: ['Documento', 'Autônomos', 'PDF']
+  },
+  {
+    id: 'proposta',
+    title: 'Proposta comercial premium',
+    category: 'documentos',
+    categoryLabel: 'Documentos',
+    plan: 'completo',
+    time: '5 min',
+    description: 'Monte proposta executiva com anexos, assinatura, autosave e versão final.',
+    tags: ['Premium', 'Cliente', 'Autosave']
+  },
+  {
+    id: 'curriculo',
+    title: 'Currículo padrão ATS',
+    category: 'documentos',
+    categoryLabel: 'Documentos',
+    plan: 'free',
+    time: '6 min',
+    description: 'Crie currículo limpo para triagens automáticas e candidatura rápida.',
+    tags: ['Carreira', 'Modelo', 'Download']
+  },
+  {
+    id: 'mei',
+    title: 'MEI e emissão de nota',
+    category: 'negocios',
+    categoryLabel: 'Negócios',
+    plan: 'free',
+    time: '3 min',
+    description: 'Encontre atalhos para regularização, emissão e obrigações do MEI.',
+    tags: ['MEI', 'Governo', 'Negócios']
+  },
+  {
+    id: 'power-bi',
+    title: 'Dashboard de uso Power BI',
+    category: 'dados',
+    categoryLabel: 'Dados',
+    plan: 'completo',
+    time: '2 min',
+    description: 'Acompanhe tarefas, documentos, conversão e produtividade por período.',
+    tags: ['BI', 'Métricas', 'Completo']
+  },
+  {
+    id: 'abnt',
+    title: 'Gerador ABNT',
+    category: 'estudos',
+    categoryLabel: 'Estudos',
+    plan: 'free',
+    time: '2 min',
+    description: 'Formate referências acadêmicas e organize trabalhos com clareza.',
+    tags: ['ABNT', 'Estudos', 'Referências']
+  },
+  {
+    id: 'servicos-publicos',
+    title: 'Consulta de direitos e serviços públicos',
+    category: 'governo',
+    categoryLabel: 'Governo',
+    plan: 'free',
+    time: '3 min',
+    description: 'Busque serviços públicos, documentos, certidões e canais oficiais.',
+    tags: ['Gov.br', 'CPF', 'Certidões']
+  },
+  {
+    id: 'historico',
+    title: 'Histórico completo por cliente',
+    category: 'negocios',
+    categoryLabel: 'Negócios',
+    plan: 'completo',
+    time: '1 min',
+    description: 'Registre contatos, entregas, versões, documentos e próximos passos.',
+    tags: ['CRM', 'Histórico', 'Ilimitado']
   }
-}
+];
 
-function saveProfessionalState(options = {}) {
-  localStorage.setItem(storageKey, JSON.stringify(professionalState));
-  refreshBillingState();
-  if (!options.skipCloudPush) {
-    pushProfessionalToCloud(professionalState, getCurrentPlanId()).catch(() => {});
+const menuItems = [
+  {
+    id: 'dashboard',
+    label: 'Painel inicial',
+    icon: '⌂',
+    plan: 'free',
+    section: 'Operacao',
+    description: 'Resumo executivo, indicadores e proximas acoes.',
+    keywords: ['home', 'inicio', 'painel', 'resumo', 'dashboard'],
+    shortcut: 'H'
+  },
+  {
+    id: 'busca',
+    label: 'Busca Jato',
+    icon: '⌕',
+    plan: 'free',
+    section: 'Operacao',
+    description: 'Encontre recursos, modelos e ferramentas por intencao.',
+    keywords: ['busca', 'pesquisa', 'catalogo', 'ferramentas', 'recursos'],
+    shortcut: '/'
+  },
+  {
+    id: 'documentos',
+    label: 'Propostas e documentos',
+    icon: '▤',
+    plan: 'free',
+    section: 'Comercial',
+    description: 'Propostas premium, contratos, anexos, logo e PDF.',
+    keywords: ['proposta', 'contrato', 'documento', 'pdf', 'logo', 'aerosuite'],
+    shortcut: 'D'
+  },
+  {
+    id: 'clientes',
+    label: 'Clientes e historico',
+    icon: '◇',
+    plan: 'completo',
+    section: 'Comercial',
+    description: 'Linha do tempo por cliente, contatos e versoes.',
+    keywords: ['cliente', 'crm', 'historico', 'contato', 'timeline'],
+    shortcut: 'C'
+  },
+  {
+    id: 'tarefas',
+    label: 'Tarefas e Kanban',
+    icon: '☷',
+    plan: 'free',
+    section: 'Produtividade',
+    description: 'Fluxo de trabalho, etapas e acompanhamento visual.',
+    keywords: ['tarefas', 'kanban', 'processo', 'fluxo', 'agenda'],
+    shortcut: 'K'
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics Power BI',
+    icon: '◫',
+    plan: 'completo',
+    section: 'Inteligencia',
+    description: 'Conversao, produtividade e leitura comercial.',
+    keywords: ['analytics', 'power bi', 'dados', 'metricas', 'relatorio'],
+    shortcut: 'A'
+  },
+  {
+    id: 'planos',
+    label: 'Planos e limites',
+    icon: '◈',
+    plan: 'free',
+    section: 'Conta',
+    description: 'Assinatura, limites, upgrade e recursos liberados.',
+    keywords: ['plano', 'limite', 'assinatura', 'upgrade', 'conta'],
+    shortcut: 'P'
   }
+];
+
+const app = document.querySelector('#app');
+const loginDialog = document.querySelector('#login-dialog');
+const authForm = document.querySelector('#auth-form');
+const authFeedback = document.querySelector('#auth-feedback');
+
+function createDefaultProposals() {
+  const today = new Date().toISOString().slice(0, 10);
+  return [
+    {
+      id: 'prop-001',
+      number: 'PROP-2026-001',
+      status: 'RASCUNHO',
+      client: 'Mercado Central',
+      document: '12.345.678/0001-90',
+      contact: 'Marina Costa',
+      email: 'marina@mercadocentral.local',
+      phone: '(11) 99999-1010',
+      address: 'Av. Paulista, 1000 - Sao Paulo/SP',
+      title: 'Proposta comercial premium',
+      value: 'R$ 4.500,00',
+      proposalDate: today,
+      validUntil: '2026-08-14',
+      deadline: '10 dias uteis apos aprovacao',
+      payment: '50% na aprovacao e 50% na entrega',
+      scope: 'Automacao de atendimento, proposta executiva, anexos e versao final em PDF.',
+      notes: 'Valores sujeitos a ajuste mediante mudanca de escopo.',
+      terms: 'A proposta contempla planejamento, execucao, revisao e entrega final conforme escopo aprovado.',
+      logo: '',
+      history: [
+        { at: 'Hoje, 09:10', action: 'Rascunho criado', detail: 'Proposta iniciada no workspace comercial.' },
+        { at: 'Hoje, 09:18', action: 'Preview revisado', detail: 'Cliente, valor e escopo conferidos.' }
+      ]
+    },
+    {
+      id: 'prop-002',
+      number: 'PROP-2026-002',
+      status: 'ENVIADA',
+      client: 'Studio Norte',
+      document: '987.654.321-00',
+      contact: 'Renato Alves',
+      email: 'renato@studionorte.local',
+      phone: '(21) 98888-2020',
+      address: 'Rua das Laranjeiras, 45 - Rio de Janeiro/RJ',
+      title: 'Organizacao comercial e documentos',
+      value: 'R$ 2.900,00',
+      proposalDate: '2026-07-12',
+      validUntil: '2026-07-28',
+      deadline: '7 dias uteis',
+      payment: 'Pix ou boleto em ate 3 parcelas',
+      scope: 'Organizacao de fluxo comercial, modelos de documentos e historico por cliente.',
+      notes: 'Inclui uma rodada de ajustes.',
+      terms: 'Entrega digital, com validacao final por e-mail.',
+      logo: '',
+      history: [
+        { at: '12/07/2026 16:20', action: 'Proposta enviada', detail: 'Envio por e-mail registrado.' }
+      ]
+    }
+  ];
 }
 
-function refreshBillingState() {
-  updateUsageMeters(professionalState.clients.length);
-  renderClientProFields();
-  renderProposalPremiumFields();
-  renderAppointmentCalendar();
-  renderBusinessDashboard();
+let state = {
+  authenticated: Boolean(localStorage.getItem('rj-token')),
+  user: JSON.parse(localStorage.getItem('rj-user') || 'null') || { name: 'Wellem Lyra', email: 'demo@resolvajato.local', planId: 'free' },
+  page: 'dashboard',
+  query: '',
+  featureQuery: '',
+  category: 'todos',
+  plan: 'todos',
+  autosave: true,
+  saveStatus: 'Alterações salvas',
+  zoom: 100,
+  rotation: 0,
+  proposalMode: 'list',
+  proposalTab: 'cliente',
+  proposalQuery: '',
+  proposalStatus: 'todos',
+  activeProposalId: 'prop-001',
+  proposals: JSON.parse(localStorage.getItem('rj-proposals') || 'null') || createDefaultProposals(),
+  document: JSON.parse(localStorage.getItem('rj-document') || 'null') || {
+    client: 'Mercado Central',
+    value: 'R$ 4.500,00',
+    title: 'Proposta comercial premium',
+    scope: 'Automação de atendimento, proposta executiva, anexos e versão final em PDF.'
+  },
+  tasks: [
+    { id: 'lead', label: 'Entrada do pedido', status: 'novo' },
+    { id: 'dados', label: 'Dados do cliente', status: 'andamento' },
+    { id: 'preview', label: 'Prévia do documento', status: 'andamento' },
+    { id: 'final', label: 'Entrega final', status: 'pronto' }
+  ]
+};
+
+let autosaveTimer;
+
+function normalize(value) {
+  return String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
-function handleUsageBlock(check) {
-  if (check.accountRequired) {
-    setView('login');
-    showToast(check.reason);
-    return true;
-  }
-
-  openUpgradeModal({ reason: check.reason, targetPlanId: 'essencial' });
-  return true;
+function getInitials(name) {
+  return String(name || 'Resolva Jato')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'RJ';
 }
 
-function gateDocumentDownload(action) {
-  const check = canDownloadDocument();
-  if (!check.allowed) {
-    handleUsageBlock(check);
-    return;
-  }
-
-  trackUsage('document');
-  action();
-  refreshBillingState();
+function isCompletePlan() {
+  return state.user.planId === 'completo';
 }
 
-function isPremiumDocuments() {
-  return hasFeature('premiumLayouts');
-}
-
-function applyTheme(theme) {
-  const isDark = theme === 'dark';
-  document.documentElement.classList.toggle('dark', isDark);
-  themeToggles.forEach((button) => {
-    button.setAttribute('aria-pressed', String(isDark));
-    button.title = isDark ? 'Usar contraste claro' : 'Usar contraste escuro';
+function filteredResources() {
+  const query = normalize(state.query);
+  return resources.filter((resource) => {
+    const searchable = normalize(`${resource.title} ${resource.description} ${resource.tags.join(' ')}`);
+    const matchesQuery = !query || searchable.includes(query);
+    const matchesCategory = state.category === 'todos' || resource.category === state.category;
+    const matchesPlan = state.plan === 'todos' || resource.plan === state.plan;
+    return matchesQuery && matchesCategory && matchesPlan;
   });
 }
 
-function toggleTheme() {
-  const nextTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-  localStorage.setItem(themeStorageKey, nextTheme);
-  applyTheme(nextTheme);
+function filteredMenuItems() {
+  const query = normalize(state.featureQuery);
+  return menuItems.filter((item) => {
+    const searchable = normalize(`${item.label} ${item.section} ${item.description} ${(item.keywords || []).join(' ')}`);
+    return !query || searchable.includes(query);
+  });
 }
 
-function getReminderLabel(value) {
-  return reminderLabels[String(value)] || reminderLabels.none;
-}
-
-async function ensureNotificationPermission() {
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') return false;
-
-  const permission = await Notification.requestPermission();
-  return permission === 'granted';
-}
-
-function showAppAlert(title, message) {
-  const alert = document.createElement('div');
-  alert.className = 'app-alert';
-  alert.setAttribute('role', 'status');
-  alert.innerHTML = `
-    <strong>${escapeHtml(title)}</strong>
-    <span>${escapeHtml(message)}</span>
-  `;
-  document.body.append(alert);
-
-  setTimeout(() => {
-    alert.classList.add('visible');
-  }, 20);
-
-  setTimeout(() => {
-    alert.classList.remove('visible');
-    setTimeout(() => alert.remove(), 220);
-  }, 7000);
-}
-
-function notifyAppointment(appointment) {
-  const title = `Compromisso: ${appointment.title}`;
-  const clientText = appointment.client ? ` com ${appointment.client}` : '';
-  const message = `${formatDateTime(appointment.date)}${clientText}`;
-
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Resolva Jato', {
-      body: `${title}\n${message}`
-    });
-  }
-
-  showAppAlert(title, message);
-}
-
-function clearAppointmentReminder(id) {
-  const timer = appointmentReminderTimers.get(id);
-  if (!timer) return;
-
-  clearTimeout(timer);
-  appointmentReminderTimers.delete(id);
-}
-
-function scheduleAppointmentReminder(appointment) {
-  clearAppointmentReminder(appointment.id);
-
-  if (appointment.reminderMinutes === 'none' || appointment.reminderMinutes === undefined) return;
-
-  const reminderMinutes = Number(appointment.reminderMinutes);
-  if (!Number.isFinite(reminderMinutes)) return;
-
-  const appointmentTime = new Date(appointment.date).getTime();
-  if (!Number.isFinite(appointmentTime) || appointmentTime < Date.now()) return;
-
-  const reminderTime = appointmentTime - reminderMinutes * 60000;
-  const delay = Math.max(0, reminderTime - Date.now());
-
-  const timer = setTimeout(() => {
-    if (delay > maxReminderDelay) {
-      scheduleAppointmentReminder(appointment);
-      return;
-    }
-
-    appointmentReminderTimers.delete(appointment.id);
-    notifyAppointment(appointment);
-  }, Math.min(delay, maxReminderDelay));
-
-  appointmentReminderTimers.set(appointment.id, timer);
-}
-
-function scheduleAllAppointmentReminders() {
-  [...appointmentReminderTimers.keys()].forEach(clearAppointmentReminder);
-  professionalState.appointments.forEach(scheduleAppointmentReminder);
-}
-
-function setActionState(button, isReady, readyText, waitingText) {
-  button.disabled = !isReady;
-  button.textContent = isReady ? readyText : waitingText;
-}
-
-function escapeHtml(value = '') {
-  return String(value)
+function escapeHtml(value) {
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#39;');
 }
 
-function formatDateTime(value) {
-  if (!value) return 'Sem data definida';
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  }).format(new Date(value));
+function currentProposal() {
+  return state.proposals.find((proposal) => proposal.id === state.activeProposalId) || state.proposals[0];
 }
 
-function sanitizePhone(value = '') {
-  return value.replace(/\D/g, '');
+function syncDocumentFromProposal() {
+  const proposal = currentProposal();
+  if (!proposal) return;
+  state.document = {
+    client: proposal.client || '',
+    value: proposal.value || '',
+    title: proposal.title || 'Proposta comercial',
+    scope: proposal.scope || ''
+  };
 }
 
-function formatCurrencyBR(value = '') {
-  const amount = sanitizePhone(value).slice(0, 12);
-  if (!amount) return '';
-
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(Number(amount) / 100);
+function saveProposals() {
+  localStorage.setItem('rj-proposals', JSON.stringify(state.proposals));
+  syncDocumentFromProposal();
+  localStorage.setItem('rj-document', JSON.stringify(state.document));
 }
 
-function parseCurrencyBR(value = '') {
-  const digits = sanitizePhone(value);
-  return digits ? Number(digits) / 100 : 0;
+function nowLabel() {
+  return new Date().toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
-function formatMoneyValue(value = 0) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(Number.isFinite(value) ? value : 0);
+function addProposalHistory(proposal, action, detail) {
+  proposal.history = [
+    { at: nowLabel(), action, detail },
+    ...(proposal.history || [])
+  ];
 }
 
-function formatPhoneBR(value = '') {
-  const digits = sanitizePhone(value).slice(0, 11);
-
-  if (digits.length <= 2) return digits ? `(${digits}` : '';
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+function filteredProposals() {
+  const query = normalize(state.proposalQuery);
+  return state.proposals.filter((proposal) => {
+    const searchable = normalize(`${proposal.number} ${proposal.client} ${proposal.email} ${proposal.title} ${proposal.value}`);
+    const matchesQuery = !query || searchable.includes(query);
+    const matchesStatus = state.proposalStatus === 'todos' || proposal.status === state.proposalStatus;
+    return matchesQuery && matchesStatus;
+  });
 }
 
-function formatCpf(value = '') {
-  const digits = sanitizePhone(value).slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+function statusLabel(status) {
+  const labels = {
+    RASCUNHO: 'Rascunho',
+    ENVIADA: 'Enviada',
+    APROVADA: 'Aprovada',
+    REJEITADA: 'Rejeitada',
+    CANCELADA: 'Cancelada'
+  };
+  return labels[status] || status;
 }
 
-function formatCnpj(value = '') {
-  const digits = sanitizePhone(value).slice(0, 14);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+function statusClass(status) {
+  return String(status || '').toLowerCase();
 }
 
-function validateCpf(value = '') {
-  const cpf = sanitizePhone(value);
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-
-  const calculateDigit = (base) => {
-    const sum = base.split('').reduce((total, digit, index) => total + Number(digit) * (base.length + 1 - index), 0);
-    const remainder = (sum * 10) % 11;
-    return remainder === 10 ? 0 : remainder;
+function createProposal() {
+  const nextNumber = String(state.proposals.length + 1).padStart(3, '0');
+  const proposal = {
+    id: `prop-${Date.now()}`,
+    number: `PROP-2026-${nextNumber}`,
+    status: 'RASCUNHO',
+    client: '',
+    document: '',
+    contact: '',
+    email: '',
+    phone: '',
+    address: '',
+    title: 'Nova proposta comercial',
+    value: 'R$ 0,00',
+    proposalDate: new Date().toISOString().slice(0, 10),
+    validUntil: '',
+    deadline: '',
+    payment: '',
+    scope: '',
+    notes: '',
+    terms: 'Condições gerais, validade e escopo sujeitos à aprovação formal do cliente.',
+    logo: '',
+    history: [{ at: nowLabel(), action: 'Rascunho criado', detail: 'Nova proposta iniciada.' }]
   };
 
-  return calculateDigit(cpf.slice(0, 9)) === Number(cpf[9])
-    && calculateDigit(cpf.slice(0, 10)) === Number(cpf[10]);
+  state.proposals = [proposal, ...state.proposals];
+  state.activeProposalId = proposal.id;
+  state.proposalMode = 'editor';
+  state.proposalTab = 'cliente';
+  state.saveStatus = 'Nova proposta criada';
+  saveProposals();
+  renderPageOnly();
 }
 
-function validateCnpj(value = '') {
-  const cnpj = sanitizePhone(value);
-  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+function openProposal(id) {
+  state.activeProposalId = id;
+  state.proposalMode = 'editor';
+  state.proposalTab = 'cliente';
+  syncDocumentFromProposal();
+  renderPageOnly();
+}
 
-  const calculateDigit = (base, weights) => {
-    const sum = base.split('').reduce((total, digit, index) => total + Number(digit) * weights[index], 0);
-    const remainder = sum % 11;
-    return remainder < 2 ? 0 : 11 - remainder;
+function backToProposalList() {
+  state.proposalMode = 'list';
+  saveProposals();
+  renderPageOnly();
+}
+
+function duplicateProposal(id) {
+  const source = state.proposals.find((proposal) => proposal.id === id);
+  if (!source) return;
+  const copy = {
+    ...source,
+    id: `prop-${Date.now()}`,
+    number: `${source.number}-C`,
+    status: 'RASCUNHO',
+    history: [{ at: nowLabel(), action: 'Proposta duplicada', detail: `Criada a partir de ${source.number}.` }]
   };
-
-  const firstDigit = calculateDigit(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-  const secondDigit = calculateDigit(cnpj.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-
-  return firstDigit === Number(cnpj[12]) && secondDigit === Number(cnpj[13]);
+  state.proposals = [copy, ...state.proposals];
+  state.activeProposalId = copy.id;
+  state.proposalMode = 'editor';
+  state.proposalTab = 'proposta';
+  state.saveStatus = 'Proposta duplicada';
+  saveProposals();
+  renderPageOnly();
 }
 
-function validatePhoneBR(value = '') {
-  const phone = sanitizePhone(value);
-  const withoutCountry = phone.startsWith('55') && phone.length > 11 ? phone.slice(2) : phone;
-  return /^\d{10,11}$/.test(withoutCountry) && Number(withoutCountry.slice(0, 2)) >= 11;
+function deleteProposal(id) {
+  if (state.proposals.length <= 1) return;
+  state.proposals = state.proposals.filter((proposal) => proposal.id !== id);
+  state.activeProposalId = state.proposals[0]?.id;
+  state.proposalMode = 'list';
+  saveProposals();
+  renderPageOnly();
 }
 
-function validateEmail(value = '') {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
+function updateProposalField(field, value) {
+  const proposal = currentProposal();
+  if (!proposal) return;
+  proposal[field] = value;
+  state.saveStatus = 'Salvando...';
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    addProposalHistory(proposal, 'Alteração salva', `Campo atualizado: ${field}.`);
+    state.saveStatus = 'Alterações salvas';
+    saveProposals();
+    renderPageOnly();
+  }, 500);
 }
 
-function sanitizePixText(value = '', maxLength = 25) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^A-Za-z0-9 $%*+\-./:]/g, '')
-    .trim()
-    .slice(0, maxLength)
-    .toUpperCase();
+function setProposalStatus(status) {
+  const proposal = currentProposal();
+  if (!proposal) return;
+  proposal.status = status;
+  addProposalHistory(proposal, `Status: ${statusLabel(status)}`, 'Ciclo comercial atualizado.');
+  state.saveStatus = 'Status atualizado';
+  saveProposals();
+  renderPageOnly();
 }
 
-function getReceiptContactRules(type = receiptContactType.value) {
-  const rules = {
-    cpf: {
-      placeholder: '000.000.000-00',
-      inputMode: 'numeric',
-      label: 'CPF',
-      help: 'Informe um CPF válido.',
-      mask: formatCpf,
-      validate: validateCpf
-    },
-    cnpj: {
-      placeholder: '00.000.000/0000-00',
-      inputMode: 'numeric',
-      label: 'CNPJ',
-      help: 'Informe um CNPJ válido.',
-      mask: formatCnpj,
-      validate: validateCnpj
-    },
-    phone: {
-      placeholder: '(00) 00000-0000',
-      inputMode: 'tel',
-      label: 'telefone',
-      help: 'Informe um telefone brasileiro válido com DDD.',
-      mask: formatPhoneBR,
-      validate: validatePhoneBR
-    },
-    email: {
-      placeholder: 'nome@email.com',
-      inputMode: 'email',
-      label: 'e-mail',
-      help: 'Informe um e-mail válido.',
-      mask: (value) => value.trim().toLowerCase(),
-      validate: validateEmail
+function registerProposalAction(type) {
+  const proposal = currentProposal();
+  if (!proposal) return;
+  if (type === 'email') {
+    proposal.status = 'ENVIADA';
+    addProposalHistory(proposal, 'Envio por e-mail', `Enviado para ${proposal.email || 'e-mail do cliente'}.`);
+    state.saveStatus = 'Envio por e-mail registrado';
+  }
+  if (type === 'whatsapp') {
+    proposal.status = 'ENVIADA';
+    addProposalHistory(proposal, 'Envio por WhatsApp', `Mensagem preparada para ${proposal.phone || 'telefone do cliente'}.`);
+    state.saveStatus = 'Envio por WhatsApp registrado';
+    if (proposal.phone) {
+      const phone = proposal.phone.replace(/\D/g, '');
+      const text = encodeURIComponent(`Olá, segue a proposta ${proposal.number}: ${proposal.title}`);
+      window.open(`https://wa.me/55${phone}?text=${text}`, '_blank', 'noopener');
     }
-  };
-
-  return rules[type] || rules.cpf;
-}
-
-function validateReceiptContact({ showFeedback = true } = {}) {
-  const rules = getReceiptContactRules();
-  const value = receiptContactInput.value.trim();
-  const isEmpty = value.length === 0;
-  const isValid = !isEmpty && rules.validate(value);
-  const message = isValid ? `${rules.label} válido.` : rules.help;
-
-  receiptContactInput.setCustomValidity(isValid ? '' : rules.help);
-  receiptContactFeedback.textContent = message;
-  receiptContactFeedback.classList.toggle('valid', isValid);
-  receiptContactFeedback.classList.toggle('invalid', showFeedback && !isValid && !isEmpty);
-
-  return isValid;
-}
-
-function updateReceiptContactField({ clearValue = false } = {}) {
-  const rules = getReceiptContactRules();
-  receiptContactInput.placeholder = rules.placeholder;
-  receiptContactInput.inputMode = rules.inputMode;
-
-  if (clearValue) {
-    receiptContactInput.value = '';
-  } else {
-    receiptContactInput.value = rules.mask(receiptContactInput.value);
   }
-
-  receiptContactFeedback.textContent = rules.help;
-  validateReceiptContact({ showFeedback: false });
-}
-
-function getBrazilWhatsappNumber(value = '') {
-  const phone = sanitizePhone(value).slice(0, 13);
-  if (!phone) return '';
-
-  return phone.startsWith('55') ? phone : `55${phone}`;
-}
-
-function buildWhatsappUrl(phone, clientName = '', status = '') {
-  const normalizedName = clientName.trim();
-  const normalizedStatus = status.trim();
-  const statusText = normalizedStatus ? ` Status atual: ${normalizedStatus}.` : '';
-  const message = normalizedName
-    ? `Olá, ${normalizedName}! Estou entrando em contato sobre o seu serviço.${statusText}`
-    : `Olá! Estou entrando em contato sobre o seu serviço.${statusText}`;
-
-  return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
-}
-
-function openInNewTab(url) {
-  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
-  if (openedWindow) return true;
-
-  const link = document.createElement('a');
-  link.href = url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  document.body.append(link);
-  link.click();
-  link.remove();
-
-  return true;
-}
-
-function getProposalData() {
-  const data = Object.fromEntries(new FormData(proposalForm).entries());
-  data.proposalValue = formatCurrencyBR(data.proposalValue) || '';
-  data.clientWhatsapp = formatPhoneBR(data.clientWhatsapp || '');
-  data.logoDataUrl = professionalState.proposal.logoDataUrl || '';
-  data.signatureDataUrl = professionalState.proposal.signatureDataUrl || '';
-  return data;
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function renderProposalPremiumPreviews() {
-  if (proposalLogoPreview) {
-    proposalLogoPreview.innerHTML = professionalState.proposal.logoDataUrl
-      ? `<img src="${professionalState.proposal.logoDataUrl}" alt="Logo enviada" />`
-      : 'Nenhuma logo enviada';
+  if (type === 'print') {
+    addProposalHistory(proposal, 'PDF/Impressão', 'Documento preparado para impressão.');
+    window.print();
   }
-
-  if (proposalSignaturePreview) {
-    proposalSignaturePreview.innerHTML = professionalState.proposal.signatureDataUrl
-      ? `<img src="${professionalState.proposal.signatureDataUrl}" alt="Assinatura enviada" />`
-      : 'Nenhuma assinatura enviada';
-  }
+  saveProposals();
+  renderPageOnly();
 }
 
-function renderProposalPremiumFields() {
-  if (!proposalPremiumFields) return;
+function sidebarSectionsTemplate() {
+  const items = filteredMenuItems();
+  const sectionOrder = ['Operacao', 'Comercial', 'Produtividade', 'Inteligencia', 'Conta'];
 
-  const unlocked = hasFeature('premiumProposals');
-  proposalPremiumFields.classList.toggle('is-locked', !unlocked);
-  if (proposalPremiumLock) proposalPremiumLock.hidden = unlocked;
-  if (proposalSendActions) proposalSendActions.hidden = false;
-  renderProposalPremiumPreviews();
-}
-
-function getFormData(form) {
-  return Object.fromEntries(new FormData(form).entries());
-}
-
-function fillProposalForm() {
-  Object.entries(professionalState.proposal).forEach(([key, value]) => {
-    if (key === 'logoDataUrl' || key === 'signatureDataUrl') return;
-    const field = proposalForm.elements[key];
-    if (!field) return;
-    field.value = key === 'proposalValue' ? formatCurrencyBR(value) : value;
-  });
-  renderProposalPremiumPreviews();
-}
-
-function updateProposalPreview(data = getProposalData()) {
-  const professional = data.professionalName?.trim() || 'Seu nome ou empresa';
-  const client = data.clientName?.trim() || 'Cliente';
-  const service = data.serviceTitle?.trim() || 'Serviço proposto';
-  const value = formatCurrencyBR(data.proposalValue) || 'Valor a definir';
-  const premiumProposal = hasFeature('premiumProposals');
-  const hasEmail = Boolean(data.clientEmail?.trim());
-  const hasWhatsapp = getBrazilWhatsappNumber(data.clientWhatsapp).length >= 12;
-
-  proposalReady = Boolean(data.professionalName && data.clientName && data.serviceTitle);
-  setActionState(
-    downloadProposalButton,
-    proposalReady,
-    premiumProposal ? '↓ Baixar proposta premium' : '↓ Baixar proposta pronta',
-    'Preencha profissional, cliente e serviço'
-  );
-
-  if (!premiumProposal) {
-    if (sendProposalEmailButton) {
-      setActionState(
-        sendProposalEmailButton,
-        true,
-        '✉ Desbloquear envio por e-mail',
-        'Envio por e-mail no Completo'
-      );
-    }
-
-    if (sendProposalWhatsappButton) {
-      setActionState(
-        sendProposalWhatsappButton,
-        true,
-        '☎ Desbloquear envio no WhatsApp',
-        'Envio por WhatsApp no Completo'
-      );
-    }
-  } else {
-  if (sendProposalEmailButton) {
-    setActionState(
-      sendProposalEmailButton,
-      proposalReady && hasEmail,
-      '✉ Enviar por e-mail',
-      hasEmail ? 'Preencha profissional, cliente e serviço' : 'Informe o e-mail do cliente'
-    );
-  }
-
-  if (sendProposalWhatsappButton) {
-    setActionState(
-      sendProposalWhatsappButton,
-      proposalReady && hasWhatsapp,
-      '☎ Enviar no WhatsApp',
-      hasWhatsapp ? 'Preencha profissional, cliente e serviço' : 'Informe o WhatsApp do cliente'
-    );
-  }
-  }
-
-  proposalPreviewText.textContent = proposalReady
-    ? premiumProposal
-      ? 'Proposta premium pronta. Baixe, envie por e-mail ou anexe no WhatsApp.'
-      : 'Documento pronto para baixar e enviar ao cliente.'
-    : 'Preencha pelo menos profissional, cliente e serviço.';
-
-  const brandNote = premiumProposal && (data.logoDataUrl || data.signatureDataUrl)
-    ? '<small>Logo e assinatura incluídas no documento.</small>'
-    : premiumProposal
-      ? '<small>Adicione logo e assinatura para uma proposta de alto padrão.</small>'
-      : '';
-
-  proposalPreviewCard.innerHTML = `
-    <strong>${escapeHtml(service)}</strong>
-    <span>${escapeHtml(professional)} para ${escapeHtml(client)}</span>
-    <span>${escapeHtml(value)}</span>
-    ${brandNote}
-  `;
-}
-
-function buildProposalDocument(data) {
-  const today = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date());
-  const description = escapeHtml(data.serviceDescription || 'Serviço descrito conforme alinhamento entre as partes.').replace(/\n/g, '<br />');
-  const proposalValue = formatCurrencyBR(data.proposalValue) || 'A definir';
-  const premium = isPremiumDocuments();
-  const premiumProposal = hasFeature('premiumProposals');
-  const brandName = escapeHtml(data.professionalName || 'Sua marca');
-  const logoBlock = premiumProposal && data.logoDataUrl
-    ? `<img class="brand-logo" src="${data.logoDataUrl}" alt="Logo ${brandName}" />`
-    : '<div class="mark">RJ</div>';
-  const signatureBlock = premiumProposal && data.signatureDataUrl
-    ? `<section class="signature-block"><img src="${data.signatureDataUrl}" alt="Assinatura" /><span>${brandName}</span></section>`
-    : '';
-
-  return `<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Proposta comercial - ${escapeHtml(data.clientName || 'Cliente')}</title>
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: ${premiumProposal ? '#f3f6ff' : premium ? '#eef2ff' : '#f6f7f9'};
-        color: #111318;
-        font-family: Inter, Arial, sans-serif;
-        line-height: 1.55;
-      }
-      main {
-        width: min(820px, calc(100% - 32px));
-        margin: 32px auto;
-        border: 1px solid ${premiumProposal ? '#b9c9ff' : premium ? '#c7d2fe' : '#dde2e8'};
-        border-radius: ${premiumProposal ? '18px' : premium ? '16px' : '8px'};
-        background: #fff;
-        padding: 42px;
-        ${premiumProposal ? 'box-shadow: 0 28px 70px rgba(36, 91, 219, 0.16);' : premium ? 'box-shadow: 0 24px 60px rgba(36, 91, 219, 0.12);' : ''}
-      }
-      header {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        border-bottom: 2px solid ${premiumProposal ? '#245bdb' : premium ? '#245bdb' : '#111318'};
-        padding-bottom: 24px;
-        align-items: center;
-      }
-      .mark {
-        display: grid;
-        width: 48px;
-        height: 48px;
-        place-items: center;
-        border-radius: 8px;
-        background: ${premium ? 'linear-gradient(135deg, #245bdb, #4f8cff)' : '#111318'};
-        color: #fff;
-        font-weight: 800;
-      }
-      .brand-logo {
-        max-height: 64px;
-        max-width: 220px;
-        object-fit: contain;
-      }
-      .hero-band {
-        margin: 20px 0 0;
-        padding: 14px 18px;
-        border-radius: 12px;
-        background: linear-gradient(90deg, #245bdb, #4f8cff);
-        color: #fff;
-        font-weight: 700;
-      }
-      h1 {
-        margin: 28px 0 10px;
-        font-size: ${premiumProposal ? '2.55rem' : '2.4rem'};
-        line-height: 1;
-      }
-      h2 {
-        margin: 28px 0 10px;
-        font-size: 1.2rem;
-      }
-      p { margin: 0; }
-      .muted { color: #606875; }
-      .meta {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        margin: 26px 0;
-      }
-      .box {
-        border: 1px solid #dde2e8;
-        border-radius: 8px;
-        padding: 14px;
-        ${premiumProposal ? 'background: #f8faff;' : ''}
-      }
-      .box span {
-        display: block;
-        color: #606875;
-        font-size: 0.76rem;
-        font-weight: 800;
-        text-transform: uppercase;
-      }
-      .box strong {
-        display: block;
-        margin-top: 4px;
-        font-size: 1.05rem;
-      }
-      .description {
-        border: 1px solid #dde2e8;
-        border-radius: 8px;
-        padding: 18px;
-        ${premiumProposal ? 'background: #fcfdff;' : ''}
-      }
-      .signature-block {
-        margin-top: 36px;
-        padding-top: 24px;
-        border-top: 1px dashed #c7d2fe;
-        display: grid;
-        gap: 8px;
-        justify-items: start;
-      }
-      .signature-block img {
-        max-height: 72px;
-        max-width: 220px;
-        object-fit: contain;
-      }
-      .signature-block span {
-        color: #606875;
-        font-size: 0.9rem;
-      }
-      footer {
-        margin-top: 36px;
-        border-top: 1px solid #dde2e8;
-        padding-top: 18px;
-        color: #606875;
-        font-size: 0.86rem;
-      }
-      @media print {
-        body { background: #fff; }
-        main { width: 100%; margin: 0; border: 0; }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <header>
-        <div>
-          ${logoBlock}
-          <p class="muted" style="margin-top: 12px;">Proposta gerada em ${today}</p>
-        </div>
-        <div style="text-align: right;">
-          <strong>${brandName}</strong>
-          <p class="muted">Proposta comercial${premiumProposal ? ' · Alto padrão' : ''}</p>
-        </div>
-      </header>
-      ${premiumProposal ? `<div class="hero-band">Proposta comercial personalizada para ${escapeHtml(data.clientName || 'Cliente')}</div>` : ''}
-
-      <h1>${escapeHtml(data.serviceTitle || 'Serviço proposto')}</h1>
-      <p class="muted">Preparada para ${escapeHtml(data.clientName || 'Cliente')}</p>
-
-      <section class="meta">
-        <div class="box">
-          <span>Valor</span>
-          <strong>${escapeHtml(proposalValue)}</strong>
-        </div>
-        <div class="box">
-          <span>Prazo</span>
-          <strong>${escapeHtml(data.deliveryTime || 'A combinar')}</strong>
-        </div>
-        <div class="box">
-          <span>Pagamento</span>
-          <strong>${escapeHtml(data.paymentTerms || 'A combinar')}</strong>
-        </div>
-        <div class="box">
-          <span>Validade</span>
-          <strong>7 dias</strong>
-        </div>
-      </section>
-
-      <h2>Escopo do serviço</h2>
-      <div class="description">${description}</div>
-
-      <h2>Próximos passos</h2>
-      <p>Após a aprovação, o trabalho será iniciado conforme prazo e condições combinadas nesta proposta.</p>
-
-      ${signatureBlock}
-
-      <footer>
-        ${premiumProposal ? `Proposta comercial de alto padrão · ${brandName} · Resolva Jato Completo.` : premium ? 'Documento premium Resolva Jato Essencial+. Para salvar em PDF, use a opção de imprimir do navegador.' : 'Gerado gratuitamente no Resolva Jato. Para salvar em PDF, use a opção de imprimir do navegador.'}
-      </footer>
-    </main>
-  </body>
-</html>`;
-}
-
-function downloadProposalFile(data = getProposalData()) {
-  const documentHtml = buildProposalDocument(data);
-  const blob = new Blob([documentHtml], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  const clientSlug = normalize(data.clientName || 'cliente').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cliente';
-
-  link.href = url;
-  link.download = `proposta-${clientSlug}-resolva-jato.html`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-
-  const proposalWindow = window.open('', '_blank');
-  if (proposalWindow) {
-    proposalWindow.document.write(documentHtml);
-    proposalWindow.document.close();
-    proposalWindow.focus();
-  }
-}
-
-function buildProposalShareMessage(data = getProposalData()) {
-  return [
-    `Olá, ${data.clientName || 'cliente'}!`,
-    '',
-    `Segue nossa proposta comercial para *${data.serviceTitle || 'serviço'}*.`,
-    `Valor: *${formatCurrencyBR(data.proposalValue) || 'a definir'}*`,
-    `Prazo: ${data.deliveryTime || 'a combinar'}`,
-    `Pagamento: ${data.paymentTerms || 'a combinar'}`,
-    '',
-    'O arquivo da proposta segue anexo para sua análise.',
-    '',
-    `Atenciosamente,`,
-    data.professionalName || 'Equipe'
-  ].join('\n');
-}
-
-function sendProposalByEmail() {
-  if (!hasFeature('premiumProposals')) {
-    openUpgradeModal({ featureKey: 'premiumProposals', reason: 'Envie propostas de alto padrão por e-mail com logo e assinatura no plano Completo.' });
-    return;
-  }
-
-  const data = getProposalData();
-  if (!proposalReady || sendProposalEmailButton?.disabled) return;
-
-  gateDocumentDownload(() => {
-    downloadProposalFile(data);
-    const subject = encodeURIComponent(`Proposta comercial - ${data.serviceTitle || 'Serviço'}`);
-    const body = encodeURIComponent(buildProposalShareMessage(data));
-    window.location.href = `mailto:${data.clientEmail?.trim()}?subject=${subject}&body=${body}`;
-  });
-}
-
-function sendProposalByWhatsapp() {
-  if (!hasFeature('premiumProposals')) {
-    openUpgradeModal({ featureKey: 'premiumProposals', reason: 'Envie propostas anexadas no WhatsApp com uma experiência profissional no plano Completo.' });
-    return;
-  }
-
-  const data = getProposalData();
-  const phone = getBrazilWhatsappNumber(data.clientWhatsapp);
-  if (!proposalReady || !phone || sendProposalWhatsappButton?.disabled) return;
-
-  gateDocumentDownload(() => {
-    downloadProposalFile(data);
-    const message = `${buildProposalShareMessage(data)}\n\nBaixei a proposta para você anexar nesta conversa.`;
-    openInNewTab(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
-  });
-}
-
-function downloadProposal() {
-  if (!proposalReady) return;
-
-  gateDocumentDownload(() => {
-    downloadProposalFile();
-  });
-}
-
-function buildUtilityDocument({ title, subtitle, blocks, footer = 'Gerado gratuitamente no Resolva Jato.' }) {
-  const today = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date());
-  const premium = isPremiumDocuments();
-  const blockHtml = blocks.map((block) => `
-    <section class="block">
-      <span>${escapeHtml(block.label)}</span>
-      <div>${block.html}</div>
-    </section>
-  `).join('');
-
-  return `<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <title>${escapeHtml(title)}</title>
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: ${premium ? '#eef2ff' : '#f6f7f9'};
-        color: #111318;
-        font-family: Inter, Arial, sans-serif;
-        line-height: 1.55;
-      }
-      main {
-        width: min(820px, calc(100% - 32px));
-        margin: 32px auto;
-        border: 1px solid #dde2e8;
-        border-radius: 8px;
-        background: #fff;
-        padding: 42px;
-      }
-      header {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        border-bottom: 2px solid #111318;
-        padding-bottom: 24px;
-      }
-      .mark {
-        display: grid;
-        width: 48px;
-        height: 48px;
-        place-items: center;
-        border-radius: 8px;
-        background: #111318;
-        color: #fff;
-        font-weight: 800;
-      }
-      h1 {
-        margin: 30px 0 8px;
-        font-size: 2.2rem;
-        line-height: 1;
-      }
-      p { margin: 0; }
-      .muted { color: #606875; }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        margin: 26px 0;
-      }
-      .block {
-        border: 1px solid #dde2e8;
-        border-radius: 8px;
-        padding: 14px;
-      }
-      .block span {
-        display: block;
-        margin-bottom: 6px;
-        color: #606875;
-        font-size: 0.76rem;
-        font-weight: 800;
-        text-transform: uppercase;
-      }
-      .block div {
-        font-weight: 700;
-      }
-      .wide { grid-column: 1 / -1; }
-      ul {
-        margin: 0;
-        padding-left: 18px;
-      }
-      li { margin: 8px 0; }
-      .signature {
-        margin-top: 48px;
-        padding-top: 18px;
-        border-top: 1px solid #111318;
-        text-align: center;
-      }
-      footer {
-        margin-top: 36px;
-        border-top: 1px solid #dde2e8;
-        padding-top: 18px;
-        color: #606875;
-        font-size: 0.86rem;
-      }
-      @media print {
-        body { background: #fff; }
-        main { width: 100%; margin: 0; border: 0; }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <header>
-        <div>
-          <div class="mark">RJ</div>
-          <p class="muted" style="margin-top: 12px;">Documento gerado em ${today}</p>
-        </div>
-        <div style="text-align: right;">
-          <strong>Resolva Jato</strong>
-          <p class="muted">Documento profissional</p>
-        </div>
-      </header>
-      <h1>${escapeHtml(title)}</h1>
-      <p class="muted">${escapeHtml(subtitle)}</p>
-      <div class="grid">${blockHtml}</div>
-      <div class="signature">Assinatura</div>
-      <footer>${escapeHtml(footer)}</footer>
-    </main>
-  </body>
-</html>`;
-}
-
-function downloadHtmlDocument(documentHtml, fileName) {
-  const blob = new Blob([documentHtml], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = fileName;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-
-  const documentWindow = window.open('', '_blank');
-  if (documentWindow) {
-    documentWindow.document.write(documentHtml);
-    documentWindow.document.close();
-    documentWindow.focus();
-  }
-}
-
-function getReceiptData() {
-  const data = getFormData(receiptForm);
-  data.receiptValue = formatCurrencyBR(data.receiptValue) || '';
-  data.receiptContactLabel = getReceiptContactRules(data.receiptContactType).label;
-  return data;
-}
-
-function updateReceiptPreview(data = getReceiptData()) {
-  const payer = data.payerName?.trim() || 'Pagador';
-  const receiver = data.receiverName?.trim() || 'Recebedor';
-  const value = formatCurrencyBR(data.receiptValue) || 'Valor a definir';
-  const reference = data.receiptDescription?.trim() || 'Referência do pagamento';
-  const contactIsValid = validateReceiptContact({ showFeedback: false });
-  const receiptReady = Boolean(data.payerName && data.receiverName && data.receiptValue && contactIsValid);
-
-  setActionState(
-    downloadReceiptButton,
-    receiptReady,
-    '↓ Baixar recibo pronto',
-    'Preencha os dados para liberar o download'
-  );
-
-  receiptPreviewText.textContent = data.payerName && data.receiverName
-    ? contactIsValid ? 'Recibo pronto para baixar e imprimir.' : 'Revise o documento/contato para liberar o recibo.'
-    : 'Preencha pagador, recebedor e valor para deixar o recibo completo.';
-
-  receiptPreviewCard.innerHTML = `
-    <strong>${escapeHtml(value)}</strong>
-    <span>${escapeHtml(receiver)} recebeu de ${escapeHtml(payer)}</span>
-    <span>${escapeHtml(data.receiptContactLabel)}: ${escapeHtml(data.payerDocument || 'não informado')}</span>
-    <span>${escapeHtml(reference)}</span>
-  `;
-}
-
-function downloadReceipt() {
-  const data = getReceiptData();
-  if (downloadReceiptButton.disabled) return;
-
-  if (!validateReceiptContact()) {
-    receiptContactInput.reportValidity();
-    return;
-  }
-
-  gateDocumentDownload(() => {
-    const date = data.receiptDate
-      ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(`${data.receiptDate}T00:00:00`))
-      : 'Data a definir';
-    const documentHtml = buildUtilityDocument({
-      title: 'Recibo',
-      subtitle: `Declaro o recebimento de ${data.receiptValue || 'valor a definir'}.`,
-      blocks: [
-        { label: 'Recebi de', html: escapeHtml(data.payerName || 'Pagador') },
-        { label: 'Quem recebeu', html: escapeHtml(data.receiverName || 'Recebedor') },
-        { label: 'Valor', html: escapeHtml(data.receiptValue || 'A definir') },
-        { label: 'Forma de pagamento', html: escapeHtml(data.paymentMethod || 'A definir') },
-        { label: 'Data', html: escapeHtml(date) },
-        { label: data.receiptContactLabel, html: escapeHtml(data.payerDocument) },
-        { label: 'Referente a', html: escapeHtml(data.receiptDescription || 'Pagamento conforme combinado.').replace(/\n/g, '<br />') }
-      ]
-    });
-    const slug = normalize(data.payerName || 'recibo').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'recibo';
-    downloadHtmlDocument(documentHtml, `recibo-${slug}-resolva-jato.html`);
-  });
-}
-
-function getWorkOrderData() {
-  return getFormData(workOrderForm);
-}
-
-function updateWorkOrderPreview(data = getWorkOrderData()) {
-  const hasService = Boolean(data.orderService?.trim());
-  const hasClient = Boolean(data.orderClient?.trim());
-  const service = hasService ? data.orderService.trim() : 'Título do Serviço';
-  const client = data.orderClient?.trim() || 'Cliente';
-  const priority = data.orderPriority || 'Normal';
-  const location = data.orderLocation?.trim() || 'Local a definir';
-  const workOrderReady = hasClient && hasService;
-
-  setActionState(
-    downloadWorkOrderButton,
-    workOrderReady,
-    '↓ Baixar ordem de serviço pronta',
-    'Preencha cliente e serviço para liberar'
-  );
-
-  workOrderPreviewText.textContent = workOrderReady
-    ? 'Ordem de serviço pronta para baixar.'
-    : 'Preencha cliente e serviço para montar a OS.';
-
-  workOrderPreviewCard.innerHTML = `
-    <strong class="${hasService ? '' : 'preview-placeholder'}">${escapeHtml(service)}</strong>
-    <span>${escapeHtml(client)} · ${escapeHtml(location)}</span>
-    <span>Prioridade ${escapeHtml(priority)}</span>
-  `;
-}
-
-function downloadWorkOrder() {
-  if (downloadWorkOrderButton.disabled) return;
-
-  gateDocumentDownload(() => {
-    const data = getWorkOrderData();
-    const date = data.orderDate
-      ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(`${data.orderDate}T00:00:00`))
-      : 'Data a definir';
-    const documentHtml = buildUtilityDocument({
-      title: 'Ordem de Serviço',
-      subtitle: data.orderService || 'Registro de solicitação e execução de serviço.',
-      blocks: [
-        { label: 'Cliente', html: escapeHtml(data.orderClient || 'Cliente') },
-        { label: 'Responsável', html: escapeHtml(data.orderOwner || 'Responsável') },
-        { label: 'Serviço', html: escapeHtml(data.orderService || 'Serviço') },
-        { label: 'Local', html: escapeHtml(data.orderLocation || 'A definir') },
-        { label: 'Data prevista', html: escapeHtml(date) },
-        { label: 'Prioridade', html: escapeHtml(data.orderPriority || 'Normal') },
-        { label: 'Descrição', html: escapeHtml(data.orderDescription || 'Solicitação conforme combinado.').replace(/\n/g, '<br />') }
-      ]
-    });
-    const slug = normalize(data.orderClient || 'ordem-servico').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'ordem-servico';
-    downloadHtmlDocument(documentHtml, `ordem-servico-${slug}-resolva-jato.html`);
-  });
-}
-
-function getChecklistData() {
-  return getFormData(checklistForm);
-}
-
-function getChecklistItems(value = '') {
-  return value.split('\n').map((item) => item.trim()).filter(Boolean);
-}
-
-function updateChecklistPreview(data = getChecklistData()) {
-  const project = data.checklistProject?.trim() || 'Projeto ou cliente';
-  const items = getChecklistItems(data.checklistItems);
-  const visibleItems = items.slice(0, 5);
-  const checklistReady = items.length > 0;
-
-  setActionState(
-    downloadChecklistButton,
-    checklistReady,
-    '↓ Baixar checklist pronto',
-    'Adicione itens para liberar o download'
-  );
-
-  checklistPreviewText.textContent = items.length > 0
-    ? `${items.length} item(ns) prontos para conferência.`
-    : 'Adicione os itens que precisam ser conferidos na entrega.';
-
-  checklistPreviewCard.classList.toggle('is-empty', !checklistReady);
-  checklistPreviewCard.innerHTML = checklistReady
-    ? `
-      <strong>${escapeHtml(project)}</strong>
-      <ul>
-        ${visibleItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
-      </ul>
-    `
-    : `
-      <strong class="preview-placeholder">${escapeHtml(project)}</strong>
-      <div class="skeleton-lines" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
+  if (!items.length) {
+    return `
+      <div class="sidebar-empty">
+        <strong>Nada encontrado</strong>
+        <span>Tente buscar por proposta, cliente, plano, BI ou tarefas.</span>
       </div>
     `;
-}
-
-function downloadChecklist() {
-  if (downloadChecklistButton.disabled) return;
-
-  gateDocumentDownload(() => {
-    const data = getChecklistData();
-    const items = getChecklistItems(data.checklistItems);
-    const itemHtml = items.length > 0
-      ? `<ul>${items.map((item) => `<li>[ ] ${escapeHtml(item)}</li>`).join('')}</ul>`
-      : 'Nenhum item informado.';
-    const documentHtml = buildUtilityDocument({
-      title: 'Checklist de Entrega',
-      subtitle: data.checklistProject || 'Lista de conferência do serviço.',
-      blocks: [
-        { label: 'Cliente ou projeto', html: escapeHtml(data.checklistProject || 'Projeto') },
-        { label: 'Responsável', html: escapeHtml(data.checklistOwner || 'Responsável') },
-        { label: 'Itens da entrega', html: itemHtml },
-        { label: 'Observações finais', html: escapeHtml(data.checklistNotes || 'Sem observações.').replace(/\n/g, '<br />') }
-      ],
-      footer: 'Use este checklist para conferir a entrega antes de finalizar o atendimento.'
-    });
-    const slug = normalize(data.checklistProject || 'checklist').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'checklist';
-    downloadHtmlDocument(documentHtml, `checklist-${slug}-resolva-jato.html`);
-  });
-}
-
-function getPricingData() {
-  const data = getFormData(pricingForm);
-  const numberOrZero = (value) => {
-    const parsed = Number(value || 0);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-
-  return {
-    income: parseCurrencyBR(data.pricingIncome),
-    costs: parseCurrencyBR(data.pricingCosts),
-    hoursDay: numberOrZero(data.pricingHoursDay),
-    daysWeek: numberOrZero(data.pricingDaysWeek),
-    projectHours: numberOrZero(data.pricingProjectHours),
-    profit: numberOrZero(data.pricingProfit)
-  };
-}
-
-function calculatePricing() {
-  const data = getPricingData();
-  const monthlyHours = data.hoursDay * data.daysWeek * 4.33;
-  const baseHour = monthlyHours > 0 ? (data.income + data.costs) / monthlyHours : 0;
-  const hourWithProfit = baseHour * (1 + data.profit / 100);
-  const projectValue = hourWithProfit * data.projectHours;
-  const isReady = data.income > 0 && data.hoursDay > 0 && data.daysWeek > 0;
-
-  return { ...data, monthlyHours, baseHour, hourWithProfit, projectValue, isReady };
-}
-
-function updatePricingPreview() {
-  const data = calculatePricing();
-
-  setActionState(
-    copyPricingSummaryButton,
-    data.isReady,
-    '⧉ Copiar resumo da precificação',
-    'Preencha os dados para copiar o resumo'
-  );
-
-  pricingPreviewText.textContent = data.monthlyHours > 0
-    ? `${data.monthlyHours.toFixed(0)} horas produtivas estimadas por mês.`
-    : 'Informe horas e dias de trabalho para calcular.';
-
-  pricingPreviewCard.innerHTML = `
-    <strong>${formatMoneyValue(data.hourWithProfit)}/h</strong>
-    <span>Hora mínima com margem de ${Number.isFinite(data.profit) ? data.profit : 0}%</span>
-    <span>Projeto: ${formatMoneyValue(data.projectValue)}</span>
-    <small>Custo mensal considerado: ${formatMoneyValue(data.income + data.costs)}</small>
-  `;
-}
-
-function buildPricingSummary() {
-  const data = calculatePricing();
-  return [
-    'Resumo da precificação',
-    `Meta mensal: ${formatMoneyValue(data.income)}`,
-    `Custos fixos: ${formatMoneyValue(data.costs)}`,
-    `Horas produtivas/mês: ${data.monthlyHours.toFixed(0)}`,
-    `Margem de lucro: ${data.profit}%`,
-    `Valor sugerido da hora: ${formatMoneyValue(data.hourWithProfit)}`,
-    `Projeto estimado: ${formatMoneyValue(data.projectValue)}`
-  ].join('\n');
-}
-
-async function copyPricingSummary() {
-  if (copyPricingSummaryButton.disabled) return;
-
-  await copyTextToClipboard(buildPricingSummary());
-  copyPricingSummaryButton.textContent = 'Resumo copiado';
-  setTimeout(() => {
-    copyPricingSummaryButton.textContent = '⧉ Copiar resumo da precificação';
-  }, 1600);
-}
-
-function getPixKeyRules(type = pixKeyType.value) {
-  const rules = {
-    cpf: {
-      placeholder: '000.000.000-00',
-      inputMode: 'numeric',
-      help: 'Informe um CPF válido.',
-      mask: formatCpf,
-      validate: validateCpf,
-      normalize: (value) => sanitizePhone(value)
-    },
-    cnpj: {
-      placeholder: '00.000.000/0000-00',
-      inputMode: 'numeric',
-      help: 'Informe um CNPJ válido.',
-      mask: formatCnpj,
-      validate: validateCnpj,
-      normalize: (value) => sanitizePhone(value)
-    },
-    phone: {
-      placeholder: '(00) 00000-0000',
-      inputMode: 'tel',
-      help: 'Informe um telefone brasileiro válido com DDD.',
-      mask: formatPhoneBR,
-      validate: validatePhoneBR,
-      normalize: (value) => {
-        const digits = sanitizePhone(value);
-        return digits.startsWith('55') ? `+${digits}` : `+55${digits}`;
-      }
-    },
-    email: {
-      placeholder: 'nome@email.com',
-      inputMode: 'email',
-      help: 'Informe um e-mail válido.',
-      mask: (value) => value.trim().toLowerCase(),
-      validate: validateEmail,
-      normalize: (value) => value.trim().toLowerCase()
-    },
-    random: {
-      placeholder: 'Chave aleatória Pix',
-      inputMode: 'text',
-      help: 'Informe uma chave aleatória Pix válida.',
-      mask: (value) => value.trim(),
-      validate: (value) => /^[A-Za-z0-9-]{32,77}$/.test(value.trim()),
-      normalize: (value) => value.trim()
-    }
-  };
-
-  return rules[type] || rules.cpf;
-}
-
-function validatePixKey({ showFeedback = true } = {}) {
-  const rules = getPixKeyRules();
-  const value = pixKeyInput.value.trim();
-  const isValid = value.length > 0 && rules.validate(value);
-
-  pixKeyInput.setCustomValidity(isValid ? '' : rules.help);
-  pixKeyFeedback.textContent = isValid ? 'Chave Pix válida.' : rules.help;
-  pixKeyFeedback.classList.toggle('valid', isValid);
-  pixKeyFeedback.classList.toggle('invalid', showFeedback && !isValid && value.length > 0);
-
-  return isValid;
-}
-
-function updatePixKeyField({ clearValue = false } = {}) {
-  const rules = getPixKeyRules();
-  pixKeyInput.placeholder = rules.placeholder;
-  pixKeyInput.inputMode = rules.inputMode;
-  pixKeyInput.value = clearValue ? '' : rules.mask(pixKeyInput.value);
-  pixKeyFeedback.textContent = rules.help;
-  validatePixKey({ showFeedback: false });
-}
-
-function tlv(id, value) {
-  const content = String(value);
-  return `${id}${String(content.length).padStart(2, '0')}${content}`;
-}
-
-function crc16(payload) {
-  let crc = 0xffff;
-
-  for (let index = 0; index < payload.length; index += 1) {
-    crc ^= payload.charCodeAt(index) << 8;
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
-      crc &= 0xffff;
-    }
   }
 
-  return crc.toString(16).toUpperCase().padStart(4, '0');
+  return sectionOrder.map((section) => {
+    const sectionItems = items.filter((item) => item.section === section);
+    if (!sectionItems.length) return '';
+
+    return `
+      <section class="sidebar-section">
+        <div class="sidebar-section__head">
+          <span>${section}</span>
+          <small>${sectionItems.length}</small>
+        </div>
+        <div class="sidebar-section__items">
+          ${sectionItems.map(sidebarNavItem).join('')}
+        </div>
+      </section>
+    `;
+  }).join('');
 }
 
-function buildPixPayload() {
-  const data = getFormData(pixForm);
-  const rules = getPixKeyRules(data.pixKeyType);
-  const key = rules.normalize(data.pixKey);
-  const amount = parseCurrencyBR(data.pixValue).toFixed(2);
-  const merchant = sanitizePixText(data.pixMerchant || 'RESOLVA JATO', 25) || 'RESOLVA JATO';
-  const city = sanitizePixText(data.pixCity || 'BRASIL', 15) || 'BRASIL';
-  const description = sanitizePixText(data.pixDescription || data.pixClient || 'COBRANCA', 25);
-  const merchantAccount = tlv('00', 'br.gov.bcb.pix') + tlv('01', key) + (description ? tlv('02', description) : '');
-  const txid = sanitizePixText(`RJ${Date.now().toString().slice(-8)}`, 25);
-  const withoutCrc = [
-    tlv('00', '01'),
-    tlv('26', merchantAccount),
-    tlv('52', '0000'),
-    tlv('53', '986'),
-    amount !== '0.00' ? tlv('54', amount) : '',
-    tlv('58', 'BR'),
-    tlv('59', merchant),
-    tlv('60', city),
-    tlv('62', tlv('05', txid)),
-    '6304'
-  ].join('');
-
-  return `${withoutCrc}${crc16(withoutCrc)}`;
-}
-
-function updatePixPreview() {
-  const isKeyValid = validatePixKey({ showFeedback: false });
-  const data = getFormData(pixForm);
-
-  if (!isKeyValid) {
-    setActionState(copyPixCodeButton, false, '⧉ Copiar Pix', 'Informe uma chave Pix válida');
-    setActionState(sendPixWhatsappButton, false, '☏ Enviar pelo WhatsApp', 'Gere o Pix para enviar');
-    pixPreviewText.textContent = 'Preencha uma chave Pix válida para gerar a cobrança.';
-    pixPreviewCard.dataset.pixPayload = '';
-    pixPreviewCard.innerHTML = '<strong>Código Pix</strong><span>O código aparecerá aqui pronto para copiar.</span>';
-    return;
-  }
-
-  const payload = buildPixPayload();
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(payload)}`;
-  setActionState(copyPixCodeButton, true, '⧉ Copiar Pix', 'Informe uma chave Pix válida');
-  setActionState(sendPixWhatsappButton, true, '☏ Enviar pelo WhatsApp', 'Gere o Pix para enviar');
-  pixPreviewCard.dataset.pixPayload = payload;
-  pixPreviewText.textContent = `${data.pixClient || 'Cliente'} · ${formatCurrencyBR(data.pixValue) || 'valor aberto'}`;
-  pixPreviewCard.innerHTML = `
-    <strong>Pix pronto</strong>
-    <img class="pix-qr" src="${qrCodeUrl}" alt="QR Code Pix para pagamento" />
-    <button class="pix-copy-block" type="button" aria-label="Copiar Pix Copia e Cola">
-      <code>${escapeHtml(payload)}</code>
-      <span class="copy-hint">Clique no bloco para copiar</span>
-      <span class="copy-toast" aria-live="polite">Copiado!</span>
+function sidebarNavItem(item) {
+  const locked = item.plan === 'completo' && !isCompletePlan();
+  return `
+    <button class="sidebar-link ${state.page === item.id ? 'active' : ''}" type="button" data-page="${item.id}">
+      <span class="sidebar-link__icon">${item.icon}</span>
+      <span class="sidebar-link__copy">
+        <strong>${item.label}</strong>
+        <small>${item.description}</small>
+      </span>
+      <span class="sidebar-link__meta">
+        ${locked ? '<b>Pro</b>' : `<kbd>${item.shortcut}</kbd>`}
+      </span>
     </button>
   `;
 }
 
-async function copyTextToClipboard(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-  } catch {
-    const temporaryInput = document.createElement('textarea');
-    temporaryInput.value = value;
-    temporaryInput.style.position = 'fixed';
-    temporaryInput.style.opacity = '0';
-    document.body.append(temporaryInput);
-    temporaryInput.select();
-    document.execCommand('copy');
-    temporaryInput.remove();
-  }
+function openAuth() {
+  loginDialog.showModal();
 }
 
-function buildPixWhatsappMessage() {
-  const data = getFormData(pixForm);
-  const payload = buildPixPayload();
-  const client = data.pixClient?.trim();
-  const value = formatCurrencyBR(data.pixValue) || 'valor combinado';
-  const description = (data.pixDescription?.trim() || 'serviço')
-    .replace(/^referente\s+(a|ao|à|aos|às)\s+/i, '')
-    .replace(/^referente\s+/i, '');
-
-  return [
-    client ? `Olá, ${client}!` : 'Olá!',
-    `Segue a cobrança Pix de ${value}.`,
-    `Descrição: ${description}.`,
-    '',
-    'Copie somente o código entre as linhas abaixo:',
-    '----- PIX COPIA E COLA -----',
-    payload,
-    '----- FIM DO PIX -----'
-  ].join('\n');
+function setAuthenticated(payload = {}) {
+  state.authenticated = true;
+  state.user = {
+    name: payload.name || document.querySelector('#auth-name')?.value || 'Usuário Resolva Jato',
+    email: payload.email || document.querySelector('#auth-email')?.value || 'demo@resolvajato.local',
+    planId: payload.planId || 'free'
+  };
+  localStorage.setItem('rj-token', payload.token || 'demo-token');
+  localStorage.setItem('rj-user', JSON.stringify(state.user));
+  loginDialog.close();
+  render();
 }
 
-function sendPixByWhatsapp() {
-  if (!validatePixKey()) {
-    pixKeyInput.reportValidity();
-    return;
-  }
-
-  sendPixWhatsappButton.disabled = true;
-  const phone = getBrazilWhatsappNumber(pixWhatsappInput.value);
-  const message = buildPixWhatsappMessage();
-  const whatsappUrl = phone
-    ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-  openInNewTab(whatsappUrl);
-
-  setTimeout(() => {
-    sendPixWhatsappButton.disabled = false;
-  }, 1800);
-}
-
-async function copyPixCode() {
-  if (!validatePixKey()) {
-    pixKeyInput.reportValidity();
-    return;
-  }
-
-  const payload = buildPixPayload();
-  await copyTextToClipboard(payload);
-
-  copyPixCodeButton.textContent = 'Pix copiado';
-  setTimeout(() => {
-    copyPixCodeButton.textContent = '⧉ Copiar Pix';
-  }, 1600);
-}
-
-async function copyPixFromPreview() {
-  const payload = pixPreviewCard.dataset.pixPayload;
-  if (!payload) return;
-
-  await copyTextToClipboard(payload);
-  const copyBlock = pixPreviewCard.querySelector('.pix-copy-block');
-  copyBlock?.classList.add('copied');
-  setTimeout(() => {
-    copyBlock?.classList.remove('copied');
-  }, 1400);
-}
-
-function getWarrantyData() {
-  return getFormData(warrantyForm);
-}
-
-function updateWarrantyPreview(data = getWarrantyData()) {
-  const hasService = Boolean(data.warrantyService?.trim());
-  const hasClient = Boolean(data.warrantyClient?.trim());
-  const service = hasService ? data.warrantyService.trim() : 'Serviço concluído';
-  const client = hasClient ? data.warrantyClient.trim() : 'Cliente';
-  const days = data.warrantyDays?.trim();
-  const warrantyLabel = days ? `Garantia de ${days} dias` : 'Garantia a definir';
-  const warrantyReady = hasClient && hasService;
-
-  setActionState(
-    downloadWarrantyButton,
-    warrantyReady,
-    '↓ Baixar termo pronto',
-    'Preencha cliente e serviço para liberar'
-  );
-
-  warrantyPreviewText.textContent = warrantyReady
-    ? 'Termo pronto para baixar e coletar aceite.'
-    : 'Preencha cliente e serviço para montar o termo.';
-
-  warrantyPreviewCard.innerHTML = `
-    <strong>${escapeHtml(service)}</strong>
-    <span>${escapeHtml(client)}</span>
-    <span>${escapeHtml(warrantyLabel)}</span>
-  `;
-}
-
-function downloadWarranty() {
-  if (downloadWarrantyButton.disabled) return;
-
-  gateDocumentDownload(() => {
-    const data = getWarrantyData();
-    const date = data.warrantyDate
-      ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(`${data.warrantyDate}T00:00:00`))
-      : 'Data a definir';
-    const documentHtml = buildUtilityDocument({
-      title: 'Termo de Serviço Concluído e Garantia',
-      subtitle: data.warrantyService || 'Registro de conclusão de serviço.',
-      blocks: [
-        { label: 'Profissional ou empresa', html: escapeHtml(data.warrantyProfessional || 'Profissional') },
-        { label: 'Cliente', html: escapeHtml(data.warrantyClient || 'Cliente') },
-        { label: 'Serviço concluído', html: escapeHtml(data.warrantyService || 'Serviço') },
-        { label: 'Data de conclusão', html: escapeHtml(date) },
-        { label: 'Prazo de garantia', html: data.warrantyDays ? `${escapeHtml(data.warrantyDays)} dias` : 'Garantia a definir' },
-        { label: 'Canal de aceite', html: escapeHtml(data.warrantyAcceptance || 'Assinatura do cliente') },
-        { label: 'Escopo entregue', html: escapeHtml(data.warrantyScope || 'Serviço entregue conforme combinado.').replace(/\n/g, '<br />') }
-      ],
-      footer: 'Este termo registra a conclusão do serviço e os limites de garantia informados pelo profissional.'
-    });
-    const slug = normalize(data.warrantyClient || 'termo-garantia').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'termo-garantia';
-    downloadHtmlDocument(documentHtml, `termo-garantia-${slug}-resolva-jato.html`);
-  });
-}
-
-function getBudgetData() {
-  const data = getFormData(budgetForm);
-  data.budgetValue = formatCurrencyBR(data.budgetValue) || '';
-  return data;
-}
-
-function updateBudgetPreview(data = getBudgetData()) {
-  const hasService = Boolean(data.budgetService?.trim());
-  const hasClient = Boolean(data.budgetClient?.trim());
-  const service = hasService ? data.budgetService.trim() : 'Serviço orçado';
-  const client = hasClient ? data.budgetClient.trim() : 'Cliente';
-  const value = data.budgetValue || 'Valor a definir';
-  const budgetReady = hasClient && hasService && Boolean(data.budgetValue);
-
-  setActionState(
-    downloadBudgetButton,
-    budgetReady,
-    '↓ Baixar orçamento pronto',
-    'Preencha cliente, serviço e valor para liberar'
-  );
-
-  budgetPreviewText.textContent = budgetReady
-    ? 'Orçamento pronto para baixar e enviar.'
-    : 'Preencha cliente, serviço e valor para montar o orçamento.';
-
-  budgetPreviewCard.innerHTML = `
-    <strong>${escapeHtml(service)}</strong>
-    <span>${escapeHtml(client)} · ${escapeHtml(value)}</span>
-    <span>Validade: ${escapeHtml(data.budgetValidity || '7 dias')}</span>
-  `;
-}
-
-function downloadBudget() {
-  if (downloadBudgetButton.disabled) return;
-
-  gateDocumentDownload(() => {
-    const data = getBudgetData();
-    const documentHtml = buildUtilityDocument({
-      title: 'Orçamento',
-      subtitle: data.budgetService || 'Proposta de preço para serviço.',
-      blocks: [
-        { label: 'Prestador', html: escapeHtml(data.budgetProfessional || 'Profissional') },
-        { label: 'Cliente', html: escapeHtml(data.budgetClient || 'Cliente') },
-        { label: 'Serviço', html: escapeHtml(data.budgetService || 'Serviço') },
-        { label: 'Valor', html: escapeHtml(data.budgetValue || 'A definir') },
-        { label: 'Prazo', html: escapeHtml(data.budgetDeadline || 'A combinar') },
-        { label: 'Validade', html: escapeHtml(data.budgetValidity || '7 dias') },
-        { label: 'Detalhes', html: escapeHtml(data.budgetDescription || 'Serviço conforme descrito neste orçamento.').replace(/\n/g, '<br />') }
-      ],
-      footer: 'Este orçamento não substitui contrato formal. Valores sujeitos a confirmação após análise final.'
-    });
-    const slug = normalize(data.budgetClient || 'orcamento').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'orcamento';
-    downloadHtmlDocument(documentHtml, `orcamento-${slug}-resolva-jato.html`);
-  });
-}
-
-function getContractData() {
-  const data = getFormData(contractForm);
-  data.contractValue = formatCurrencyBR(data.contractValue) || '';
-  return data;
-}
-
-function updateContractPreview(data = getContractData()) {
-  const hasService = Boolean(data.contractService?.trim());
-  const hasClient = Boolean(data.contractClient?.trim());
-  const hasProvider = Boolean(data.contractProvider?.trim());
-  const service = hasService ? data.contractService.trim() : 'Serviço contratado';
-  const client = hasClient ? data.contractClient.trim() : 'Cliente';
-  const provider = hasProvider ? data.contractProvider.trim() : 'Prestador';
-  const contractReady = hasClient && hasService && hasProvider;
-
-  setActionState(
-    downloadContractButton,
-    contractReady,
-    '↓ Baixar contrato pronto',
-    'Preencha prestador, cliente e serviço para liberar'
-  );
-
-  contractPreviewText.textContent = contractReady
-    ? 'Contrato pronto para baixar e coletar assinaturas.'
-    : 'Preencha prestador, cliente e serviço para montar o contrato.';
-
-  contractPreviewCard.innerHTML = `
-    <strong>${escapeHtml(service)}</strong>
-    <span>${escapeHtml(provider)} → ${escapeHtml(client)}</span>
-    <span>${escapeHtml(data.contractValue || 'Valor a definir')}</span>
-  `;
-}
-
-function downloadContract() {
-  if (downloadContractButton.disabled) return;
-
-  gateDocumentDownload(() => {
-    const data = getContractData();
-    const documentHtml = buildUtilityDocument({
-      title: 'Contrato de Prestação de Serviço',
-      subtitle: data.contractService || 'Formalização de serviço entre prestador e contratante.',
-      blocks: [
-        { label: 'Prestador', html: escapeHtml(data.contractProvider || 'Prestador') },
-        { label: 'Contratante', html: escapeHtml(data.contractClient || 'Cliente') },
-        { label: 'Objeto do contrato', html: escapeHtml(data.contractService || 'Serviço') },
-        { label: 'Valor', html: escapeHtml(data.contractValue || 'A combinar') },
-        { label: 'Prazo de execução', html: escapeHtml(data.contractDeadline || 'A combinar') },
-        { label: 'Pagamento', html: escapeHtml(data.contractPayment || 'A combinar') },
-        { label: 'Escopo e condições', html: escapeHtml(data.contractScope || 'Serviço executado conforme combinado entre as partes.').replace(/\n/g, '<br />') }
-      ],
-      footer: 'Modelo simplificado para uso entre particulares. Consulte um advogado para casos complexos ou valores elevados.'
-    });
-    const slug = normalize(data.contractClient || 'contrato').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'contrato';
-    downloadHtmlDocument(documentHtml, `contrato-${slug}-resolva-jato.html`);
-  });
-}
-
-function renderBusinessDashboard() {
-  const panel = document.querySelector('#business-dashboard');
-  if (!panel) return;
-
-  const plan = getCurrentPlan();
-
-  if (!hasFeature('businessDashboard')) {
-    if (plan.id === 'essencial') {
-      panel.hidden = false;
-      panel.innerHTML = `
-        <div class="dashboard-teaser">
-          <div>
-            <strong>Painel de métricas no Completo</strong>
-            <p>Clientes ativos, compromissos da semana e documentos gerados em um só lugar.</p>
-          </div>
-          <button type="button" class="promo-action" data-upgrade-feature="businessDashboard">Ver Completo</button>
-        </div>
-      `;
-      return;
-    }
-
-    panel.hidden = true;
-    panel.innerHTML = '';
-    return;
-  }
-
-  const usage = getUsageState();
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
-
-  const weekAppointments = professionalState.appointments.filter((appointment) => {
-    const date = new Date(appointment.date);
-    return date >= weekStart && date < weekEnd;
-  }).length;
-
-  const activeClients = professionalState.clients.filter((client) => client.status !== 'Finalizado').length;
-  const leads = professionalState.clients.filter((client) => client.status === 'Lead').length;
-
-  panel.hidden = false;
-  panel.innerHTML = `
-    <div class="business-dashboard__head">
-      <p class="eyebrow">Painel Completo</p>
-      <h3>Resumo do seu negócio</h3>
-    </div>
-    <div class="business-dashboard__grid">
-      <article class="metric-card">
-        <span>Clientes ativos</span>
-        <strong>${activeClients}</strong>
-      </article>
-      <article class="metric-card">
-        <span>Leads na carteira</span>
-        <strong>${leads}</strong>
-      </article>
-      <article class="metric-card">
-        <span>Compromissos esta semana</span>
-        <strong>${weekAppointments}</strong>
-      </article>
-      <article class="metric-card">
-        <span>Documentos este mês</span>
-        <strong>${usage.documentsMonth}</strong>
-      </article>
-    </div>
-  `;
-}
-
-function toDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function renderClientProFields() {
-  if (!clientProFields) return;
-
-  const unlocked = hasFeature('clientProfileFull');
-  clientProFields.classList.toggle('is-locked', !unlocked);
-  if (clientProLock) clientProLock.hidden = unlocked;
-}
-
-function getAppointmentsForDay(date) {
-  const key = toDateKey(date);
-  return professionalState.appointments.filter((appointment) => appointment.date?.slice(0, 10) === key);
-}
-
-function renderAppointmentCalendar() {
-  if (!appointmentCalendar || !appointmentCalendarWrap) return;
-
-  const unlocked = hasFeature('calendarAgenda');
-  appointmentCalendarWrap.classList.toggle('is-locked', !unlocked);
-
-  const year = calendarCursor.getFullYear();
-  const month = calendarCursor.getMonth();
-  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(calendarCursor);
-  const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const firstDay = new Date(year, month, 1);
-  const startOffset = firstDay.getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayKey = toDateKey(new Date());
-
-  let cells = weekdays.map((day) => `<span class="calendar-weekday">${day}</span>`).join('');
-
-  for (let i = 0; i < startOffset; i += 1) {
-    cells += '<span class="calendar-day is-muted" aria-hidden="true"></span>';
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = new Date(year, month, day);
-    const key = toDateKey(date);
-    const hasEvents = getAppointmentsForDay(date).length > 0;
-    const classes = [
-      'calendar-day',
-      key === todayKey ? 'is-today' : '',
-      selectedCalendarDay === key ? 'is-selected' : '',
-      hasEvents ? 'has-events' : ''
-    ].filter(Boolean).join(' ');
-
-    cells += `<button type="button" class="${classes}" data-calendar-day="${key}">${day}</button>`;
-  }
-
-  appointmentCalendar.innerHTML = `
-    <div class="calendar-head">
-      <button type="button" class="ghost-button" data-calendar-nav="prev" aria-label="Mês anterior">‹</button>
-      <strong>${monthLabel}</strong>
-      <button type="button" class="ghost-button" data-calendar-nav="next" aria-label="Próximo mês">›</button>
-    </div>
-    <div class="calendar-grid">${cells}</div>
-  `;
-
-  const existingLock = appointmentCalendarWrap.querySelector('.calendar-lock');
-  existingLock?.remove();
-
-  if (!unlocked) {
-    appointmentCalendarWrap.insertAdjacentHTML('beforeend', `
-      <div class="calendar-lock">
-        <strong>Agenda em calendário no Essencial</strong>
-        <p>Visualize compromissos por dia, identifique semanas cheias e organize entregas com clareza.</p>
-        <button type="button" class="promo-action" data-upgrade-feature="calendarAgenda">Desbloquear calendário</button>
-      </div>
-    `);
-    appointmentCalendarWrap.querySelector('[data-upgrade-feature="calendarAgenda"]')?.addEventListener('click', () => {
-      openUpgradeModal({ featureKey: 'calendarAgenda', reason: 'Veja sua agenda em calendário visual. Fica muito mais fácil planejar a semana.' });
-    });
-    return;
-  }
-
-  appointmentCalendar.querySelector('[data-calendar-nav="prev"]')?.addEventListener('click', () => {
-    calendarCursor = new Date(year, month - 1, 1);
-    renderAppointmentCalendar();
-  });
-
-  appointmentCalendar.querySelector('[data-calendar-nav="next"]')?.addEventListener('click', () => {
-    calendarCursor = new Date(year, month + 1, 1);
-    renderAppointmentCalendar();
-  });
-
-  appointmentCalendar.querySelectorAll('[data-calendar-day]').forEach((button) => {
-    button.addEventListener('click', () => {
-      selectedCalendarDay = button.dataset.calendarDay;
-      renderAppointmentCalendar();
-      renderAppointments();
-    });
-  });
-}
-
-function renderClients() {
-  clientCount.textContent = String(professionalState.clients.length);
-  renderAppointmentClientOptions();
-
-  if (professionalState.clients.length === 0) {
-    clientList.innerHTML = '<div class="compact-item"><span>Nenhum cliente salvo ainda.</span></div>';
-    return;
-  }
-
-  clientList.innerHTML = professionalState.clients.map((client) => {
-    const phone = getBrazilWhatsappNumber(client.whatsapp);
-    const formattedPhone = formatPhoneBR(client.whatsapp);
-    const meta = [
-      client.document ? `Doc: ${escapeHtml(client.document)}` : '',
-      client.email ? escapeHtml(client.email) : '',
-      client.address ? escapeHtml(client.address) : ''
-    ].filter(Boolean).join(' · ');
-    const timeline = hasFeature('clientTimeline') && client.notes
-      ? `<p class="client-timeline">${escapeHtml(client.notes).replace(/\n/g, '<br />')}</p>`
-      : '';
-
-    return `
-      <article class="compact-item client-card">
-        <strong>${escapeHtml(client.name)}</strong>
-        <span>${escapeHtml(client.status)}${phone ? ` · ${escapeHtml(formattedPhone)}` : ''}</span>
-        ${meta ? `<div class="client-card__meta">${meta}</div>` : ''}
-        ${timeline}
-        <div class="compact-actions">
-          ${phone ? `<button class="whatsapp-action" type="button" data-whatsapp-phone="${phone}" data-client-name="${escapeHtml(client.name)}" data-client-status="${escapeHtml(client.status)}" aria-label="Abrir WhatsApp de ${escapeHtml(client.name)} com mensagem pronta">☎ WhatsApp</button>` : ''}
-          <button type="button" data-delete-client="${client.id}">Remover</button>
-        </div>
-      </article>
-    `;
-  }).join('');
-
-  refreshBillingState();
-}
-
-function renderAppointmentClientOptions() {
-  const currentValue = appointmentClientSelect.value;
-  const clientOptions = professionalState.clients.map((client) => `
-    <option value="${escapeHtml(client.name)}">${escapeHtml(client.name)}</option>
-  `).join('');
-
-  appointmentClientSelect.innerHTML = `
-    <option value="">Nenhum / Uso Geral</option>
-    <option value="__new_client__">+ Cadastrar novo cliente</option>
-    ${clientOptions}
-  `;
-
-  appointmentClientSelect.value = [...appointmentClientSelect.options].some((option) => option.value === currentValue)
-    ? currentValue
-    : '';
-  syncAppointmentNewClientField();
-}
-
-function syncAppointmentNewClientField() {
-  const isCreatingClient = appointmentClientSelect.value === '__new_client__';
-  const fields = [...appointmentNewClientField.querySelectorAll('input')];
-  appointmentNewClientField.hidden = !isCreatingClient;
-  fields.forEach((field) => {
-    field.required = isCreatingClient;
-  });
-}
-
-function renderAppointments() {
-  let appointments = [...professionalState.appointments].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  if (selectedCalendarDay && hasFeature('calendarAgenda')) {
-    appointments = appointments.filter((appointment) => appointment.date?.slice(0, 10) === selectedCalendarDay);
-  }
-
-  if (appointments.length === 0) {
-    appointmentList.innerHTML = `<div class="compact-item timeline-empty"><span>${selectedCalendarDay ? 'Nenhum compromisso neste dia.' : 'Nenhum compromisso salvo ainda.'}</span></div>`;
-    return;
-  }
-
-  appointmentList.innerHTML = appointments.map((appointment) => {
-    const date = new Date(appointment.date);
-    const time = new Intl.DateTimeFormat('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-    const day = new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: 'short'
-    }).format(date).replace('.', '');
-
-    return `
-    <article class="compact-item timeline-item">
-      <div class="timeline-time">
-        <strong>${escapeHtml(time)}</strong>
-        <span>${escapeHtml(day)}</span>
-      </div>
-      <div class="timeline-content">
-        <strong>${escapeHtml(appointment.title)}</strong>
-        <span>${appointment.client ? escapeHtml(appointment.client) : 'Nenhum / Uso Geral'}</span>
-        <small class="reminder-badge">${escapeHtml(getReminderLabel(appointment.reminderMinutes))}</small>
-        <div class="compact-actions">
-          <button type="button" data-delete-appointment="${appointment.id}">Concluir</button>
-        </div>
-      </div>
-    </article>
-  `;
-  }).join('');
-}
-
-function updateClientActionState() {
-  const data = getFormData(clientForm);
-  const isReady = Boolean(data.clientName?.trim());
-  setActionState(saveClientButton, isReady, '+ Salvar cliente', 'Preencha o nome para salvar');
-}
-
-function updateAppointmentActionState() {
-  const data = getFormData(appointmentForm);
-  const isCreatingClient = data.appointmentClient === '__new_client__';
-  const hasNewClientName = Boolean(data.appointmentNewClient?.trim());
-  const hasNewClientPhone = sanitizePhone(data.appointmentNewClientPhone || '').length >= 10;
-  const isReady = Boolean(data.appointmentTitle?.trim() && data.appointmentDate && (!isCreatingClient || (hasNewClientName && hasNewClientPhone)));
-  const waitingText = isCreatingClient && (!hasNewClientName || !hasNewClientPhone)
-    ? 'Digite nome e telefone do cliente'
-    : 'Preencha compromisso e data';
-
-  setActionState(saveAppointmentButton, isReady, '+ Adicionar compromisso', waitingText);
-}
-
-function getFilteredResources() {
-  const normalizedQuery = normalize(query);
-
-  return resources.filter((resource) => {
-    const matchesCategory = activeCategory === 'todos' || resource.category === activeCategory;
-    const searchable = normalize([
-      resource.name,
-      resource.categoryLabel,
-      resource.description,
-      ...resource.tags
-    ].join(' '));
-
-    return matchesCategory && searchable.includes(normalizedQuery);
-  });
-}
-
-function renderResources() {
-  const filtered = getFilteredResources();
-  const groupedResources = filtered.reduce((groups, resource) => {
-    if (!groups.has(resource.category)) {
-      groups.set(resource.category, {
-        label: resource.categoryLabel,
-        items: []
-      });
-    }
-
-    groups.get(resource.category).items.push(resource);
-    return groups;
-  }, new Map());
-  resultCount.textContent = String(filtered.length);
-  emptyState.hidden = filtered.length > 0;
-  grid.classList.toggle('list-view', resourceView === 'list');
-  resourceViewButtons.forEach((button) => {
-    const isActive = button.dataset.resourceView === resourceView;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-pressed', String(isActive));
-  });
-
-  const renderResourceCard = (resource) => `
-    <article class="resource-card">
-      <div class="resource-card__topline">
-        <span>${resource.categoryLabel}</span>
-      </div>
-      <h3>${resource.name}</h3>
-      <p>${resource.description}</p>
-      <div class="tag-list">
-        ${resource.tags.map((tag) => `<span>${tag}</span>`).join('')}
-      </div>
-      <a href="${resource.url}" target="_blank" rel="noopener noreferrer">Acessar recurso</a>
-    </article>
-  `;
-
-  grid.innerHTML = [...groupedResources.entries()].map(([category, group], index) => `
-    <details class="resource-category-section" data-resource-category="${category}" ${index === 0 ? 'open' : ''}>
-      <summary class="resource-category-divider">
-        <span>${group.label}</span>
-        <small>${group.items.length} recursos</small>
-      </summary>
-      <div class="resource-category-items">
-        ${[...group.items]
-          .sort((firstResource, secondResource) => firstResource.name.localeCompare(secondResource.name, 'pt-BR'))
-          .map(renderResourceCard)
-          .join('')}
-      </div>
-    </details>
-  `).join('');
-
-  const gridRemainder = filtered.length % 3;
-
-  if (filtered.length > 0 && gridRemainder !== 0) {
-    grid.insertAdjacentHTML('beforeend', `
-      <article class="resource-card suggest-card">
-        <div class="resource-card__topline">
-          <span>Comunidade</span>
-        </div>
-        <h3>Falta algo aqui?</h3>
-        <p>Indique um recurso gratuito e confiável para a próxima rodada de validação. Ex: nota fiscal, compressor de fotos, contrato simples.</p>
-        <a href="mailto:sugestoes@resolvajato.local?subject=Sugestão de recurso gratuito">Sugerir recurso</a>
-      </article>
-    `);
-  }
-}
-
-function setResourceView(view) {
-  resourceView = view === 'list' ? 'list' : 'grid';
-  localStorage.setItem(resourceViewStorageKey, resourceView);
-  renderResources();
-}
-
-function focusCurrentViewHeading() {
-  const heading = document.querySelector(viewHeadings[currentView]);
-  if (!heading) return;
-
-  if (!heading.hasAttribute('tabindex')) {
-    heading.setAttribute('tabindex', '-1');
-  }
-
-  requestAnimationFrame(() => {
-    heading.focus({ preventScroll: true });
-  });
-}
-
-function setView(view, options = {}) {
-  const { updateHistory = true, focusHeading = true } = options;
-  const shouldRequireLogin = view === 'profissional' && !getSession()?.token;
-  currentView = shouldRequireLogin ? 'login' : view;
-  viewScreens.forEach((screen) => {
-    screen.hidden = screen.dataset.view !== currentView;
-  });
-  if (currentView === 'home') {
-    renderResources();
-  } else if (currentView === 'login' && shouldRequireLogin) {
-    setAccessMode('login');
-  } else if (currentView === 'profissional') {
-    scheduleTabScrollUpdate();
-    renderProfessionalPlanBar();
-    refreshBillingState();
-  }
-  document.body.dataset.view = currentView;
-  const hash = viewHashes[currentView] || '#top';
-  if (updateHistory && window.location.hash !== hash) {
-    history.pushState({ view: currentView }, '', hash);
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (focusHeading) {
-    focusCurrentViewHeading();
-  }
-}
-
-function setAccessMode(mode) {
-  if (!accessForm || !accessNameField || !accessSubmitButton || !accessToggleModeButton) return;
-
-  const isRegister = mode === 'register';
-  accessForm.dataset.mode = isRegister ? 'register' : 'login';
-  accessNameField.hidden = !isRegister;
-  accessNameField.querySelector('input').required = isRegister;
-  accessSubmitButton.textContent = isRegister ? 'Criar conta e entrar' : 'Entrar no painel';
-  accessToggleModeButton.textContent = isRegister ? 'Já tenho conta. Entrar' : 'Não tenho conta. Criar conta grátis';
-  if (accessFeedback) accessFeedback.textContent = '';
-}
-
-async function restoreAccountState() {
-  const payload = await pullCloudData().catch(() => null);
-
-  if (payload?.planId) {
-    setCurrentPlanId(payload.planId);
-  }
-
-  if (payload?.usage || payload?.data?.usage) {
-    applyRemoteUsageState(payload.usage || payload.data.usage);
-  }
-
-  window.dispatchEvent(new CustomEvent('resolvajato:cloud-pull', { detail: payload || {} }));
-}
-
-async function handleAccessSubmit(event) {
-  event.preventDefault();
-
-  const mode = accessForm.dataset.mode || 'login';
-  const data = Object.fromEntries(new FormData(accessForm).entries());
-
-  if (accessFeedback) accessFeedback.textContent = mode === 'register' ? 'Criando conta...' : 'Entrando...';
-  accessSubmitButton.disabled = true;
+async function authRequest(path) {
+  const body = {
+    name: document.querySelector('#auth-name').value,
+    email: document.querySelector('#auth-email').value,
+    password: document.querySelector('#auth-password').value,
+    planId: 'free'
+  };
 
   try {
-    const payload = mode === 'register'
-      ? await registerAccount({ name: data.name, email: data.email, password: data.password, planId: getCurrentPlanId() })
-      : await loginAccount({ email: data.email, password: data.password });
-
-    if (payload?.planId) {
-      setCurrentPlanId(payload.planId);
-    }
-
-    await restoreAccountState();
-    accessForm.reset();
-    setAccessMode('login');
-    showToast('Acesso liberado. Bem-vindo ao painel profissional.');
-    setView('profissional');
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Não foi possível autenticar.');
+    setAuthenticated(payload);
   } catch (error) {
-    if (accessFeedback) accessFeedback.textContent = error.message || 'Não foi possível entrar.';
-  } finally {
-    accessSubmitButton.disabled = false;
+    authFeedback.textContent = `${error.message} Entrando em modo demonstração local.`;
+    setTimeout(() => setAuthenticated(body), 500);
   }
 }
 
-function setTab(tab) {
-  currentTab = tab;
-  syncToolNumbers();
-  tabButtons.forEach((button) => {
-    const isActive = button.dataset.tabTarget === currentTab;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-selected', String(isActive));
-  });
-  tabPanels.forEach((panel) => {
-    const isActive = panel.dataset.tabPanel === currentTab;
-    panel.classList.toggle('active', isActive);
-    panel.hidden = !isActive;
-  });
-  updateTabScrollButtons();
+function logout() {
+  localStorage.removeItem('rj-token');
+  localStorage.removeItem('rj-user');
+  state.authenticated = false;
+  state.page = 'dashboard';
+  render();
 }
 
-function syncToolNumbers() {
-  tabButtons.forEach((button, index) => {
-    const panel = document.querySelector(`[data-tab-panel="${button.dataset.tabTarget}"]`);
-    const numberBadge = panel?.querySelector('.tool-panel__head > span');
-    if (numberBadge) {
-      numberBadge.textContent = String(index + 1).padStart(2, '0');
-    }
-  });
+function setPage(page) {
+  const item = menuItems.find((entry) => entry.id === page);
+  if (item?.plan === 'completo' && !isCompletePlan()) {
+    state.page = 'planos';
+  } else {
+    state.page = page;
+  }
+  render();
 }
 
-function updateTabScrollButtons() {
-  const maxScroll = tabList.scrollWidth - tabList.clientWidth;
-  const canScroll = maxScroll > 4;
-
-  tabScrollButtons.forEach((button) => {
-    const direction = button.dataset.tabScroll;
-    const shouldHide = !canScroll
-      || (direction === 'left' && tabList.scrollLeft <= 4)
-      || (direction === 'right' && tabList.scrollLeft >= maxScroll - 4);
-
-    button.hidden = shouldHide;
-  });
+function upgradePlan() {
+  state.user.planId = 'completo';
+  localStorage.setItem('rj-user', JSON.stringify(state.user));
+  render();
 }
 
-function scheduleTabScrollUpdate() {
-  requestAnimationFrame(() => {
-    updateTabScrollButtons();
-    setTimeout(updateTabScrollButtons, 80);
-  });
+function scheduleAutosave() {
+  if (!state.autosave) {
+    state.saveStatus = 'Autosave pausado';
+    renderPageOnly();
+    return;
+  }
+
+  state.saveStatus = 'Salvando...';
+  renderPageOnly();
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    localStorage.setItem('rj-document', JSON.stringify(state.document));
+    state.saveStatus = 'Alterações salvas';
+    renderPageOnly();
+  }, 650);
 }
 
-function initHeroMessages() {
-  const messages = [...document.querySelectorAll('[data-hero-message]')];
-  if (messages.length < 2) return;
+function landingTemplate() {
+  const previewResults = resources.slice(0, 4);
+  return `
+    <div class="landing-shell">
+      <header class="landing-header">
+        <a class="brand" href="#topo" aria-label="Resolva Jato">
+          <span class="brand-mark">RJ</span>
+          <span><strong>Resolva Jato</strong><small>Busca, documentos e execução em segundos</small></span>
+        </a>
+        <nav aria-label="Navegação comercial">
+          <a href="#previews">Previews</a>
+          <a href="#planos-publicos">Planos</a>
+          <a href="#arquitetura">Arquitetura</a>
+        </nav>
+        <button class="primary-action" type="button" data-open-auth>Experimente já</button>
+      </header>
 
-  const motions = ['rise', 'slide', 'zoom', 'tilt'];
-  let activeMessage = 0;
+      <main>
+        <section class="hero-sales" id="topo">
+          <div class="hero-sales__copy">
+            <p class="eyebrow">Resolva Jato OS</p>
+            <h1>Uma central bonita, rápida e pronta para transformar tarefas soltas em entregas reais.</h1>
+            <p>
+              Home pública para vender a solução, login para acessar o ambiente e um workspace interno com menu lateral,
+              busca reaproveitada, documentos, histórico e controles Free ou Completo.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-action magnetic" type="button" data-open-auth>Experimente já</button>
+              <a class="secondary-action" href="#previews">Ver prévias</a>
+            </div>
+          </div>
+          <div class="hero-product-preview" aria-label="Preview do produto Resolva Jato">
+            <div class="mini-sidebar">
+              <span class="brand-mark">RJ</span>
+              <strong>Workspace</strong>
+              <small>Free ativo</small>
+              ${menuItems.slice(0, 5).map((item, index) => `<span class="${index === 1 ? 'active' : ''}">${item.icon} ${item.label}</span>`).join('')}
+            </div>
+            <div class="mini-app">
+              <div class="mini-app__top"><strong>Busca Jato</strong><span>42 ms</span></div>
+              <div class="mini-search">⌕ contrato, MEI, proposta, ABNT...</div>
+              <div class="mini-grid">
+                ${previewResults.map((item) => `<article><span>${item.categoryLabel}</span><strong>${item.title}</strong><p>${item.description}</p></article>`).join('')}
+              </div>
+            </div>
+          </div>
+        </section>
 
-  messages.forEach((message, index) => {
-    message.dataset.motion = motions[index % motions.length];
-    message.setAttribute('aria-hidden', String(index !== activeMessage));
-  });
+        <section class="preview-section" id="previews">
+          <div class="section-heading">
+            <p class="eyebrow">Previews que dão vontade de usar</p>
+            <h2>O usuário entende o valor antes mesmo de entrar.</h2>
+          </div>
+          <div class="preview-grid">
+            <article><span>01</span><strong>Busca universal</strong><p>Resultados filtrados por plano, categoria, texto e intenção.</p></article>
+            <article><span>02</span><strong>Workspace de documentos</strong><p>Editor, anexos, autosave e preview com zoom em uma área só.</p></article>
+            <article><span>03</span><strong>Menu lateral premium</strong><p>Funcionalidades organizadas em um shell parecido com sistema operacional.</p></article>
+            <article><span>04</span><strong>Plano Completo</strong><p>Oferta simples de R$ 4,99/mês com uso ilimitado e recursos avançados.</p></article>
+          </div>
+        </section>
 
-  setInterval(() => {
-    const previousMessage = messages[activeMessage];
-    activeMessage = (activeMessage + 1) % messages.length;
-    const nextMessage = messages[activeMessage];
+        <section class="public-plans" id="planos-publicos">
+          <article>
+            <span>Free</span>
+            <h3>R$ 0</h3>
+            <p>Busca, catálogo, tarefas essenciais e limites claros para começar agora.</p>
+            <button class="secondary-action" type="button" data-open-auth>Começar grátis</button>
+          </article>
+          <article class="featured">
+            <span>Completo</span>
+            <h3>R$ 4,99 <small>/mês</small></h3>
+            <p>Uso ilimitado, documentos avançados, histórico, anexos, autosave e analytics.</p>
+            <button class="primary-action" type="button" data-open-auth>Ativar Completo</button>
+          </article>
+        </section>
 
-    previousMessage.classList.remove('is-active');
-    previousMessage.classList.add('is-leaving');
-    previousMessage.setAttribute('aria-hidden', 'true');
-    nextMessage.classList.remove('is-leaving');
-    nextMessage.classList.add('is-active');
-    nextMessage.setAttribute('aria-hidden', 'false');
+        <section class="architecture-strip" id="arquitetura">
+          <span>React + TypeScript</span>
+          <span>Java 21 + Quarkus</span>
+          <span>MySQL</span>
+          <span>Elasticsearch</span>
+          <span>Power BI Embedded</span>
+        </section>
+      </main>
 
-    setTimeout(() => {
-      previousMessage.classList.remove('is-leaving');
-    }, 900);
-  }, 8200);
+      <footer class="landing-footer">
+        <strong>Resolva Jato</strong>
+        <span>Performance, clareza e conversão em uma experiência só.</span>
+      </footer>
+    </div>
+  `;
 }
 
-function initPromoShowcase() {
-  const slides = [...document.querySelectorAll('[data-promo-slide]')];
-  const dots = [...document.querySelectorAll('[data-promo-dot]')];
-  const resourcesTotal = document.querySelector('#promo-stat-resources');
-  const categoriesTotal = document.querySelector('#promo-stat-categories');
-  const aiTotal = document.querySelector('#promo-stat-ai');
-  const scrollButton = document.querySelector('[data-promo-scroll="search"]');
+function appTemplate() {
+  return `
+    <div class="app-container">
+      <aside class="sidebar" aria-label="Menu principal">
+        <div class="sidebar-brand">
+          <span class="brand-mark">RJ</span>
+          <div><strong>Resolva Jato</strong><small>Suite operacional</small></div>
+        </div>
+        <div class="sidebar-profile">
+          <span class="user-avatar">${getInitials(state.user.name)}</span>
+          <div class="sidebar-profile__copy">
+            <strong>${state.user.name}</strong>
+            <small>${state.user.email}</small>
+          </div>
+          <span class="sidebar-profile__status">${isCompletePlan() ? 'Completo' : 'Free'}</span>
+        </div>
+        <label class="sidebar-search">
+          <span>⌕</span>
+          <input id="feature-search" type="search" value="${state.featureQuery}" placeholder="Buscar funcionalidade..." autocomplete="off" />
+        </label>
+        <div class="sidebar-quick-stats" aria-label="Resumo rapido">
+          <span><strong>8</strong><small>recursos</small></span>
+          <span><strong>${isCompletePlan() ? '∞' : '3'}</strong><small>limite</small></span>
+          <span><strong>42ms</strong><small>busca</small></span>
+        </div>
+        <nav class="sidebar-nav" aria-label="Funcionalidades">
+          ${sidebarSectionsTemplate()}
+        </nav>
+        <div class="sidebar-upgrade">
+          <span>${isCompletePlan() ? 'Suite completa ativa' : 'Desbloqueie a suite completa'}</span>
+          <strong>${isCompletePlan() ? 'Propostas, historico e BI liberados.' : 'Propostas com logo, historico e analytics.'}</strong>
+          <button type="button" data-page="planos">${isCompletePlan() ? 'Ver plano' : 'Ver upgrade'}</button>
+        </div>
+      </aside>
 
-  if (!slides.length) return;
+      <div class="app-main">
+        <header class="app-header">
+          <button class="mobile-menu-trigger" type="button" data-toggle-menu>☰</button>
+          <label class="app-global-search">
+            <span>⌕</span>
+            <input id="global-query" type="search" value="${state.query}" placeholder="Busca global: contrato, MEI, dashboard..." />
+          </label>
+          <span class="plan-indicator">${isCompletePlan() ? 'Completo ilimitado' : 'Free com limites'}</span>
+          <button class="icon-button" type="button" aria-label="Notificações">●</button>
+          <button class="secondary-action" type="button" data-logout>Sair</button>
+        </header>
+        <main id="app-content" class="main-content">${pageTemplate()}</main>
+        <footer class="app-footer">
+          <span>Status: operacional</span>
+          <span>Atalhos: / busca · D documentos · P planos</span>
+          <a href="mailto:suporte@resolvajato.local">Suporte ágil</a>
+        </footer>
+      </div>
+    </div>
+  `;
+}
 
-  const categoryCount = new Set(resources.map((resource) => resource.category)).size;
-  const aiCount = resources.filter((resource) => resource.category === 'inteligencia-artificial').length;
+function pageTemplate() {
+  if (state.page === 'busca') return searchPage();
+  if (state.page === 'documentos') return documentPage();
+  if (state.page === 'tarefas') return tasksPage();
+  if (state.page === 'clientes') return clientsPage();
+  if (state.page === 'analytics') return analyticsPage();
+  if (state.page === 'planos') return plansPage();
+  return dashboardPage();
+}
 
-  if (resourcesTotal) resourcesTotal.textContent = String(resources.length);
-  if (categoriesTotal) categoriesTotal.textContent = String(categoryCount);
-  if (aiTotal) aiTotal.textContent = String(aiCount);
+function dashboardPage() {
+  return `
+    <section class="page-hero">
+      <div>
+        <p class="eyebrow">Painel inicial</p>
+        <h1>Bem-vindo ao seu centro de execução.</h1>
+        <p>Escolha uma funcionalidade no menu lateral. Cada página abre neste mesmo container, mantendo header, footer e navegação sempre à mão.</p>
+      </div>
+      <button class="primary-action" type="button" data-page="busca">Começar pela busca</button>
+    </section>
+    <section class="metric-grid">
+      <article><span>Busca média</span><strong>42 ms</strong><p>Pronta para Elasticsearch.</p></article>
+      <article><span>Documentos</span><strong>Autosave</strong><p>Salvamento com debounce.</p></article>
+      <article><span>Plano</span><strong>${isCompletePlan() ? 'Completo' : 'Free'}</strong><p>Controles por recurso.</p></article>
+      <article><span>BI</span><strong>Power BI</strong><p>Eventos preparados para análise.</p></article>
+    </section>
+    <section class="internal-grid">
+      ${resources.slice(0, 4).map(resourceCard).join('')}
+    </section>
+  `;
+}
 
-  let activeSlide = 0;
-  let promoTimer;
+function searchPage() {
+  const results = filteredResources();
+  return `
+    <section class="page-hero compact">
+      <div>
+        <p class="eyebrow">Busca Jato</p>
+        <h1>Encontre o recurso certo sem navegar por telas demais.</h1>
+        <p>A estrutura de busca do projeto atual foi mantida e reposicionada como funcionalidade interna da aplicação.</p>
+      </div>
+    </section>
+    <section class="tool-panel">
+      <div class="filters">
+        <label>Busca<input id="resource-search" type="search" value="${state.query}" placeholder="Contrato, MEI, currículo, ABNT..." /></label>
+        <label>Categoria
+          <select id="category-filter">
+            ${option('todos', 'Todas', state.category)}
+            ${option('documentos', 'Documentos', state.category)}
+            ${option('negocios', 'Negócios', state.category)}
+            ${option('estudos', 'Estudos', state.category)}
+            ${option('governo', 'Governo', state.category)}
+            ${option('dados', 'Dados', state.category)}
+          </select>
+        </label>
+        <label>Plano
+          <select id="plan-filter">
+            ${option('todos', 'Todos', state.plan)}
+            ${option('free', 'Free', state.plan)}
+            ${option('completo', 'Completo', state.plan)}
+          </select>
+        </label>
+      </div>
+      <div class="result-summary"><strong>${results.length} resultados</strong><span>Busca local agora, Elasticsearch na arquitetura final</span></div>
+      <div class="internal-grid">${results.map(resourceCard).join('')}</div>
+    </section>
+  `;
+}
 
-  const showSlide = (index) => {
-    activeSlide = (index + slides.length) % slides.length;
-    slides.forEach((slide, slideIndex) => {
-      slide.classList.toggle('is-active', slideIndex === activeSlide);
-    });
-    dots.forEach((dot, dotIndex) => {
-      dot.classList.toggle('is-active', dotIndex === activeSlide);
-    });
+function documentPage() {
+  if (state.proposalMode === 'list') return proposalListPage();
+  const proposal = currentProposal();
+  if (!proposal) return proposalListPage();
+  syncDocumentFromProposal();
+  return `
+    <section class="page-hero compact">
+      <div>
+        <p class="eyebrow">Propostas comerciais</p>
+        <h1>${escapeHtml(proposal.number)} · ${statusLabel(proposal.status)}</h1>
+        <p>Cadastro nos moldes do AeroSuite, sem aba de produto: cliente, proposta, envios, histórico e ações comerciais.</p>
+      </div>
+      <div class="proposal-hero-actions">
+        <button class="secondary-action" type="button" data-proposal-back>Voltar</button>
+        <button class="secondary-action" type="button" data-proposal-duplicate="${proposal.id}">Duplicar</button>
+        <button class="primary-action" type="button" data-proposal-email>Enviar e-mail</button>
+      </div>
+    </section>
+
+    <section class="proposal-status-strip">
+      ${['RASCUNHO', 'ENVIADA', 'APROVADA', 'REJEITADA', 'CANCELADA'].map((status) => `
+        <button class="${proposal.status === status ? 'active' : ''}" type="button" data-proposal-status="${status}">
+          <span>${statusLabel(status)}</span>
+        </button>
+      `).join('')}
+    </section>
+
+    <section class="document-workspace proposal-workspace">
+      <form class="document-editor proposal-editor">
+        <div class="editor-head">
+          <div><span>Proposta ativa</span><h2>${escapeHtml(proposal.title)}</h2></div>
+          <label class="toggle"><input id="autosave-toggle" type="checkbox" ${state.autosave ? 'checked' : ''} /> Autosave</label>
+        </div>
+
+        <div class="proposal-tabs" role="tablist">
+          ${proposalTabButton('cliente', 'Cliente')}
+          ${proposalTabButton('proposta', 'Proposta')}
+          ${proposalTabButton('historico', 'Histórico e envios')}
+        </div>
+
+        ${proposalTabTemplate(proposal)}
+        <p class="save-status">${state.saveStatus}</p>
+      </form>
+      <aside class="preview-panel">
+        <div class="preview-toolbar">
+          <strong>Preview</strong>
+          <label>Zoom ${state.zoom}%<input id="zoom-range" type="range" min="70" max="145" value="${state.zoom}" /></label>
+          <button class="icon-button" type="button" data-rotate aria-label="Rotacionar">↻</button>
+        </div>
+        <div class="preview-stage">
+          <article class="document-preview" style="transform: scale(${state.zoom / 100}) rotate(${state.rotation}deg)">
+            ${proposal.logo ? `<img class="proposal-logo-preview" src="${proposal.logo}" alt="Logo da proposta" />` : '<span>Resolva Jato</span>'}
+            <h3>${state.document.title}</h3>
+            <p>Cliente: <strong>${state.document.client}</strong></p>
+            <p>Valor: <strong>${state.document.value}</strong></p>
+            <hr />
+            <p>${state.document.scope}</p>
+            <footer>Gerado com histórico, versões e controle de plano.</footer>
+          </article>
+        </div>
+      </aside>
+    </section>
+  `;
+}
+
+function proposalListPage() {
+  const proposals = filteredProposals();
+  const totals = {
+    draft: state.proposals.filter((item) => item.status === 'RASCUNHO').length,
+    sent: state.proposals.filter((item) => item.status === 'ENVIADA').length,
+    approved: state.proposals.filter((item) => item.status === 'APROVADA').length
   };
 
-  const restartPromoTimer = () => {
-    clearInterval(promoTimer);
-    promoTimer = setInterval(() => {
-      showSlide(activeSlide + 1);
-    }, 5200);
-  };
+  return `
+    <section class="page-hero compact">
+      <div>
+        <p class="eyebrow">Comercial</p>
+        <h1>Propostas comerciais</h1>
+        <p>Histórico, busca, duplicação, status, impressão e envio por e-mail ou WhatsApp no mesmo fluxo.</p>
+      </div>
+      <button class="primary-action" type="button" data-proposal-new>Nova proposta</button>
+    </section>
 
-  dots.forEach((dot) => {
-    dot.addEventListener('click', () => {
-      showSlide(Number(dot.dataset.promoDot));
-      restartPromoTimer();
-    });
-  });
+    <section class="proposal-metrics">
+      <article><span>Rascunhos</span><strong>${totals.draft}</strong></article>
+      <article><span>Enviadas</span><strong>${totals.sent}</strong></article>
+      <article><span>Aprovadas</span><strong>${totals.approved}</strong></article>
+      <article><span>Total</span><strong>${state.proposals.length}</strong></article>
+    </section>
 
-  scrollButton?.addEventListener('click', () => {
-    searchInput?.focus();
-    searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+    <section class="proposal-list-panel">
+      <div class="filters proposal-filters">
+        <label>Busca<input id="proposal-search" type="search" value="${escapeHtml(state.proposalQuery)}" placeholder="Cliente, número, e-mail ou título..." /></label>
+        <label>Status
+          <select id="proposal-status-filter">
+            ${option('todos', 'Todos', state.proposalStatus)}
+            ${option('RASCUNHO', 'Rascunho', state.proposalStatus)}
+            ${option('ENVIADA', 'Enviada', state.proposalStatus)}
+            ${option('APROVADA', 'Aprovada', state.proposalStatus)}
+            ${option('REJEITADA', 'Rejeitada', state.proposalStatus)}
+            ${option('CANCELADA', 'Cancelada', state.proposalStatus)}
+          </select>
+        </label>
+      </div>
 
-  showSlide(0);
-  restartPromoTimer();
+      <div class="proposal-table">
+        <div class="proposal-table__head">
+          <span>Número</span><span>Cliente</span><span>Valor</span><span>Data</span><span>Status</span><span>Ações</span>
+        </div>
+        ${proposals.map(proposalRow).join('') || '<div class="proposal-empty">Nenhuma proposta encontrada.</div>'}
+      </div>
+    </section>
+  `;
 }
 
-tabScrollButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const direction = button.dataset.tabScroll === 'left' ? -1 : 1;
-    tabList.scrollBy({ left: direction * 150, behavior: 'smooth' });
+function proposalRow(proposal) {
+  return `
+    <article class="proposal-row">
+      <span class="proposal-number">${escapeHtml(proposal.number)}</span>
+      <span class="proposal-client"><strong>${escapeHtml(proposal.client || 'Cliente não informado')}</strong><small>${escapeHtml(proposal.email || proposal.contact || '')}</small></span>
+      <span class="proposal-value">${escapeHtml(proposal.value || 'R$ 0,00')}</span>
+      <span>${escapeHtml(proposal.proposalDate || '-')}</span>
+      <span class="proposal-status ${statusClass(proposal.status)}">${statusLabel(proposal.status)}</span>
+      <span class="proposal-actions">
+        <button type="button" title="Abrir" data-proposal-open="${proposal.id}">Ver</button>
+        <button type="button" title="Duplicar" data-proposal-duplicate="${proposal.id}">Copiar</button>
+        <button type="button" title="Excluir" data-proposal-delete="${proposal.id}">Excluir</button>
+      </span>
+    </article>
+  `;
+}
+
+function proposalTabButton(tab, label) {
+  return `<button class="${state.proposalTab === tab ? 'active' : ''}" type="button" data-proposal-tab="${tab}">${label}</button>`;
+}
+
+function proposalTabTemplate(proposal) {
+  if (state.proposalTab === 'historico') {
+    return `
+      <div class="proposal-tab-panel">
+        <div class="proposal-action-grid">
+          <button class="secondary-action" type="button" data-proposal-email>Enviar por e-mail</button>
+          <button class="secondary-action" type="button" data-proposal-whatsapp>Enviar por WhatsApp</button>
+          <button class="secondary-action" type="button" data-proposal-print>Imprimir/PDF</button>
+          <button class="secondary-action" type="button" data-proposal-duplicate="${proposal.id}">Duplicar proposta</button>
+        </div>
+        <div class="history-list">
+          ${(proposal.history || []).map((item) => `
+            <article>
+              <span>${escapeHtml(item.at)}</span>
+              <strong>${escapeHtml(item.action)}</strong>
+              <p>${escapeHtml(item.detail)}</p>
+            </article>
+          `).join('') || '<p>Nenhum histórico registrado.</p>'}
+        </div>
+      </div>
+    `;
+  }
+
+  if (state.proposalTab === 'proposta') {
+    return `
+      <div class="proposal-tab-panel">
+        <div class="proposal-form-grid">
+          <label>Título<input data-proposal-field="title" value="${escapeHtml(proposal.title)}" /></label>
+          <label>Valor<input data-proposal-field="value" value="${escapeHtml(proposal.value)}" /></label>
+          <label>Data<input type="date" data-proposal-field="proposalDate" value="${escapeHtml(proposal.proposalDate)}" /></label>
+          <label>Validade<input type="date" data-proposal-field="validUntil" value="${escapeHtml(proposal.validUntil)}" /></label>
+          <label>Prazo de entrega<input data-proposal-field="deadline" value="${escapeHtml(proposal.deadline)}" /></label>
+          <label>Forma de pagamento<input data-proposal-field="payment" value="${escapeHtml(proposal.payment)}" /></label>
+          <label class="full-width">Escopo<textarea data-proposal-field="scope">${escapeHtml(proposal.scope)}</textarea></label>
+          <label class="full-width">Observações<textarea data-proposal-field="notes">${escapeHtml(proposal.notes)}</textarea></label>
+          <label class="full-width">Condições gerais<textarea data-proposal-field="terms">${escapeHtml(proposal.terms)}</textarea></label>
+        </div>
+        <label class="drop-zone logo-upload" tabindex="0">
+          <input id="proposal-logo-input" type="file" accept="image/*" hidden />
+          <strong>${proposal.logo ? 'Trocar logo da proposta' : 'Adicionar logo da proposta'}</strong>
+          <span>PNG, JPG ou SVG. A imagem aparece no preview com alta qualidade.</span>
+        </label>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="proposal-tab-panel">
+      <div class="cliente-search-section">
+        <h3>Dados do cliente</h3>
+        <p>Sem aba Produto: todos os dados abaixo alimentam a proposta e o histórico comercial.</p>
+      </div>
+      <div class="proposal-form-grid">
+        <label>Nome/Razão social<input data-proposal-field="client" value="${escapeHtml(proposal.client)}" /></label>
+        <label>CNPJ/CPF<input data-proposal-field="document" value="${escapeHtml(proposal.document)}" /></label>
+        <label>Contato<input data-proposal-field="contact" value="${escapeHtml(proposal.contact)}" /></label>
+        <label>E-mail<input type="email" data-proposal-field="email" value="${escapeHtml(proposal.email)}" /></label>
+        <label>Telefone/WhatsApp<input data-proposal-field="phone" value="${escapeHtml(proposal.phone)}" /></label>
+        <label class="full-width">Endereço<input data-proposal-field="address" value="${escapeHtml(proposal.address)}" /></label>
+      </div>
+    </div>
+  `;
+}
+
+function tasksPage() {
+  return `
+    <section class="page-hero compact">
+      <div><p class="eyebrow">Tarefas e Kanban</p><h1>Organize o fluxo de execução por etapas.</h1></div>
+    </section>
+    <section class="kanban-board">
+      ${state.tasks.map((task) => `<article draggable="true" class="kanban-card"><span>${task.status}</span><strong>${task.label}</strong><p>Arraste visual previsto para dnd-kit na versão React.</p></article>`).join('')}
+    </section>
+  `;
+}
+
+function clientsPage() {
+  return `
+    <section class="page-hero compact">
+      <div><p class="eyebrow">Clientes e histórico</p><h1>Linha do tempo de cada cliente.</h1><p>Área preparada para MySQL com auditoria estrita, versões e concorrência otimista.</p></div>
+    </section>
+    <section class="table-panel">
+      <table>
+        <thead><tr><th>Cliente</th><th>Última tarefa</th><th>Plano</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Mercado Central</td><td>Proposta premium</td><td>Completo</td><td>Em revisão</td></tr>
+          <tr><td>Studio Norte</td><td>Contrato de serviços</td><td>Free</td><td>Concluído</td></tr>
+          <tr><td>Consultoria Lima</td><td>Histórico comercial</td><td>Completo</td><td>Ativo</td></tr>
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function analyticsPage() {
+  return `
+    <section class="page-hero compact">
+      <div><p class="eyebrow">Analytics Power BI</p><h1>Indicadores de uso, conversão e produtividade.</h1><p>Mock visual para o espaço de Power BI Embedded no plano Completo.</p></div>
+    </section>
+    <section class="analytics-grid">
+      <article><span>Conversão</span><strong>18%</strong><div class="bar" style="--value: 72%"></div></article>
+      <article><span>Tarefas concluídas</span><strong>142</strong><div class="bar" style="--value: 84%"></div></article>
+      <article><span>Docs gerados</span><strong>67</strong><div class="bar" style="--value: 58%"></div></article>
+    </section>
+  `;
+}
+
+function plansPage() {
+  return `
+    <section class="page-hero compact">
+      <div><p class="eyebrow">Planos e limites</p><h1>Free para começar. Completo para usar sem limite.</h1></div>
+    </section>
+    <section class="public-plans internal">
+      <article>
+        <span>Free</span>
+        <h3>R$ 0</h3>
+        <p>Busca, modelos básicos e limites claros.</p>
+      </article>
+      <article class="featured">
+        <span>Completo</span>
+        <h3>R$ 4,99 <small>/mês</small></h3>
+        <p>Uso ilimitado, documentos, histórico, anexos, analytics e autosave.</p>
+        <button class="primary-action" type="button" data-upgrade>${isCompletePlan() ? 'Plano ativo' : 'Ativar demonstração Completo'}</button>
+      </article>
+    </section>
+  `;
+}
+
+function option(value, label, selected) {
+  return `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`;
+}
+
+function resourceCard(item) {
+  const locked = item.plan === 'completo' && !isCompletePlan();
+  return `
+    <article class="resource-card ${locked ? 'locked' : ''}">
+      <div><span>${item.categoryLabel}</span><span>${item.plan === 'completo' ? 'Completo' : 'Free'}</span></div>
+      <h3>${item.title}</h3>
+      <p>${item.description}</p>
+      <footer>${item.tags.map((tag) => `<small>${tag}</small>`).join('')}</footer>
+      ${locked ? '<button class="secondary-action" type="button" data-page="planos">Desbloquear</button>' : ''}
+    </article>
+  `;
+}
+
+function render() {
+  app.innerHTML = state.authenticated ? appTemplate() : landingTemplate();
+  bindEvents();
+}
+
+function renderPageOnly() {
+  const content = document.querySelector('#app-content');
+  if (content) {
+    content.innerHTML = pageTemplate();
+    bindEvents();
+  }
+}
+
+function bindEvents() {
+  document.querySelectorAll('[data-open-auth]').forEach((button) => button.addEventListener('click', openAuth));
+  document.querySelectorAll('[data-page]').forEach((button) => button.addEventListener('click', () => setPage(button.dataset.page)));
+  document.querySelector('[data-logout]')?.addEventListener('click', logout);
+  document.querySelector('[data-upgrade]')?.addEventListener('click', upgradePlan);
+  document.querySelector('[data-rotate]')?.addEventListener('click', () => {
+    state.rotation = (state.rotation + 90) % 360;
+    renderPageOnly();
   });
-});
+  document.querySelector('[data-toggle-menu]')?.addEventListener('click', () => document.querySelector('.sidebar')?.classList.toggle('mobile-open'));
 
-tabList.addEventListener('scroll', updateTabScrollButtons);
-window.addEventListener('resize', updateTabScrollButtons);
-
-viewButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    setView(button.dataset.viewTarget);
-  });
-});
-
-window.addEventListener('popstate', () => {
-  setView(getViewFromHash(), { updateHistory: false });
-});
-
-accessToggleModeButton?.addEventListener('click', () => {
-  setAccessMode(accessForm.dataset.mode === 'register' ? 'login' : 'register');
-});
-
-accessForm?.addEventListener('submit', handleAccessSubmit);
-
-tabButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    setTab(button.dataset.tabTarget);
-  });
-});
-
-filterButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    activeCategory = button.dataset.category;
-    filterButtons.forEach((item) => item.classList.toggle('active', item === button));
-    searchInput.placeholder = searchPlaceholders[activeCategory];
-    renderResources();
-  });
-});
-
-resourceViewButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    setResourceView(button.dataset.resourceView);
-  });
-});
-
-grid.addEventListener('toggle', (event) => {
-  const openedSection = event.target.closest('.resource-category-section');
-  if (!openedSection?.open) return;
-
-  grid.querySelectorAll('.resource-category-section[open]').forEach((section) => {
-    if (section !== openedSection) {
-      section.open = false;
+  document.querySelector('#feature-search')?.addEventListener('input', (event) => {
+    state.featureQuery = event.target.value;
+    const nav = document.querySelector('.sidebar-nav');
+    if (nav) {
+      nav.innerHTML = sidebarSectionsTemplate();
+      nav.querySelectorAll('[data-page]').forEach((button) => button.addEventListener('click', () => setPage(button.dataset.page)));
     }
   });
 
-  requestAnimationFrame(() => {
-    openedSection.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
+  const globalQuery = document.querySelector('#global-query');
+  globalQuery?.addEventListener('input', (event) => {
+    state.query = event.target.value;
+    if (state.page !== 'busca') state.page = 'busca';
+    render();
+  });
+
+  document.querySelector('#resource-search')?.addEventListener('input', (event) => {
+    state.query = event.target.value;
+    renderPageOnly();
+  });
+  document.querySelector('#category-filter')?.addEventListener('change', (event) => {
+    state.category = event.target.value;
+    renderPageOnly();
+  });
+  document.querySelector('#plan-filter')?.addEventListener('change', (event) => {
+    state.plan = event.target.value;
+    renderPageOnly();
+  });
+  document.querySelector('[data-proposal-new]')?.addEventListener('click', createProposal);
+  document.querySelector('[data-proposal-back]')?.addEventListener('click', backToProposalList);
+  document.querySelectorAll('[data-proposal-open]').forEach((button) => {
+    button.addEventListener('click', () => openProposal(button.dataset.proposalOpen));
+  });
+  document.querySelectorAll('[data-proposal-duplicate]').forEach((button) => {
+    button.addEventListener('click', () => duplicateProposal(button.dataset.proposalDuplicate));
+  });
+  document.querySelectorAll('[data-proposal-delete]').forEach((button) => {
+    button.addEventListener('click', () => deleteProposal(button.dataset.proposalDelete));
+  });
+  document.querySelectorAll('[data-proposal-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.proposalTab = button.dataset.proposalTab;
+      renderPageOnly();
     });
   });
-}, true);
-
-searchInput.addEventListener('input', (event) => {
-  query = event.target.value;
-  renderResources();
-});
-
-themeToggles.forEach((button) => {
-  button.addEventListener('click', toggleTheme);
-});
-
-newsletterForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  newsletterForm.classList.add('submitted');
-  newsletterForm.querySelector('button').textContent = 'Inscrito';
-});
-
-proposalForm.addEventListener('input', (event) => {
-  if (event.target === proposalValueInput) {
-    proposalValueInput.value = formatCurrencyBR(proposalValueInput.value);
-  }
-
-  if (event.target === proposalClientWhatsappInput) {
-    proposalClientWhatsappInput.value = formatPhoneBR(proposalClientWhatsappInput.value);
-  }
-
-  professionalState.proposal = getProposalData();
-  saveProfessionalState();
-  updateProposalPreview(professionalState.proposal);
-});
-
-proposalForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  professionalState.proposal = getProposalData();
-  saveProfessionalState();
-  updateProposalPreview(professionalState.proposal);
-});
-
-clearProposalButton.addEventListener('click', () => {
-  proposalForm.reset();
-  if (proposalLogoInput) proposalLogoInput.value = '';
-  if (proposalSignatureInput) proposalSignatureInput.value = '';
-  professionalState.proposal = {};
-  saveProfessionalState();
-  renderProposalPremiumPreviews();
-  updateProposalPreview({});
-});
-
-downloadProposalButton.addEventListener('click', downloadProposal);
-sendProposalEmailButton?.addEventListener('click', sendProposalByEmail);
-sendProposalWhatsappButton?.addEventListener('click', sendProposalByWhatsapp);
-
-proposalLogoInput?.addEventListener('change', async (event) => {
-  if (!hasFeature('premiumProposals')) {
-    openUpgradeModal({ featureKey: 'premiumProposals' });
-    event.target.value = '';
-    return;
-  }
-
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  professionalState.proposal.logoDataUrl = await readFileAsDataUrl(file);
-  professionalState.proposal = { ...getProposalData(), logoDataUrl: professionalState.proposal.logoDataUrl };
-  saveProfessionalState();
-  renderProposalPremiumPreviews();
-  updateProposalPreview();
-});
-
-proposalSignatureInput?.addEventListener('change', async (event) => {
-  if (!hasFeature('premiumProposals')) {
-    openUpgradeModal({ featureKey: 'premiumProposals' });
-    event.target.value = '';
-    return;
-  }
-
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  professionalState.proposal.signatureDataUrl = await readFileAsDataUrl(file);
-  professionalState.proposal = { ...getProposalData(), signatureDataUrl: professionalState.proposal.signatureDataUrl };
-  saveProfessionalState();
-  renderProposalPremiumPreviews();
-  updateProposalPreview();
-});
-
-receiptForm.addEventListener('input', (event) => {
-  if (event.target === receiptValueInput) {
-    receiptValueInput.value = formatCurrencyBR(receiptValueInput.value);
-  }
-
-  if (event.target === receiptContactInput) {
-    const rules = getReceiptContactRules();
-    receiptContactInput.value = rules.mask(receiptContactInput.value);
-    validateReceiptContact();
-  }
-
-  updateReceiptPreview();
-});
-
-receiptContactType.addEventListener('change', () => {
-  updateReceiptContactField({ clearValue: true });
-  updateReceiptPreview();
-  receiptContactInput.focus();
-});
-
-downloadReceiptButton.addEventListener('click', downloadReceipt);
-
-workOrderForm.addEventListener('input', () => {
-  updateWorkOrderPreview();
-});
-
-downloadWorkOrderButton.addEventListener('click', downloadWorkOrder);
-
-checklistForm.addEventListener('input', () => {
-  updateChecklistPreview();
-});
-
-downloadChecklistButton.addEventListener('click', downloadChecklist);
-
-pricingForm.addEventListener('input', (event) => {
-  if (event.target === pricingIncomeInput || event.target === pricingCostsInput) {
-    event.target.value = formatCurrencyBR(event.target.value);
-  }
-
-  updatePricingPreview();
-});
-
-copyPricingSummaryButton.addEventListener('click', copyPricingSummary);
-
-pixForm.addEventListener('input', (event) => {
-  if (event.target === pixKeyInput) {
-    const rules = getPixKeyRules();
-    pixKeyInput.value = rules.mask(pixKeyInput.value);
-    validatePixKey();
-  }
-
-  if (event.target === pixValueInput) {
-    pixValueInput.value = formatCurrencyBR(pixValueInput.value);
-  }
-
-  if (event.target === pixWhatsappInput) {
-    pixWhatsappInput.value = formatPhoneBR(pixWhatsappInput.value);
-  }
-
-  updatePixPreview();
-});
-
-pixKeyType.addEventListener('change', () => {
-  updatePixKeyField({ clearValue: true });
-  updatePixPreview();
-  pixKeyInput.focus();
-});
-
-copyPixCodeButton.addEventListener('click', () => {
-  copyPixCode();
-});
-
-pixPreviewCard.addEventListener('click', (event) => {
-  if (!event.target.closest('.pix-copy-block')) return;
-  copyPixFromPreview();
-});
-
-sendPixWhatsappButton.addEventListener('click', sendPixByWhatsapp);
-
-warrantyForm.addEventListener('input', () => {
-  updateWarrantyPreview();
-});
-
-downloadWarrantyButton.addEventListener('click', downloadWarranty);
-
-budgetForm.addEventListener('input', (event) => {
-  if (event.target === budgetValueInput) {
-    budgetValueInput.value = formatCurrencyBR(budgetValueInput.value);
-  }
-
-  updateBudgetPreview();
-});
-
-downloadBudgetButton.addEventListener('click', downloadBudget);
-
-contractForm.addEventListener('input', (event) => {
-  if (event.target === contractValueInput) {
-    contractValueInput.value = formatCurrencyBR(contractValueInput.value);
-  }
-
-  updateContractPreview();
-});
-
-downloadContractButton.addEventListener('click', downloadContract);
-
-clientWhatsappInput.addEventListener('input', () => {
-  clientWhatsappInput.value = formatPhoneBR(clientWhatsappInput.value);
-});
-
-clientForm.addEventListener('input', updateClientActionState);
-
-clientForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  updateClientActionState();
-  if (saveClientButton.disabled) return;
-
-  const clientCheck = canCreateClient(professionalState.clients.length);
-  if (!clientCheck.allowed) {
-    handleUsageBlock(clientCheck);
-    return;
-  }
-
-  const data = Object.fromEntries(new FormData(clientForm).entries());
-
-  professionalState.clients.unshift({
-    id: crypto.randomUUID(),
-    name: data.clientName.trim(),
-    whatsapp: formatPhoneBR(data.clientWhatsapp),
-    status: data.clientStatus,
-    document: hasFeature('clientProfileFull') ? data.clientDocument?.trim() || '' : '',
-    email: hasFeature('clientProfileFull') ? data.clientEmail?.trim() || '' : '',
-    address: hasFeature('clientProfileFull') ? data.clientAddress?.trim() || '' : '',
-    notes: hasFeature('clientProfileFull') ? data.clientNotes?.trim() || '' : ''
+  document.querySelectorAll('[data-proposal-status]').forEach((button) => {
+    button.addEventListener('click', () => setProposalStatus(button.dataset.proposalStatus));
   });
-  trackUsage('client');
-
-  clientForm.reset();
-  saveProfessionalState();
-  renderClients();
-  updateClientActionState();
-});
-
-clientList.addEventListener('click', (event) => {
-  const whatsappButton = event.target.closest('[data-whatsapp-phone]');
-  if (whatsappButton) {
-    const whatsappUrl = buildWhatsappUrl(
-      whatsappButton.dataset.whatsappPhone,
-      whatsappButton.dataset.clientName,
-      whatsappButton.dataset.clientStatus
-    );
-    openInNewTab(whatsappUrl);
-
-    return;
-  }
-
-  const deleteButton = event.target.closest('[data-delete-client]');
-  if (!deleteButton) return;
-
-  professionalState.clients = professionalState.clients.filter((client) => client.id !== deleteButton.dataset.deleteClient);
-  saveProfessionalState();
-  renderClients();
-});
-
-appointmentForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  updateAppointmentActionState();
-  appointmentForm.classList.toggle('was-submitted', saveAppointmentButton.disabled);
-  if (saveAppointmentButton.disabled) return;
-
-  const appointmentCheck = canCreateAppointment();
-  if (!appointmentCheck.allowed) {
-    handleUsageBlock(appointmentCheck);
-    return;
-  }
-
-  const data = Object.fromEntries(new FormData(appointmentForm).entries());
-  const newClientName = data.appointmentNewClient?.trim() || '';
-  const newClientPhone = formatPhoneBR(data.appointmentNewClientPhone || '');
-  const isCreatingClient = data.appointmentClient === '__new_client__';
-  const appointmentClient = isCreatingClient ? newClientName : data.appointmentClient;
-
-  if (isCreatingClient) {
-    const existingClient = professionalState.clients.find((client) => normalize(client.name) === normalize(newClientName));
-
-    if (existingClient) {
-      existingClient.whatsapp = existingClient.whatsapp || newClientPhone;
-    } else {
-      const clientCheck = canCreateClient(professionalState.clients.length);
-      if (!clientCheck.allowed) {
-        handleUsageBlock(clientCheck);
+  document.querySelector('#proposal-search')?.addEventListener('input', (event) => {
+    state.proposalQuery = event.target.value;
+    renderPageOnly();
+  });
+  document.querySelector('#proposal-status-filter')?.addEventListener('change', (event) => {
+    state.proposalStatus = event.target.value;
+    renderPageOnly();
+  });
+  document.querySelector('[data-proposal-email]')?.addEventListener('click', () => registerProposalAction('email'));
+  document.querySelector('[data-proposal-whatsapp]')?.addEventListener('click', () => registerProposalAction('whatsapp'));
+  document.querySelector('[data-proposal-print]')?.addEventListener('click', () => registerProposalAction('print'));
+  document.querySelectorAll('[data-proposal-field]').forEach((field) => {
+    field.addEventListener('input', (event) => {
+      if (!state.autosave) {
+        const proposal = currentProposal();
+        if (proposal) proposal[event.target.dataset.proposalField] = event.target.value;
+        syncDocumentFromProposal();
         return;
       }
-
-      professionalState.clients.unshift({
-        id: crypto.randomUUID(),
-        name: newClientName,
-        whatsapp: newClientPhone,
-        status: 'Lead'
-      });
-      trackUsage('client');
-    }
-  }
-
-  const appointment = {
-    id: crypto.randomUUID(),
-    title: data.appointmentTitle,
-    date: data.appointmentDate,
-    client: appointmentClient,
-    reminderMinutes: data.appointmentReminder
-  };
-
-  professionalState.appointments.push(appointment);
-  trackUsage('appointment');
-
-  if (appointment.reminderMinutes !== 'none') {
-    await ensureNotificationPermission();
-    scheduleAppointmentReminder(appointment);
-  }
-
-  appointmentForm.reset();
-  appointmentForm.classList.remove('was-submitted');
-  saveProfessionalState();
-  renderClients();
-  renderAppointments();
-  updateAppointmentActionState();
-});
-
-appointmentForm.addEventListener('input', () => {
-  const newClientPhoneInput = appointmentForm.elements.appointmentNewClientPhone;
-  if (document.activeElement === newClientPhoneInput) {
-    newClientPhoneInput.value = formatPhoneBR(newClientPhoneInput.value);
-  }
-
-  updateAppointmentActionState();
-  if (!saveAppointmentButton.disabled) {
-    appointmentForm.classList.remove('was-submitted');
-  }
-});
-
-appointmentClientSelect.addEventListener('change', () => {
-  syncAppointmentNewClientField();
-  updateAppointmentActionState();
-});
-
-appointmentList.addEventListener('click', (event) => {
-  const deleteButton = event.target.closest('[data-delete-appointment]');
-  if (!deleteButton) return;
-
-  clearAppointmentReminder(deleteButton.dataset.deleteAppointment);
-  professionalState.appointments = professionalState.appointments.filter((appointment) => appointment.id !== deleteButton.dataset.deleteAppointment);
-  saveProfessionalState();
-  renderAppointments();
-});
-
-fillProposalForm();
-applyTheme(localStorage.getItem(themeStorageKey) || 'light');
-updateReceiptContactField();
-updateProposalPreview(professionalState.proposal);
-updateReceiptPreview();
-updateWorkOrderPreview();
-updateChecklistPreview();
-updatePricingPreview();
-updatePixKeyField();
-updatePixPreview();
-updateWarrantyPreview();
-updateBudgetPreview();
-updateContractPreview();
-updateClientActionState();
-updateAppointmentActionState();
-setAccessMode('login');
-renderClients();
-renderAppointments();
-scheduleAllAppointmentReminders();
-renderResources();
-initHeroMessages();
-initPromoShowcase();
-setTab(currentTab);
-setView(currentView, { updateHistory: false, focusHeading: false });
-scheduleTabScrollUpdate();
-
-initPlansUi({
-  onPlanChanged: () => {
-    refreshBillingState();
-    renderClients();
-    renderAppointments();
-  }
-});
-
-window.addEventListener('resolvajato:navigate', (event) => {
-  if (event.detail?.view) setView(event.detail.view);
-});
-
-window.addEventListener('resolvajato:cloud-pull', (event) => {
-  const payload = event.detail;
-  if (payload?.usage || payload?.data?.usage) {
-    applyRemoteUsageState(payload.usage || payload.data.usage);
-    refreshBillingState();
-  }
-
-  if (!hasFeature('cloudSync') || !payload?.data?.professional) return;
-
-  professionalState.proposal = payload.data.professional.proposal || {};
-  professionalState.clients = payload.data.professional.clients || [];
-  professionalState.appointments = payload.data.professional.appointments || [];
-  saveProfessionalState({ skipCloudPush: true });
-  fillProposalForm();
-  updateProposalPreview(professionalState.proposal);
-  renderClients();
-  renderAppointments();
-  scheduleAllAppointmentReminders();
-});
-
-window.addEventListener('resolvajato:export-backup', () => {
-  exportLocalBackup({
-    professional: professionalState,
-    usage: getUsageState(),
-    planId: getCurrentPlanId(),
-    exportedAt: new Date().toISOString()
+      updateProposalField(event.target.dataset.proposalField, event.target.value);
+    });
   });
+  document.querySelector('#proposal-logo-input')?.addEventListener('change', (event) => {
+    const file = event.target.files?.[0];
+    const proposal = currentProposal();
+    if (!file || !proposal) return;
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      proposal.logo = String(reader.result || '');
+      addProposalHistory(proposal, 'Logo atualizado', file.name);
+      state.saveStatus = 'Logo aplicado na proposta';
+      saveProposals();
+      renderPageOnly();
+    });
+    reader.readAsDataURL(file);
+  });
+  document.querySelector('#autosave-toggle')?.addEventListener('change', (event) => {
+    state.autosave = event.target.checked;
+    scheduleAutosave();
+  });
+  document.querySelector('#zoom-range')?.addEventListener('input', (event) => {
+    state.zoom = Number(event.target.value);
+    renderPageOnly();
+  });
+  document.querySelectorAll('[data-doc]').forEach((field) => {
+    field.addEventListener('input', (event) => {
+      state.document[event.target.dataset.doc] = event.target.value;
+      scheduleAutosave();
+    });
+  });
+}
+
+authForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  authRequest('/api/auth/register');
 });
 
-window.addEventListener('resolvajato:import-backup', (event) => {
-  const data = event.detail;
-  if (!data?.professional) return;
+document.querySelector('#auth-login').addEventListener('click', () => authRequest('/api/auth/login'));
+document.querySelector('#auth-close').addEventListener('click', () => loginDialog.close());
 
-  if (data.usage) {
-    applyRemoteUsageState(data.usage);
-  }
-
-  professionalState.proposal = data.professional.proposal || {};
-  professionalState.clients = data.professional.clients || [];
-  professionalState.appointments = data.professional.appointments || [];
-  saveProfessionalState();
-  fillProposalForm();
-  updateProposalPreview(professionalState.proposal);
-  renderClients();
-  renderAppointments();
-  scheduleAllAppointmentReminders();
-});
+render();

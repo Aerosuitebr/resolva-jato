@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Wellem Lyra">
+  <defs>
+    <linearGradient id="bg" x1="18" x2="142" y1="8" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#bae6fd"/>
+      <stop offset=".5" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="light" cx="52" cy="35" r="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".78"/>
+      <stop offset=".45" stop-color="#fff" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="160" height="160" rx="80" fill="url(#bg)"/>
+  <rect width="160" height="160" rx="80" fill="url(#light)"/>
+  <circle cx="80" cy="64" r="30" fill="#f8fafc" opacity=".96"/>
+  <path fill="#f8fafc" opacity=".96" d="M31 137c5-30 24-49 49-49s44 19 49 49c-13 10-29 16-49 16s-36-6-49-16Z"/>
+  <path fill="#0f172a" opacity=".16" d="M50 67c6-28 26-42 52-27 12 7 17 19 12 31-11-12-27-16-64-4Z"/>
+  <text x="80" y="132" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#0f172a" opacity=".72">WL</text>
+</svg>

@@ -1,0 +1,391 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Dancing+Script:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Great+Vibes&family=Playfair+Display:ital,wght@1,500;1,600&family=Sora:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 199 89% 48%;
+
+  --rj-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 55%, #020617 100%);
+  --rj-sidebar-accent: #38bdf8;
+  --rj-sidebar-accent-deep: #0284c7;
+  --rj-sidebar-text: #e2e8f0;
+  --rj-sidebar-muted: #94a3b8;
+  --rj-sidebar-border: rgba(255, 255, 255, 0.1);
+  --rj-sidebar-active-bar: #fbbf24;
+  --rj-page-bg: linear-gradient(180deg, #f8fafc 0%, #eef4f9 40%, #f8fafc 100%);
+  --rj-card-bg: #ffffff;
+  --rj-card-border: #e2e8f0;
+  --rj-gold: #fbbf24;
+  --rj-link: #0284c7;
+  --rj-success: #16a34a;
+  --rj-success-bg: #dcfce7;
+  --rj-draft: #64748b;
+  --rj-draft-bg: #f1f5f9;
+  --rj-warning: #d97706;
+  --rj-warning-bg: #fef3c7;
+  --rj-danger: #dc2626;
+  --rj-danger-bg: #fee2e2;
+  --rj-hero-from: #020617;
+  --rj-hero-via: #0f172a;
+  --rj-hero-to: #0c4a6e;
+  --rj-sidebar-width: 300px;
+  --rj-sidebar-collapsed: 76px;
+  --rj-font-display: 'Sora', ui-sans-serif, sans-serif;
+  --rj-font-body: 'DM Sans', ui-sans-serif, sans-serif;
+
+  /* Chrome sticky stack: banner + header + doc actions */
+  --rj-banner-h: 2rem;
+  --rj-header-h: 5.75rem;
+  --rj-chrome-top: calc(var(--rj-banner-h) + var(--rj-header-h));
+  --rj-doc-actions-h: 3.5rem;
+  --rj-doc-preview-top: calc(var(--rj-chrome-top) + var(--rj-doc-actions-h) + 0.5rem);
+  --rj-section-scroll-mt: calc(var(--rj-chrome-top) + 1.25rem);
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-padding-top: var(--rj-section-scroll-mt);
+}
+
+[id] {
+  scroll-margin-top: var(--rj-section-scroll-mt);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--rj-page-bg);
+  color: hsl(var(--foreground));
+  font-family: var(--rj-font-body);
+  font-feature-settings: "ss01", "ss02";
+}
+
+.rj-display {
+  font-family: var(--rj-font-display);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rj-hud-grid {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, black 0%, black 55%, transparent 100%);
+}
+
+@keyframes rj-horizon-pulse {
+  from {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.85;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes rj-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rj-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-12px, -8px, 0);
+  }
+}
+
+@keyframes rj-shine {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes rj-auth-ambient {
+  0% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
+  100% {
+    background-position: 0% 40%;
+  }
+}
+
+@keyframes rj-auth-blob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -6%, 0) scale(1.08);
+  }
+}
+
+@keyframes rj-auth-mark {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+    opacity: 0.07;
+  }
+  50% {
+    transform: translateY(-12px) rotate(-4deg);
+    opacity: 0.12;
+  }
+}
+
+@keyframes rj-tools-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.rj-tools-marquee {
+  animation: rj-tools-marquee 42s linear infinite;
+}
+
+.rj-animate-fade-up {
+  animation: rj-fade-up 0.7s ease-out both;
+}
+
+.rj-animate-fade-up-delay {
+  animation: rj-fade-up 0.75s ease-out 0.08s both;
+}
+
+.rj-animate-fade-up-delay-2 {
+  animation: rj-fade-up 0.75s ease-out 0.16s both;
+}
+
+.rj-animate-drift {
+  animation: rj-drift 8s ease-in-out infinite alternate;
+}
+
+.rj-price-shine {
+  background-size: 200% 200%;
+  animation: rj-shine 6s ease-in-out infinite alternate;
+}
+
+.rj-auth-ambient {
+  background-image: linear-gradient(
+    125deg,
+    #e8f4fc 0%,
+    #f8fafc 22%,
+    #eef6ff 42%,
+    #f0f9ff 58%,
+    #ecfdf5 78%,
+    #f8fafc 100%
+  );
+  background-size: 220% 220%;
+  animation: rj-auth-ambient 18s ease-in-out infinite;
+}
+
+.rj-auth-blob {
+  animation: rj-auth-blob 14s ease-in-out infinite;
+}
+
+.rj-auth-blob-delay {
+  animation: rj-auth-blob 16s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.rj-auth-mark {
+  animation: rj-auth-mark 12s ease-in-out infinite;
+}
+
+@keyframes rj-spotlight-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rj-spotlight-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.rj-spotlight-enter {
+  animation: rj-spotlight-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rj-spotlight-enter-delay {
+  animation: rj-spotlight-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.rj-spotlight-progress {
+  transform-origin: left center;
+  animation: rj-spotlight-progress 5.2s linear both;
+}
+
+.rj-press {
+  position: relative;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    filter 0.12s ease;
+}
+
+.rj-press:hover {
+  transform: translateY(-1px);
+}
+
+.rj-press:active {
+  transform: scale(0.96);
+  filter: brightness(0.97);
+  animation: rj-press-flash 0.45s ease-out;
+}
+
+@keyframes rj-press-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(14, 165, 233, 0);
+  }
+}
+
+@keyframes rj-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rj-toast-in {
+  animation: rj-toast-in 0.28s ease-out both;
+}
+
+@keyframes rj-progress-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.rj-progress-indeterminate {
+  animation: rj-progress-indeterminate 1.1s ease-in-out infinite;
+}
+
+.rj-spotlight-doc-frame {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile/touch: evita bug do Safari que deixa o slide em opacity:0 ao reiniciar a mesma animação */
+@media (hover: none), (max-width: 1023px) {
+  .rj-spotlight-enter,
+  .rj-spotlight-enter-delay {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rj-animate-fade-up,
+  .rj-animate-fade-up-delay,
+  .rj-animate-fade-up-delay-2,
+  .rj-animate-drift,
+  .rj-price-shine,
+  .rj-auth-ambient,
+  .rj-auth-blob,
+  .rj-auth-blob-delay,
+  .rj-auth-mark,
+  .rj-tools-marquee,
+  .rj-spotlight-enter,
+  .rj-spotlight-enter-delay,
+  .rj-spotlight-progress,
+  .rj-toast-in,
+  .rj-progress-indeterminate,
+  .rj-press-flash {
+    animation: none;
+  }
+
+  .rj-press:hover,
+  .rj-press:active {
+    transform: none;
+    filter: none;
+    animation: none;
+  }
+}
+
+.rj-signature-elegante {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 600;
+}
+
+.rj-signature-executivo {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.rj-signature-classico {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+}
+
+.rj-signature-moderno {
+  font-family: var(--rj-font-body);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.rj-signature-formal {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 500;
+}

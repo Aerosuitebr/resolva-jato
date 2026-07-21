@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrcamentoStatus {
+  pending
+  approved
+  declined
+}
+
+enum BlacklistType {
+  ip
+  email
+  domain
+  device
+}
+
+model Orcamento {
+  id                   String          @id @default(uuid()) @db.Uuid
+  profissionalNome     String
+  profissionalWhatsapp String
+  clienteNome          String
+  clienteContato       String          @default("")
+  clienteEmail         String          @default("")
+  itens                Json
+  total                Float
+  validade             String          @default("")
+  observacoes          String          @default("")
+  status               OrcamentoStatus @default(pending)
+  feedbackCliente      String?
+  ownerEmail           String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([ownerEmail])
+  @@index([status])
+  @@map("orcamentos")
+}
+
+model PushSubscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  ownerEmail String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ownerEmail])
+  @@map("push_subscriptions")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  riskFlags       String?
+
+  verificationTokens EmailVerificationToken[]
+  toolUsage          ToolUsage?
+  subscription       Subscription?
+  deviceLinks        DeviceCookieLink[]
+  auditLogs          AuditLog[]
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model ToolUsage {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  availableUses  Int       @default(5)
+  totalConsumed  Int       @default(0)
+  exhaustedAt    DateTime?
+  nextReleaseAt  DateTime?
+  periodDays     Int       @default(30)
+  recentActions  Json      @default("[]")
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tool_usages")
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  planId      String   @default("premium")
+  startedAt   DateTime @default(now())
+  expiresAt   DateTime
+  providerRef String?
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("subscriptions")
+}
+
+model DeviceCookie {
+  id          String   @id @default(cuid())
+  uuid        String   @unique
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  userAgent   String?
+  language    String?
+  timezone    String?
+
+  links DeviceCookieLink[]
+
+  @@map("device_cookies")
+}
+
+model DeviceCookieLink {
+  id             String   @id @default(cuid())
+  deviceCookieId String
+  userId         String
+  createdAt      DateTime @default(now())
+
+  deviceCookie DeviceCookie @relation(fields: [deviceCookieId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceCookieId, userId])
+  @@index([userId])
+  @@map("device_cookie_links")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  email     String?
+  ip        String?
+  userAgent String?
+  deviceId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([event, createdAt])
+  @@index([ip, createdAt])
+  @@index([deviceId, createdAt])
+  @@index([email, createdAt])
+  @@map("audit_logs")
+}
+
+model BlacklistEntry {
+  id        String        @id @default(cuid())
+  type      BlacklistType
+  value     String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime      @default(now())
+
+  @@unique([type, value])
+  @@index([expiresAt])
+  @@map("blacklist_entries")
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int      @default(0)
+  windowStart DateTime
+
+  @@index([windowStart])
+  @@map("rate_limit_buckets")
+}

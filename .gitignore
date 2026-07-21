@@ -1,2 +1,13 @@
 .data/
 node_modules/
+.next/
+.angular/
+dist/
+out/
+*.log
+tsconfig.tsbuildinfo
+.env
+.env.local
+.env.production
+.env*.local
+/generated/prisma

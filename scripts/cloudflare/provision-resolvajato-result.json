@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "accountId": "44a7c31ca337648abef38dea0c599e79",
+  "accountName": "Sistema@aerosuite.com.br's Account",
+  "tunnelName": "resolvajato",
+  "tunnelId": "3f99aa58-2811-4cd2-9b0b-a0819ee70242",
+  "tunnelCname": "3f99aa58-2811-4cd2-9b0b-a0819ee70242.cfargotunnel.com",
+  "zoneId": "30a3329312fe1bad82168d95ea83ef7f",
+  "zoneName": "resolvajato.com.br",
+  "dns": {
+    "apex": "resolvajato.com.br → new tunnel CNAME",
+    "www": "www.resolvajato.com.br → new tunnel CNAME"
+  },
+  "localConfig": "%USERPROFILE%\\.cloudflared\\config-resolvajato.yml",
+  "credentials": "%USERPROFILE%\\.cloudflared\\3f99aa58-2811-4cd2-9b0b-a0819ee70242.json",
+  "origin": "http://127.0.0.1:3000",
+  "nameservers": [
+    "brynne.ns.cloudflare.com",
+    "tom.ns.cloudflare.com"
+  ],
+  "note": "Tunnel criado NA conta Aero Suite (não usa o tunnel 6d599ea8 de outra conta). Serviço Cloudflared antigo permanece para homolog Aero Suite."
+}

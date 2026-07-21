@@ -1,0 +1,21 @@
+tunnel: 3f99aa58-2811-4cd2-9b0b-a0819ee70242
+credentials-file: /etc/cloudflared-resolvajato/3f99aa58-2811-4cd2-9b0b-a0819ee70242.json
+
+ingress:
+  - hostname: resolvajato.com.br
+    service: http://127.0.0.1:3000
+    originRequest:
+      noHappyEyeballs: true
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+      httpHostHeader: resolvajato.com.br
+
+  - hostname: www.resolvajato.com.br
+    service: http://127.0.0.1:3000
+    originRequest:
+      noHappyEyeballs: true
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+      httpHostHeader: www.resolvajato.com.br
+
+  - service: http_status:404

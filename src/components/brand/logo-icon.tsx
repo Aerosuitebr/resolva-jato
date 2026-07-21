@@ -1,0 +1,16 @@
+import { cn } from '@/lib/utils';
+
+interface LogoIconProps {
+  className?: string;
+}
+
+export function LogoIcon({ className }: LogoIconProps) {
+  return (
+    <svg viewBox="0 0 64 64" className={cn('h-10 w-10', className)} role="img" aria-label="Resolva Jato">
+      <rect width="64" height="64" rx="16" fill="#0f172a" />
+      <path d="M11 38.5c10.8-8.9 23.7-15.1 38.2-18.7 2.1-.5 4.1.9 4.3 3l.3 2.4-17 7.1 11.4 5.2-3.6 4.4-18.9-4.7-9.4 6.3-5.3-5Z" fill="#38bdf8" />
+      <path d="M18 23h8.4c5.8 0 9 2.8 9 7.4 0 3.2-1.5 5.4-4.4 6.6l5.2 8h-7.1l-4.3-7.1h-1.3V45H18V23Zm5.5 5v5.2h2.4c2.4 0 3.6-.9 3.6-2.7S28.3 28 26 28h-2.5Z" fill="#fbbf24" opacity=".96" />
+      <path d="M43 23h5.3v14.7c0 4.8-2.9 7.9-8.2 7.9-1.9 0-3.6-.3-5-1l.9-4.7c.9.4 2 .6 3.1.6 2.6 0 3.9-1.1 3.9-3.4V23Z" fill="#f8fafc" opacity=".95" />
+    </svg>
+  );
+}

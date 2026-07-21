@@ -1,0 +1,37 @@
+# Deploy Resolva Jato Vultr (manual)
+
+name: Deploy Resolva Jato Vultr
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VULTR_HOST: ${{ secrets.VULTR_HOST }}
+      VULTR_SSH_USER: ${{ secrets.VULTR_SSH_USER }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack repo
+        run: |
+          tar --exclude=node_modules --exclude=.next --exclude=.git --exclude=.angular \
+            --exclude='*.pack' --exclude='.env' --exclude='.env.local' \
+            -czf /tmp/resolva-jato-repo.tgz .
+
+      - name: Deploy via SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VULTR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${VULTR_HOST:-216.238.102.195}"
+          USER="${VULTR_SSH_USER:-root}"
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/vultr_deploy
+          chmod 600 ~/.ssh/vultr_deploy
+          SSH_OPTS="-i ~/.ssh/vultr_deploy -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+          scp ${SSH_OPTS} /tmp/resolva-jato-repo.tgz "${USER}@${HOST}:/tmp/resolva-jato-repo.tgz"
+          scp ${SSH_OPTS} scripts/deploy/vultr-deploy-resolvajato.sh "${USER}@${HOST}:/tmp/vultr-deploy-resolvajato.sh"
+          ssh ${SSH_OPTS} "${USER}@${HOST}" \
+            "chmod +x /tmp/vultr-deploy-resolvajato.sh && INSTALL_DIR=/opt/resolva-jato TARBALL=/tmp/resolva-jato-repo.tgz bash /tmp/vultr-deploy-resolvajato.sh"

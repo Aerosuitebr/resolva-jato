@@ -1,0 +1,185 @@
+# Stack de produção — Resolva Jato
+# App (Next.js) + PostgreSQL + Caddy (HTTPS) + Evolution/WhatsApp
+#
+# Pré-requisitos:
+#   1. DNS de DOMAIN apontando para este servidor
+#   2. Copiar .env.production.example → .env e preencher
+#   3. docker compose up -d --build
+#
+# Ver DOCKER.md para o passo a passo completo.
+
+name: resolva-jato
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: resolva-jato-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resolvajato}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-resolvajato}
+    volumes:
+      - rj_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-resolvajato} -d ${POSTGRES_DB:-resolvajato}'
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - rj_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://resolvajato.com.br}
+        NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: ${NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY:-}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+    container_name: resolva-jato-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rj-evolution-api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-resolvajato}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-resolvajato}?schema=public
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://resolvajato.com.br}
+      NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: ${NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY:-}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      MERCADOPAGO_WEBHOOK_SECRET: ${MERCADOPAGO_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-Resolva Jato <onboarding@resend.dev>}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-evolution}
+      WHATSAPP_API_ENABLED: ${WHATSAPP_API_ENABLED:-true}
+      EVOLUTION_API_URL: http://rj-evolution-api:8080
+      WHATSAPP_API_URL: http://rj-evolution-api:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:?Defina EVOLUTION_API_KEY no .env}
+      WHATSAPP_API_TOKEN: ${EVOLUTION_API_KEY}
+      WHATSAPP_INSTANCE: ${WHATSAPP_INSTANCE:-resolva-jato}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contato@resolvajato.com.br}
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3000/']
+      interval: 30s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks:
+      - rj_net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: resolva-jato-caddy
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:-resolvajato.com.br}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - rj_caddy_data:/data
+      - rj_caddy_config:/config
+    networks:
+      - rj_net
+
+  rj-evolution-postgres:
+    image: postgres:15-alpine
+    container_name: resolva-jato-evolution-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:-evolution}
+      POSTGRES_DB: evolution
+    volumes:
+      - rj_evolution_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U evolution -d evolution']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rj_net
+
+  rj-evolution-redis:
+    image: redis:7-alpine
+    container_name: resolva-jato-evolution-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - rj_net
+
+  rj-evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: resolva-jato-evolution-api
+    restart: unless-stopped
+    depends_on:
+      rj-evolution-postgres:
+        condition: service_healthy
+      rj-evolution-redis:
+        condition: service_healthy
+    # Só no localhost do host — não publicar na internet
+    ports:
+      - '127.0.0.1:18083:8080'
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://127.0.0.1:18083}
+      SERVER_PORT: '8080'
+      AUTHENTICATION_TYPE: apikey
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?Defina EVOLUTION_API_KEY no .env}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: 'true'
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:-evolution}@rj-evolution-postgres:5432/evolution?schema=public
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://rj-evolution-redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: rj-evolution
+      CACHE_LOCAL_ENABLED: 'false'
+      LOG_LEVEL: ERROR,WARN,INFO
+      DEL_INSTANCE: 'false'
+      CONFIG_SESSION_PHONE_VERSION: '2.3000.1025062854'
+    volumes:
+      - rj_evolution_instances:/evolution/instances
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rj_net
+
+volumes:
+  rj_postgres:
+  rj_caddy_data:
+  rj_caddy_config:
+  rj_evolution_postgres:
+  rj_evolution_instances:
+
+networks:
+  rj_net:
+    driver: bridge

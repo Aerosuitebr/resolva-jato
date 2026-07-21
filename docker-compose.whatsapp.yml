@@ -1,0 +1,79 @@
+# Evolution API independente do Resolva Jato (WhatsApp) — DEV LOCAL.
+# Em produção use o docker-compose.yml unificado (ver DOCKER.md).
+#
+# Subir:
+#   docker compose -f docker-compose.whatsapp.yml up -d
+#
+# Parar:
+#   docker compose -f docker-compose.whatsapp.yml down
+#
+# Host: http://localhost:18083
+# Chave padrão: resolva-jato-evolution-api-key-2026
+# Instância: resolva-jato
+
+services:
+  rj-evolution-postgres:
+    image: postgres:15-alpine
+    container_name: resolva-jato-evolution-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution
+      POSTGRES_DB: evolution
+    volumes:
+      - rj_evolution_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U evolution -d evolution']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rj-evolution-redis:
+    image: redis:7-alpine
+    container_name: resolva-jato-evolution-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rj-evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: resolva-jato-evolution-api
+    restart: unless-stopped
+    depends_on:
+      rj-evolution-postgres:
+        condition: service_healthy
+      rj-evolution-redis:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:18083:8080'
+    environment:
+      SERVER_URL: http://localhost:18083
+      SERVER_PORT: '8080'
+      AUTHENTICATION_TYPE: apikey
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-resolva-jato-evolution-api-key-2026}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: 'true'
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:evolution@rj-evolution-postgres:5432/evolution?schema=public
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://rj-evolution-redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: rj-evolution
+      CACHE_LOCAL_ENABLED: 'false'
+      LOG_LEVEL: ERROR,WARN,INFO
+      DEL_INSTANCE: 'false'
+      CONFIG_SESSION_PHONE_VERSION: '2.3000.1025062854'
+    volumes:
+      - rj_evolution_instances:/evolution/instances
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+volumes:
+  rj_evolution_postgres:
+  rj_evolution_instances:
