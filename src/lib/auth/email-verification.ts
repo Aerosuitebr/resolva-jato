@@ -1,5 +1,6 @@
 import { getPrisma } from '@/lib/db';
 import { generateSecureToken, hashToken } from '@/lib/auth/password-hash';
+import { sendMail } from '@/lib/mail/send-mail';
 
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 
@@ -25,17 +26,6 @@ export async function sendVerificationEmail(input: {
   name: string;
   verifyUrl: string;
 }): Promise<{ sent: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM?.trim() || 'Resolva Jato <onboarding@resend.dev>';
-
-  if (!apiKey) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.info('[auth] RESEND_API_KEY ausente — link de verificação:', input.verifyUrl);
-      return { sent: true };
-    }
-    return { sent: false, error: 'RESEND_API_KEY não configurada.' };
-  }
-
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a;max-width:560px">
       <h2 style="margin:0 0 12px">Confirme seu e-mail</h2>
@@ -52,28 +42,18 @@ export async function sendVerificationEmail(input: {
     </div>
   `;
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from,
-        to: [input.to],
-        subject: 'Confirme seu e-mail — Resolva Jato',
-        html
-      })
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      return { sent: false, error: text || `Resend HTTP ${response.status}` };
-    }
-    return { sent: true };
-  } catch (error) {
-    return { sent: false, error: error instanceof Error ? error.message : 'Falha ao enviar e-mail.' };
+  const result = await sendMail({
+    to: input.to,
+    subject: 'Confirme seu e-mail — Resolva Jato',
+    html,
+    text: `Olá${input.name ? ` ${input.name}` : ''},\n\nConfirme seu e-mail no Resolva Jato:\n${input.verifyUrl}\n\nO link expira em 24 horas.`
+  });
+
+  if (!result.sent && process.env.NODE_ENV !== 'production') {
+    console.info('[auth] falha no envio — link de verificação:', input.verifyUrl, result.error);
   }
+
+  return result;
 }
 
 export async function consumeVerificationToken(rawToken: string) {

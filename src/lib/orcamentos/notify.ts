@@ -1,4 +1,5 @@
 ﻿import { formatCurrency } from '@/lib/formatters';
+import { sendMail } from '@/lib/mail/send-mail';
 import { sendSmsAlert } from '@/lib/orcamentos/sms';
 import { buildProfissionalWhatsAppNotifyUrl } from '@/lib/orcamentos/whatsapp-links';
 import { sendPushToOwner } from '@/lib/push/send';
@@ -45,8 +46,6 @@ function alertText(input: NotifyOrcamentoInput) {
 export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<NotifyOrcamentoResult> {
   const whatsappUrl = buildProfissionalWhatsAppNotifyUrl(input);
   const email = input.ownerEmail?.trim().toLowerCase();
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM?.trim() || 'Resolva Jato <onboarding@resend.dev>';
   const approved = input.status === 'approved';
   const text = alertText(input);
 
@@ -55,8 +54,6 @@ export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<N
 
   if (!email) {
     emailError = 'E-mail do profissional não informado.';
-  } else if (!apiKey) {
-    emailError = 'RESEND_API_KEY não configurada.';
   } else {
     const subject = approved
       ? `Orçamento aprovado por ${input.clienteNome}`
@@ -76,30 +73,14 @@ export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<N
       </div>
     `;
 
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from,
-          to: [email],
-          subject: `[Resolva Jato] ${subject}`,
-          html
-        })
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        emailError = detail.slice(0, 200) || `Resend HTTP ${response.status}`;
-      } else {
-        emailSent = true;
-      }
-    } catch (error) {
-      emailError = error instanceof Error ? error.message : 'Falha ao enviar e-mail.';
-    }
+    const mail = await sendMail({
+      to: email,
+      subject: `[Resolva Jato] ${subject}`,
+      html,
+      text
+    });
+    emailSent = mail.sent;
+    emailError = mail.error;
   }
 
   const sms = await sendSmsAlert(input.profissionalWhatsapp, text);
