@@ -151,16 +151,16 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
   {
     label: 'Agenda para a sua rotina',
     tabLabel: 'Agenda',
-    hint: 'Organize compromissos e lembretes. No plano grátis você conhece a ferramenta; o uso completo é exclusivo do Premium.',
+    hint: 'Organize compromissos, visitas e entregas com lembretes no celular e no computador.',
     icon: CalendarDays,
     href: '/ferramentas/agenda',
-    learnHref: '/planos',
-    cta: 'Conhecer Agenda Premium',
-    badge: 'Exclusiva do Premium',
+    learnHref: '/ferramentas/agenda',
+    cta: 'Abrir agenda',
+    badge: 'Organização',
     steps: [
       'Calendário mensal + feriados nacionais',
-      'Alertas e detecção de conflitos',
-      'Uso completo liberado no Premium'
+      'Compromissos salvos na conta',
+      'Alertas antes dos horários importantes'
     ],
     preview: 'agenda'
   }

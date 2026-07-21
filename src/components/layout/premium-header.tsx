@@ -12,8 +12,7 @@ import { cn } from '@/lib/utils';
 
 const links = [
   { href: '/ferramentas', label: 'Ferramentas', icon: Sparkles },
-  { href: '/busca', label: 'Busca gratuita', icon: Search },
-  { href: '/planos', label: 'Planos', icon: Crown }
+  { href: '/busca', label: 'Busca gratuita', icon: Search }
 ];
 
 export function PremiumHeader() {

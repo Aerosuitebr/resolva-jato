@@ -1,4 +1,4 @@
-import { CreditCard, FileText, Search, Sparkles } from 'lucide-react';
+import { CreditCard, Search, Sparkles } from 'lucide-react';
 import { searchCategories } from './search-catalog';
 import { toolsCatalog } from './tools-catalog';
 import type { MenuSection } from './types';
@@ -41,8 +41,7 @@ export const menuSections: MenuSection[] = [
     icon: CreditCard,
     accentColor: '#fbbf24',
     items: [
-      { id: 'minha-conta', label: 'Plano e utilizações', href: '/conta', icon: CreditCard },
-      { id: 'planos', label: 'Ver planos', href: '/planos', icon: FileText },
+      { id: 'minha-conta', label: 'Minha conta', href: '/conta', icon: CreditCard },
       { id: 'busca-livre', label: 'Página inicial', href: '/', icon: Search }
     ]
   }

@@ -12,8 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 const links = [
   { href: '/busca', label: 'Busca grátis', auth: false },
-  { href: '/ferramentas', label: 'Ferramentas', auth: true },
-  { href: '/planos', label: 'Planos', auth: false }
+  { href: '/ferramentas', label: 'Ferramentas', auth: true }
 ] as const;
 
 export function SiteHeader() {

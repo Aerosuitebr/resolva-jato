@@ -12,8 +12,7 @@ const YEAR = new Date().getFullYear();
 const NAV_LINKS: { href: string; label: string; authAware?: boolean }[] = [
   { href: '/', label: 'Início' },
   { href: '/busca', label: 'Busca grátis' },
-  { href: '/ferramentas', label: 'Ferramentas', authAware: true },
-  { href: '/planos', label: 'Planos' }
+  { href: '/ferramentas', label: 'Ferramentas', authAware: true }
 ];
 
 function FooterDisclosure({ title, children }: { title: string; children: React.ReactNode }) {
