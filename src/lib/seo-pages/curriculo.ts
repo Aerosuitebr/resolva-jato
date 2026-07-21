@@ -4,6 +4,8 @@ import {
   LayoutTemplate,
   Lock,
   Palette,
+  ScanSearch,
+  ShieldCheck,
   Sparkles,
   Smartphone,
   Download
@@ -45,6 +47,16 @@ export const curriculoSeoContent: SeoPageContent = {
       icon: Sparkles,
       title: 'Atualize quando quiser',
       description: 'Guarde seu currículo na conta e edite antes de cada vaga nova, sem começar do zero.'
+    },
+    {
+      icon: ScanSearch,
+      title: 'Otimizado para palavras-chave',
+      description: 'Estrutura de texto limpa (sem tabelas ou imagens escondendo conteúdo) para o ATS reconhecer seu cargo, formação e habilidades corretamente.'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Compatibilidade real com ATS',
+      description: 'Hierarquia de títulos e seções segue o padrão esperado pelos principais sistemas de triagem usados por empresas no Brasil.'
     }
   ],
   steps: [

@@ -30,8 +30,14 @@ export function ToolLandingPage({ content, heroMockup, toolPreview, examples }: 
   return (
     <>
       <ToolLandingJsonLd content={content} />
+      <a
+        href="#conteudo-principal"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
+      >
+        Pular para o conteúdo principal
+      </a>
       <SiteHeader />
-      <main>
+      <main id="conteudo-principal">
         <ToolLandingHero content={content} preview={heroMockup} />
 
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">

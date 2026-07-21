@@ -21,25 +21,34 @@ export function ToolLandingHero({
           <h1 className="rj-display mt-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
             {content.h1}
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+          <p className="mt-4 max-w-xl text-base font-medium leading-7 text-slate-200 sm:text-lg">
             {content.subtitle}
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="h-13 px-6 text-base">
+            <Button
+              asChild
+              size="lg"
+              className="h-13 bg-sky-500 px-6 text-base font-bold shadow-lg shadow-sky-950/40 hover:bg-sky-400"
+            >
               <Link href={content.ctaHref}>
                 {content.ctaPrimary}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="h-13 border-white/20 bg-white/5 px-6 text-base text-white hover:bg-white/10">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-13 border-2 border-white bg-transparent px-6 text-base font-semibold text-white hover:bg-white/15"
+            >
               <a href="#exemplos">{content.ctaSecondary}</a>
             </Button>
           </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2.5">
             {content.quickBadges.map(({ icon: Icon, label }) => (
-              <li key={label} className="flex items-center gap-1.5 text-sm font-medium text-slate-300">
+              <li key={label} className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
                 <Icon className="h-4 w-4 text-emerald-400" aria-hidden />
                 {label}
               </li>

@@ -14,10 +14,13 @@ export function ToolLandingExamples({ examples }: { examples: ToolLandingExample
 
   return (
     <section id="exemplos" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-      <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">Modelos prontos</p>
-      <h2 className="rj-display mt-3 max-w-xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-        Escolha um modelo e comece já preenchido.
+      <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-800">Modelos prontos</p>
+      <h2 className="rj-display mt-3 max-w-xl text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+        Compare os modelos lado a lado e escolha o seu.
       </h2>
+      <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-700">
+        Cada modelo já vem preenchido com um exemplo real, pra você ver o resultado antes de começar.
+      </p>
       <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {examples.map((example) => (
           <li
@@ -31,7 +34,7 @@ export function ToolLandingExamples({ examples }: { examples: ToolLandingExample
             </div>
             <div className="flex flex-1 flex-col p-5">
               <h3 className="text-base font-bold text-slate-900">{example.title}</h3>
-              <p className="mt-1.5 flex-1 text-sm leading-6 text-slate-600">{example.description}</p>
+              <p className="mt-1.5 flex-1 text-sm font-medium leading-6 text-slate-700">{example.description}</p>
               <Link
                 href={example.href}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
