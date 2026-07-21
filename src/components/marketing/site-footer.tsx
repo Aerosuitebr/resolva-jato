@@ -5,7 +5,6 @@ import { ChevronDown } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { AuthAwareLink } from '@/components/auth/auth-aware-link';
 import { useAuth } from '@/hooks/use-auth';
-import { PLANS } from '@/lib/plans';
 import { toolsCatalog } from '@/lib/tools-catalog';
 
 const YEAR = new Date().getFullYear();
@@ -34,8 +33,6 @@ function FooterDisclosure({ title, children }: { title: string; children: React.
 
 export function SiteFooter() {
   const { isAuthenticated } = useAuth();
-  const premium = PLANS.premium;
-  const gratis = PLANS.gratis;
 
   return (
     <footer className="border-t border-sky-900/40 bg-slate-950 text-slate-300">
@@ -49,8 +46,7 @@ export function SiteFooter() {
             Ferramentas para autônomos, estudantes e pequenos negócios — sem burocracia.
           </p>
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            Busca sempre grátis · {gratis.toolUsesLimit} usos no plano Grátis · Premium {premium.priceLabel}
-            {premium.period}
+            Busca sempre grátis · Ferramentas profissionais liberadas na hora
           </p>
           {!isAuthenticated ? (
             <Link

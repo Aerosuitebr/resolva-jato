@@ -11,19 +11,20 @@ export function PricingPage() {
       <div className="mx-auto mb-10 max-w-2xl text-center">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Escolha como quer usar</h1>
         <ul className="mx-auto mt-5 max-w-md space-y-2 text-left text-sm leading-6 text-slate-700 sm:text-center">
-          <li>· Busca 100% gratuita</li>
-          <li>· Grátis: 5 usos/mês nas ferramentas</li>
-          <li>· Premium: ilimitado por R$ 4,99/mês</li>
+          <li>· Busca 100% gratuita, sempre</li>
+          <li>· Grátis: ferramentas profissionais liberadas na hora</li>
+          <li>· Premium: ilimitado quando fizer sentido pra você</li>
         </ul>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        {PLAN_ORDER.map((planId) => {
+        {[...PLAN_ORDER].reverse().map((planId) => {
           const plan = PLANS[planId];
+          const isFree = plan.id !== 'premium';
           return (
             <article
               key={plan.id}
               className={`rounded-[28px] border p-8 shadow-sm ${
-                plan.highlight ? 'border-sky-300 bg-gradient-to-b from-sky-50 to-white' : 'border-slate-200 bg-white'
+                isFree ? 'border-sky-300 bg-gradient-to-b from-sky-50 to-white' : 'border-slate-200 bg-white'
               }`}
             >
               <h2 className="text-2xl font-bold text-slate-900">{plan.name}</h2>
@@ -36,17 +37,17 @@ export function PricingPage() {
                 benefits={plan.benefits}
                 className="mt-6"
                 itemClassName={
-                  plan.highlight
+                  isFree
                     ? 'border-sky-100 bg-sky-50/60'
                     : 'border-slate-100 bg-slate-50'
                 }
                 iconWrapClassName={
-                  plan.highlight ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'
+                  isFree ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'
                 }
                 titleClassName="text-slate-900"
                 textClassName="text-slate-600"
               />
-              <Button asChild className="mt-8 w-full" variant={plan.highlight ? 'default' : 'outline'}>
+              <Button asChild className="mt-8 w-full" variant={isFree ? 'default' : 'outline'}>
                 {plan.id === 'premium' ? (
                   <AuthAwareLink href="/conta?upgrade=premium">Assinar Premium</AuthAwareLink>
                 ) : (

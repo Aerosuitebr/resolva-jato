@@ -33,11 +33,17 @@ export function PremiumHeader() {
       : 'Premium · uso ilimitado'
     : `Plano ${plan.name}`;
 
+  // Só mostramos números de utilização quando o saldo está realmente acabando —
+  // o usuário não precisa "contar usos" pra usar a ferramenta no dia a dia.
+  const usageLow = !usage.unlimited && usage.remaining !== null && usage.remaining <= 1;
+
   const usageSubtitle = usage.unlimited
     ? 'Uso ilimitado de ferramentas'
-    : usage.remaining === 0
-      ? 'Saldo de ferramentas esgotado'
-      : `Restam ${usage.remaining} de ${usage.limit} usos`;
+    : usageLow
+      ? usage.remaining === 0
+        ? 'Saldo de ferramentas esgotado'
+        : `Restam ${usage.remaining} de ${usage.limit} usos`
+      : null;
 
   return (
     <header className="sticky top-8 z-[100] border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
@@ -71,14 +77,7 @@ export function PremiumHeader() {
         <div className="ml-auto flex items-center gap-2">
           {isAuthenticated ? (
             <>
-              {plan.id !== 'premium' ? (
-                <Button asChild size="sm" className="hidden sm:inline-flex">
-                  <Link href="/conta?upgrade=premium">
-                    <Crown className="h-3.5 w-3.5 text-amber-200" />
-                    Liberar ilimitado
-                  </Link>
-                </Button>
-              ) : (
+              {plan.id === 'premium' ? (
                 <Link
                   href="/conta"
                   className="hidden items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-900 sm:inline-flex"
@@ -86,7 +85,14 @@ export function PremiumHeader() {
                   <Crown className="h-3.5 w-3.5" />
                   Uso ilimitado
                 </Link>
-              )}
+              ) : usageLow ? (
+                <Button asChild size="sm" className="hidden sm:inline-flex">
+                  <Link href="/conta?upgrade=premium">
+                    <Crown className="h-3.5 w-3.5 text-amber-200" />
+                    Liberar ilimitado
+                  </Link>
+                </Button>
+              ) : null}
               <Link
                 href="/conta"
                 className={`hidden min-w-0 max-w-[240px] items-center gap-3 rounded-2xl border px-3 py-2 transition xl:flex ${
@@ -101,7 +107,9 @@ export function PremiumHeader() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-slate-900">{session?.user.name}</span>
                   <span className="block text-xs font-medium text-slate-600">{planSubtitle}</span>
-                  <span className="block text-xs font-medium text-slate-600">{usageSubtitle}</span>
+                  {usageSubtitle ? (
+                    <span className="block text-xs font-medium text-slate-600">{usageSubtitle}</span>
+                  ) : null}
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
               </Link>
@@ -111,11 +119,7 @@ export function PremiumHeader() {
                 aria-label={`Minha conta, plano ${plan.name}`}
               >
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-[10px] text-white">{initials}</span>
-                {usage.unlimited
-                  ? 'Premium'
-                  : usage.remaining === 0
-                    ? 'Esgotado'
-                    : `${usage.remaining}/${usage.limit} usos`}
+                {usage.unlimited ? 'Premium' : usageLow && usage.remaining === 0 ? 'Esgotado' : plan.name}
               </Link>
             </>
           ) : (
@@ -160,19 +164,19 @@ export function PremiumHeader() {
             })}
             {isAuthenticated ? (
               <>
-                {plan.id !== 'premium' ? (
+                {plan.id === 'premium' ? (
+                  <div className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+                    Premium · uso ilimitado
+                    {usage.premiumExpiresAt ? ` até ${formatDate(usage.premiumExpiresAt)}` : ''}
+                  </div>
+                ) : usageLow ? (
                   <Button asChild className="mt-2">
                     <Link href="/conta?upgrade=premium" onClick={() => setMobileOpen(false)}>
                       <Crown className="h-4 w-4 text-amber-200" />
                       Liberar ilimitado por 1 mês
                     </Link>
                   </Button>
-                ) : (
-                  <div className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
-                    Premium · uso ilimitado
-                    {usage.premiumExpiresAt ? ` até ${formatDate(usage.premiumExpiresAt)}` : ''}
-                  </div>
-                )}
+                ) : null}
                 <Link
                   href="/conta"
                   onClick={() => setMobileOpen(false)}
@@ -182,11 +186,7 @@ export function PremiumHeader() {
                   <span>
                     <span className="block text-sm font-bold">{session?.user.name}</span>
                     <span className="block text-xs text-slate-300">
-                      {usage.unlimited
-                        ? planSubtitle
-                        : usage.remaining === 0
-                          ? 'Saldo esgotado'
-                          : `${usage.remaining} de ${usage.limit} restantes`}
+                      {usage.unlimited ? planSubtitle : usageLow ? usageSubtitle : `Plano ${plan.name}`}
                     </span>
                   </span>
                 </Link>

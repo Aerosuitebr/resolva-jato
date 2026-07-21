@@ -2,13 +2,11 @@ import Link from 'next/link';
 import { ArrowRight, BookOpen, Check, ClipboardList, FileText, GraduationCap, Scale, Search, Wallet } from 'lucide-react';
 import { AuthAwareLink } from '@/components/auth/auth-aware-link';
 import { Logo } from '@/components/brand/logo';
-import { PlanBenefitsList } from '@/components/marketing/plan-benefits-list';
 import { PromoVideoPlayer } from '@/components/marketing/promo-video-section';
 import { TestimonialsSection } from '@/components/marketing/testimonials-section';
 import { TrustSeals } from '@/components/marketing/trust-seals';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { Button } from '@/components/ui/button';
-import { PLANS } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
 const primaryCtaClass =
@@ -136,9 +134,6 @@ function ContratoMock() {
 }
 
 export function LandingPage() {
-  const premium = PLANS.premium;
-  const gratis = PLANS.gratis;
-
   return (
     <div className="bg-[image:var(--rj-page-bg)]">
       {/* Hero: marca + CTAs + vídeo no fluxo de conversão */}
@@ -156,15 +151,15 @@ export function LandingPage() {
               <Logo variant="hero" />
             </div>
             <h1 className="rj-display rj-animate-fade-up-delay mt-6 text-[clamp(1.9rem,4.2vw,3.25rem)] font-extrabold leading-[1.08] tracking-tight text-white">
-              Ferramentas profissionais por quase nada.
+              Currículos, contratos, recibos e propostas — grátis e profissionais.
             </h1>
             <p className="rj-animate-fade-up-delay-2 mt-4 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">
-              Currículos, contratos e propostas — comece grátis, Premium por R$&nbsp;4,99/mês.
+              Crie documentos com cara de profissional em minutos, sem cartão e sem pegadinha.
             </p>
             <ul className="rj-animate-fade-up-delay-2 mt-5 space-y-2 text-sm text-slate-200">
               {[
                 'Busca de recursos sempre gratuita',
-                `${gratis.toolUsesLimit} usos grátis nas ferramentas`,
+                'Layouts profissionais em todas as ferramentas',
                 'PDF pronto em minutos'
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2.5">
@@ -396,19 +391,19 @@ export function LandingPage() {
 
       <TestimonialsSection />
 
-      {/* Preço acessível */}
+      {/* Grátis e profissional */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-          <div className="flex flex-col justify-center">
-            <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">Acesso acessível</p>
+          <div className="overflow-hidden rounded-[28px] border border-sky-200 bg-white p-8 shadow-sm">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-sky-700">Plano Grátis</p>
             <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Poder de ferramenta paga, preço de cafezinho.
+              Documentos profissionais, sem custo pra começar.
             </h2>
             <ul className="mt-5 space-y-2.5 text-sm text-slate-700">
               {[
                 'Busca sempre gratuita',
-                `Teste com ${gratis.toolUsesLimit} usos`,
-                'Ilimitado quando fizer sentido'
+                'Ferramentas profissionais liberadas na hora',
+                'Sem cartão de crédito'
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 shrink-0 text-sky-600" />
@@ -417,40 +412,29 @@ export function LandingPage() {
               ))}
             </ul>
             <TrustSeals className="mt-8" />
-            <Link
-              href="/conta?upgrade=premium"
-              className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-bold text-sky-700 underline-offset-4 hover:underline"
-            >
-              Liberar ilimitado
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <Button asChild size="lg" className={cn('mt-6', primaryCtaClass)}>
+              <Link href="/cadastro">
+                Criar conta grátis
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-slate-800 bg-[linear-gradient(135deg,#0f172a_0%,#0c4a6e_55%,#0369a1_100%)] p-8 text-white rj-price-shine bg-[length:200%_200%]">
-            <p className="text-sm font-semibold text-sky-200">Premium · 30 dias</p>
-            <div className="mt-3 flex items-end gap-2">
-              <span className="rj-display text-5xl font-extrabold tracking-tight">{premium.priceLabel}</span>
-              <span className="pb-2 text-sm text-slate-300">{premium.period}</span>
-            </div>
-            <PlanBenefitsList
-              benefits={premium.benefits}
-              limit={4}
-              className="mt-6 sm:grid-cols-1"
-              iconWrapClassName="bg-amber-300/15 text-amber-300"
-              titleClassName="text-white"
-              textClassName="text-slate-300"
-            />
-            <div className="mt-8 flex flex-col gap-3">
-              <Button asChild size="lg" className="w-full bg-white font-bold text-slate-950 hover:bg-sky-50">
-                <Link href="/conta?upgrade=premium">Liberar ilimitado</Link>
-              </Button>
-              <Link
-                href="/cadastro"
-                className="text-center text-sm font-semibold text-sky-200 underline-offset-4 transition hover:text-white hover:underline"
-              >
-                Ou testar {gratis.toolUsesLimit} usos gratuitos
-              </Link>
-            </div>
+          <div className="flex flex-col justify-center rounded-[28px] border border-slate-200 bg-slate-50 p-8">
+            <p className="text-sm font-semibold text-slate-500">Quando precisar de mais</p>
+            <h3 className="rj-display mt-2 text-xl font-bold tracking-tight text-slate-900">
+              Premium libera uso ilimitado por 30 dias.
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Disponível quando fizer sentido pra você — sem pressa, sem pegadinha.
+            </p>
+            <Link
+              href="/planos"
+              className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-bold text-slate-700 underline-offset-4 hover:underline"
+            >
+              Ver detalhes do Premium
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -470,7 +454,7 @@ export function LandingPage() {
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                Ferramentas usam os {gratis.toolUsesLimit} usos do plano grátis
+                Ferramentas profissionais liberadas com sua conta grátis
               </li>
             </ul>
           </div>
@@ -499,7 +483,7 @@ export function LandingPage() {
                 </li>
                 <li className="flex gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                  Premium por menos que um cafezinho
+                  Ferramentas profissionais desde o primeiro acesso
                 </li>
               </ul>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">

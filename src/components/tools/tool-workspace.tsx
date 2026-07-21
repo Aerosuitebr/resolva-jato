@@ -32,7 +32,7 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
   return (
     <AuthGate
       title={`${tool.name} exige cadastro`}
-      description="Crie sua conta gratuita para liberar as ferramentas. Você ganha 5 utilizações para testar antes de assinar o Premium."
+      description="Crie sua conta gratuita e use as ferramentas de verdade — sem cartão e sem pegadinha."
     >
       <div className="space-y-5">
         <PageHero
@@ -91,9 +91,6 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
             <div className="mt-4 space-y-3 text-sm text-slate-700">
               <p>
                 Plano atual: <strong className="text-slate-900">{plan.name}</strong>
-              </p>
-              <p>
-                Utilizações: <strong className="text-slate-900">{usage.unlimited ? 'Ilimitadas' : `${usage.current}/${usage.limit}`}</strong>
               </p>
               <p>
                 Busca de recursos: <strong className="text-slate-900">sempre gratuita</strong>

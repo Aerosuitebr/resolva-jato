@@ -7,7 +7,6 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/use-auth';
-import { formatToolUsageLabel } from '@/lib/billing';
 
 interface SidebarUserCardProps {
   collapsed: boolean;
@@ -15,7 +14,8 @@ interface SidebarUserCardProps {
 
 export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
   const router = useRouter();
-  const { session, plan, logout, isAuthenticated } = useAuth();
+  const { session, plan, usage, logout, isAuthenticated } = useAuth();
+  const usageLow = !usage.unlimited && usage.remaining !== null && usage.remaining <= 1;
 
   if (!isAuthenticated) {
     if (collapsed) {
@@ -65,7 +65,11 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-white">{session?.user.name}</p>
           <p className="truncate text-xs font-medium text-slate-400">
-            {plan.id === 'premium' ? 'Premium · uso ilimitado' : `${plan.name} · ${formatToolUsageLabel()}`}
+            {plan.id === 'premium'
+              ? 'Premium · uso ilimitado'
+              : usageLow
+                ? `${plan.name} · ${usage.remaining === 0 ? 'saldo esgotado' : `${usage.remaining} de ${usage.limit} restantes`}`
+                : plan.name}
           </p>
         </div>
         <Button
