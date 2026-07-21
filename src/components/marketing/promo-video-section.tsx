@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const VIDEO_SRC = '/videos/resolvajato-promo-16x9.mp4';
+const VIDEO_SRC = '/videos/resolvajato-final.mp4';
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds)) return '0:00';
