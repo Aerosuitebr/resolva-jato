@@ -123,9 +123,25 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-slate-800/80">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-sm leading-6 text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {YEAR} Resolva Jato</p>
-          <p className="sm:text-right">Links de terceiros são de responsabilidade de seus autores.</p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-sm leading-6 text-slate-400 sm:px-6">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <Link href="/sobre" className="hover:text-sky-300">
+              Sobre
+            </Link>
+            <Link href="/contato" className="hover:text-sky-300">
+              Contato
+            </Link>
+            <Link href="/privacidade" className="hover:text-sky-300">
+              Privacidade
+            </Link>
+            <Link href="/termos" className="hover:text-sky-300">
+              Termos
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {YEAR} Resolva Jato · operado pela Aerosuite</p>
+            <p className="sm:text-right">Links de terceiros são de responsabilidade de seus autores.</p>
+          </div>
         </div>
       </div>
     </footer>

@@ -9,6 +9,9 @@ export type SendMailInput = {
 
 export type SendMailResult = { sent: boolean; error?: string; provider?: 'smtp' | 'resend' };
 
+const DEFAULT_FROM = 'Resolva Jato <contato@aerosuite.com.br>';
+const DEFAULT_REPLY_TO = 'contato@aerosuite.com.br';
+
 function env(name: string, fallback = '') {
   return (process.env[name] || fallback).trim();
 }
@@ -19,21 +22,27 @@ export function getSmtpConfig() {
   const port = Number(env('SMTP_PORT') || env('QUARKUS_MAILER_PORT') || '587');
   const user = env('SMTP_USER') || env('QUARKUS_MAILER_USERNAME');
   const pass = env('SMTP_PASSWORD') || env('QUARKUS_MAILER_PASSWORD');
+  // From alinhado ao usuário SMTP autenticado (evita aparência de spoofing/phishing)
   const from =
     env('SMTP_FROM') ||
     env('QUARKUS_MAILER_FROM') ||
     env('RESEND_FROM') ||
-    'Resolva Jato <noreply@aerosuite.com.br>';
+    (user ? `Resolva Jato <${user}>` : DEFAULT_FROM);
+  const replyTo = env('SMTP_REPLY_TO') || env('MAIL_REPLY_TO') || user || DEFAULT_REPLY_TO;
   const secure =
     (env('SMTP_SSL') || env('QUARKUS_MAILER_SSL') || 'false').toLowerCase() === 'true' || port === 465;
   const startTls = (env('SMTP_START_TLS') || env('QUARKUS_MAILER_START_TLS') || 'REQUIRED').toUpperCase();
 
-  return { host, port, user, pass, from, secure, startTls };
+  return { host, port, user, pass, from, replyTo, secure, startTls };
 }
 
 export function isSmtpConfigured() {
   const { host, user, pass } = getSmtpConfig();
   return Boolean(host && user && pass);
+}
+
+function formatFrom(from: string) {
+  return from.includes('<') ? from : `Resolva Jato <${from}>`;
 }
 
 async function sendViaSmtp(input: SendMailInput): Promise<SendMailResult> {
@@ -53,7 +62,8 @@ async function sendViaSmtp(input: SendMailInput): Promise<SendMailResult> {
 
   try {
     await transporter.sendMail({
-      from: cfg.from.includes('<') ? cfg.from : `Resolva Jato <${cfg.from}>`,
+      from: formatFrom(cfg.from),
+      replyTo: cfg.replyTo,
       to: input.to,
       subject: input.subject,
       html: input.html,
@@ -71,7 +81,11 @@ async function sendViaSmtp(input: SendMailInput): Promise<SendMailResult> {
 
 async function sendViaResend(input: SendMailInput): Promise<SendMailResult> {
   const apiKey = env('RESEND_API_KEY');
-  const from = env('RESEND_FROM') || env('SMTP_FROM') || 'Resolva Jato <onboarding@resend.dev>';
+  const from =
+    env('RESEND_FROM') ||
+    env('SMTP_FROM') ||
+    'Resolva Jato <contato@aerosuite.com.br>';
+  const replyTo = env('SMTP_REPLY_TO') || env('MAIL_REPLY_TO') || DEFAULT_REPLY_TO;
   if (!apiKey) {
     return { sent: false, error: 'RESEND_API_KEY não configurada.' };
   }
@@ -85,6 +99,7 @@ async function sendViaResend(input: SendMailInput): Promise<SendMailResult> {
       },
       body: JSON.stringify({
         from,
+        reply_to: replyTo,
         to: Array.isArray(input.to) ? input.to : [input.to],
         subject: input.subject,
         html: input.html,

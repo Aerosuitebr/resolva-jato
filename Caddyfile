@@ -1,5 +1,12 @@
 # TLS automático (Let's Encrypt). Defina DOMAIN no .env (padrão: resolvajato.com.br).
 {$DOMAIN:resolvajato.com.br} {
 	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
 	reverse_proxy app:3000
 }

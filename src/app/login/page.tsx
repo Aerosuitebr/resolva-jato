@@ -29,11 +29,18 @@ function LoginForm() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [needsVerify, setNeedsVerify] = useState(false);
+  const verified = searchParams.get('verified') === '1';
 
   useEffect(() => {
     if (!ready) return;
     if (isAuthenticated && emailVerified) router.replace(next);
   }, [emailVerified, isAuthenticated, next, ready, router]);
+
+  useEffect(() => {
+    if (verified) {
+      setInfo('E-mail confirmado. Entre com sua senha para acessar as ferramentas.');
+    }
+  }, [verified]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
