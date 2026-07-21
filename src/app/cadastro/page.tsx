@@ -57,8 +57,8 @@ function CadastroForm() {
       <div className="space-y-4 text-center">
         <p className="text-lg font-bold text-slate-900">Confirme seu e-mail</p>
         <p className="text-sm leading-6 text-slate-600">
-          Enviamos um link para <strong>{doneEmail}</strong>. Sem a confirmação, as 5 utilizações
-          gratuitas não são liberadas.
+          Enviamos um link para <strong>{doneEmail}</strong>. Sem a confirmação, as ferramentas
+          profissionais não são liberadas.
         </p>
         <Button asChild className="w-full">
           <Link href={`/login?next=${encodeURIComponent(next)}&email=${encodeURIComponent(doneEmail)}`}>
@@ -76,7 +76,7 @@ function CadastroForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <AuthReturnBanner nextHref={searchParams.get('next')} />
       <p className="text-center text-sm text-slate-600">
-        Sem cartão. Confirme o e-mail para liberar 5 usos.
+        Sem cartão. Confirme o e-mail e use as ferramentas profissionais.
       </p>
       <label className="relative block">
         <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -142,7 +142,7 @@ function CadastroForm() {
 
 export default function CadastroPage() {
   return (
-    <AuthShell subtitle="Crie sua conta gratuita. Confirme o e-mail e ganhe 5 utilizações.">
+    <AuthShell subtitle="Crie sua conta gratuita e use as ferramentas profissionais.">
       <Suspense>
         <CadastroForm />
       </Suspense>

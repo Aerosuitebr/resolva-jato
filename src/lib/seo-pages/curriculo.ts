@@ -97,7 +97,7 @@ export const curriculoSeoContent: SeoPageContent = {
     {
       question: 'O gerador de currículo é realmente gratuito?',
       answer:
-        'Sim. Você pode criar, editar e baixar seu currículo em PDF gratuitamente. Recursos extras, como múltiplos currículos salvos e modelos premium, fazem parte do plano pago.'
+        'Sim. Você pode criar, editar e baixar seu currículo em PDF gratuitamente, com layouts profissionais.'
     },
     {
       question: 'Preciso instalar algum programa?',

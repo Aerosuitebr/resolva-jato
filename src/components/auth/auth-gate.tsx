@@ -71,8 +71,8 @@ export function AuthGate({
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-sm leading-6 text-slate-700">
         <p className="font-semibold text-slate-900">Confirme seu e-mail para continuar</p>
         <p className="mt-2">
-          Enviamos um link para <strong>{session?.user.email}</strong>. As 5 utilizações só são
-          liberadas após a confirmação.
+          Enviamos um link para <strong>{session?.user.email}</strong>. As ferramentas
+          profissionais só são liberadas após a confirmação.
         </p>
         <Button asChild className="mt-5">
           <Link href={`/login?email=${encodeURIComponent(session?.user.email || '')}`}>

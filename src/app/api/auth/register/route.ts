@@ -206,7 +206,7 @@ export async function POST(request: Request) {
         emailSent: mail.sent,
         emailError: mail.error,
         message:
-          'Conta criada. Confirme o e-mail para liberar as 5 utilizações gratuitas.'
+          'Conta criada. Confirme o e-mail para liberar as ferramentas profissionais.'
       },
       { status: 201 }
     );

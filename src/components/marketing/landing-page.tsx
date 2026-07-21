@@ -393,49 +393,31 @@ export function LandingPage() {
 
       {/* Grátis e profissional */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-          <div className="overflow-hidden rounded-[28px] border border-sky-200 bg-white p-8 shadow-sm">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-sky-700">Plano Grátis</p>
-            <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Documentos profissionais, sem custo pra começar.
-            </h2>
-            <ul className="mt-5 space-y-2.5 text-sm text-slate-700">
-              {[
-                'Busca sempre gratuita',
-                'Ferramentas profissionais liberadas na hora',
-                'Sem cartão de crédito'
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5">
-                  <Check className="h-4 w-4 shrink-0 text-sky-600" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <TrustSeals className="mt-8" />
-            <Button asChild size="lg" className={cn('mt-6', primaryCtaClass)}>
-              <Link href="/cadastro">
-                Criar conta grátis
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="flex flex-col justify-center rounded-[28px] border border-slate-200 bg-slate-50 p-8">
-            <p className="text-sm font-semibold text-slate-500">Quando precisar de mais</p>
-            <h3 className="rj-display mt-2 text-xl font-bold tracking-tight text-slate-900">
-              Premium libera uso ilimitado por 30 dias.
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Disponível quando fizer sentido pra você — sem pressa, sem pegadinha.
-            </p>
-            <Link
-              href="/planos"
-              className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-bold text-slate-700 underline-offset-4 hover:underline"
-            >
-              Ver detalhes do Premium
+        <div className="overflow-hidden rounded-[28px] border border-sky-200 bg-white p-8 shadow-sm sm:p-10">
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-sky-700">Tudo grátis pra começar</p>
+          <h2 className="rj-display mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Documentos profissionais, sem custo e sem pegadinha.
+          </h2>
+          <ul className="mt-5 grid gap-2.5 text-sm text-slate-700 sm:grid-cols-2">
+            {[
+              'Currículos, contratos, recibos e propostas',
+              'Layouts com cara de escritório',
+              'Busca de recursos sempre gratuita',
+              'Sem cartão de crédito'
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2.5">
+                <Check className="h-4 w-4 shrink-0 text-sky-600" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <TrustSeals className="mt-8" />
+          <Button asChild size="lg" className={cn('mt-6', primaryCtaClass)}>
+            <Link href="/cadastro">
+              Criar conta grátis
               <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
+          </Button>
         </div>
       </section>
 

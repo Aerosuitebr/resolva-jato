@@ -43,7 +43,7 @@ export const PLANS: Record<PlanId, Plan> = {
     benefits: [
       { icon: 'search', title: 'Busca ilimitada', text: 'Links úteis sempre grátis' },
       { icon: 'user', title: 'Conta gratuita', text: 'E-mail e senha em segundos' },
-      { icon: 'gift', title: '5 usos/mês', text: 'Teste as ferramentas sem custo' },
+      { icon: 'gift', title: 'Ferramentas liberadas', text: 'Currículos, contratos e mais sem pagar' },
       { icon: 'tools', title: 'Todas as ferramentas', text: 'Currículos, contratos, Pix e mais' },
       { icon: 'test', title: 'Sem cartão', text: 'Ideal para experimentar primeiro' }
     ]

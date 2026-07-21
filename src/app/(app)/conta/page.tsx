@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  CalendarClock,
   CheckCircle2,
   Crown,
   Gauge,
@@ -183,14 +182,14 @@ function ContaContent() {
   return (
     <AuthGate
       title="Sua conta"
-      description="Entre para acompanhar plano, utilizações e upgrade Premium."
+      description="Entre para gerenciar sua conta e acessar as ferramentas profissionais."
       enforceUsageLimit={false}
       requireEmailVerified={false}
     >
       <div className="space-y-5">
         <PageHero
           title="Minha conta"
-          subtitle="Gerencie seu plano, acompanhe utilizações e evolua para o Premium quando fizer sentido."
+          subtitle="Seus dados, sua conta e as ferramentas profissionais do Resolva Jato."
           icon={Sparkles}
         />
 
@@ -239,51 +238,41 @@ function ContaContent() {
                 </div>
                 <span
                   className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${
-                    usage.unlimited ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-800'
+                    usage.unlimited
+                      ? 'bg-amber-100 text-amber-900'
+                      : usage.remaining === 0
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-sky-100 text-sky-800'
                   }`}
                 >
                   {usage.unlimited ? <Crown className="h-3.5 w-3.5" /> : <Gauge className="h-3.5 w-3.5" />}
                   {usage.unlimited
                     ? 'Uso ilimitado'
                     : usage.remaining === 0
-                      ? 'Sem usos restantes'
-                      : `Restam ${usage.remaining} usos`}
+                      ? '5 utilizações gratuitas esgotadas'
+                      : 'Ferramentas liberadas'}
                 </span>
               </div>
 
-              {!usage.unlimited ? (
-                <div className="mt-6">
-                  <div className="mb-2 flex justify-between text-sm font-semibold text-slate-700">
-                    <span>Usos já consumidos</span>
-                    <span>
-                      {usage.current} de {usage.limit}
-                    </span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={`h-full rounded-full transition-all ${usage.remaining === 0 ? 'bg-rose-500' : 'bg-sky-600'}`}
-                      style={{
-                        width: `${Math.max(((usage.current || 0) / (usage.limit || 5)) * 100, 0)}%`
-                      }}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Cada salvamento manual ou download concluído consome uma utilização. O salvamento automático não
-                    consome saldo.
-                  </p>
-                  {usage.nextReleaseAt ? (
-                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-                      <div>
-                        <p className="text-sm font-bold text-amber-950">Próxima liberação de 5 utilizações</p>
-                        <p className="mt-1 text-sm text-amber-900">{formatDateTime(usage.nextReleaseAt)}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-xs text-slate-500">
-                      O prazo de 30 dias começa quando a quinta utilização for consumida.
+              {!usage.unlimited && usage.remaining === 0 ? (
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <p className="text-sm font-bold text-rose-950">Suas 5 utilizações gratuitas acabaram</p>
+                    <p className="mt-1 text-sm leading-6 text-rose-900">
+                      Você usou o pacote gratuito. Assine o Premium para liberar uso ilimitado durante 30 dias
+                      {usage.nextReleaseAt
+                        ? `, ou aguarde um novo pacote em ${formatDateTime(usage.nextReleaseAt)}`
+                        : ''}
+                      .
                     </p>
-                  )}
+                  </div>
+                </div>
+              ) : !usage.unlimited ? (
+                <div className="mt-6">
+                  <p className="text-sm leading-6 text-slate-600">
+                    Crie e baixe currículos, contratos, recibos e outros documentos com qualidade profissional —
+                    sem precisar contar utilizações no dia a dia.
+                  </p>
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
@@ -336,68 +325,103 @@ function ContaContent() {
             className={`rounded-[28px] border p-6 shadow-xl sm:p-7 ${
               plan.id === 'premium'
                 ? 'border-emerald-300 bg-gradient-to-br from-emerald-950 to-slate-950 text-white shadow-emerald-900/10'
-                : 'border-slate-800 bg-gradient-to-br from-slate-950 to-blue-950 text-white shadow-slate-900/10'
+                : usage.remaining === 0 || wantsUpgrade
+                  ? 'border-slate-800 bg-gradient-to-br from-slate-950 to-blue-950 text-white shadow-slate-900/10'
+                  : 'border-sky-200 bg-gradient-to-br from-sky-50 to-white text-slate-900 shadow-sky-100/40'
             }`}
           >
-            <span
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wide ${
-                plan.id === 'premium' ? 'bg-emerald-300 text-emerald-950' : 'bg-amber-300 text-slate-950'
-              }`}
-            >
-              <Crown className="h-3.5 w-3.5" />
-              {plan.id === 'premium' ? 'Premium ativo' : 'Premium'}
-            </span>
-            <h2 className="mt-5 text-2xl font-black">
-              {plan.id === 'premium' ? 'Você está no uso ilimitado.' : 'Trabalhe sem contar utilizações.'}
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-300">
-              {plan.id === 'premium' && usage.premiumExpiresAt
-                ? `Plano Premium vigente até ${formatDate(usage.premiumExpiresAt)}. Contador do plano grátis oculto enquanto o Premium estiver ativo.`
-                : `Por ${PLANS.premium.priceLabel}${PLANS.premium.period}, salve e baixe documentos sem limites durante 30 dias. Pagamento via Mercado Pago (cartão, Pix e outros).`}
-            </p>
-            <ul className="mt-6 space-y-3">
-              {[
-                'Salvamentos e downloads ilimitados',
-                'Todas as ferramentas liberadas',
-                '30 dias completos de acesso'
-              ].map((benefit) => (
-                <li key={benefit} className="flex items-center gap-3 text-sm text-slate-100">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-sky-300" />
-                  {benefit}
-                </li>
-              ))}
-            </ul>
-            {plan.id === 'premium' ? (
-              <Button
-                variant="outline"
-                className="mt-7 w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
-                onClick={handleDowngrade}
-              >
-                Encerrar Premium neste aparelho
-              </Button>
-            ) : (
-              <Button
-                className="mt-7 w-full bg-white text-slate-950 hover:bg-sky-50"
-                onClick={handleUpgrade}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+            {plan.id === 'premium' || usage.remaining === 0 || wantsUpgrade ? (
+              <>
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wide ${
+                    plan.id === 'premium' ? 'bg-emerald-300 text-emerald-950' : 'bg-amber-300 text-slate-950'
+                  }`}
+                >
+                  <Crown className="h-3.5 w-3.5" />
+                  {plan.id === 'premium' ? 'Premium ativo' : 'Pacote gratuito esgotado'}
+                </span>
+                <h2 className="mt-5 text-2xl font-black">
+                  {plan.id === 'premium'
+                    ? 'Você está no uso ilimitado.'
+                    : 'Suas 5 utilizações gratuitas acabaram.'}
+                </h2>
+                <p className={`mt-3 text-sm leading-7 ${plan.id === 'premium' || usage.remaining === 0 ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {plan.id === 'premium' && usage.premiumExpiresAt
+                    ? `Plano Premium vigente até ${formatDate(usage.premiumExpiresAt)}.`
+                    : `Assine o Premium por ${PLANS.premium.priceLabel}${PLANS.premium.period} e libere uso ilimitado durante 30 dias.`}
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {[
+                    'Salvamentos e downloads ilimitados',
+                    'Todas as ferramentas liberadas',
+                    '30 dias completos de acesso'
+                  ].map((benefit) => (
+                    <li key={benefit} className="flex items-center gap-3 text-sm text-slate-100">
+                      <ShieldCheck className="h-4 w-4 shrink-0 text-sky-300" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                {plan.id === 'premium' ? (
+                  <Button
+                    variant="outline"
+                    className="mt-7 w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+                    onClick={handleDowngrade}
+                  >
+                    Encerrar Premium neste aparelho
+                  </Button>
                 ) : (
-                  <ArrowRight className="h-4 w-4" />
+                  <Button
+                    className="mt-7 w-full bg-white text-slate-950 hover:bg-sky-50"
+                    onClick={handleUpgrade}
+                    disabled={checkoutLoading}
+                  >
+                    {checkoutLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                    {checkoutLoading ? 'Abrindo Mercado Pago…' : 'Liberar uso ilimitado por 30 dias'}
+                  </Button>
                 )}
-                {checkoutLoading
-                  ? 'Abrindo Mercado Pago…'
-                  : wantsUpgrade
-                    ? 'Pagar Premium no Mercado Pago'
-                    : 'Pagar Premium no Mercado Pago'}
-              </Button>
+                <p className="mt-4 text-xs leading-5 text-slate-400">
+                  {plan.id === 'premium'
+                    ? 'Após o vencimento, a conta volta ao plano grátis.'
+                    : 'Pagamento via Mercado Pago (cartão, Pix e outros). Após a aprovação, o Premium libera automaticamente.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-sky-800">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Conta grátis
+                </span>
+                <h2 className="mt-5 text-2xl font-black text-slate-900">
+                  Ferramentas profissionais liberadas.
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Currículos, contratos, recibos, propostas e mais — com qualidade profissional, sem cartão.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {[
+                    'Layouts com cara de escritório',
+                    'PDF pronto em minutos',
+                    'Busca de recursos sempre gratuita'
+                  ].map((benefit) => (
+                    <li key={benefit} className="flex items-center gap-3 text-sm text-slate-800">
+                      <ShieldCheck className="h-4 w-4 shrink-0 text-sky-600" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild className="mt-7 w-full">
+                  <Link href="/ferramentas">
+                    <ArrowRight className="h-4 w-4" />
+                    Abrir ferramentas
+                  </Link>
+                </Button>
+              </>
             )}
-            <p className="mt-4 text-xs leading-5 text-slate-400">
-              {plan.id === 'premium'
-                ? 'Após o vencimento, a conta volta ao plano grátis com 5 utilizações.'
-                : 'Você será redirecionado ao Checkout Pro do Mercado Pago (cartão, Pix e outros). Após o pagamento aprovado, o Premium libera automaticamente por 30 dias.'}
-            </p>
           </aside>
         </section>
 

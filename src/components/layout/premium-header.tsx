@@ -33,16 +33,13 @@ export function PremiumHeader() {
       : 'Premium · uso ilimitado'
     : `Plano ${plan.name}`;
 
-  // Só mostramos números de utilização quando o saldo está realmente acabando —
-  // o usuário não precisa "contar usos" pra usar a ferramenta no dia a dia.
-  const usageLow = !usage.unlimited && usage.remaining !== null && usage.remaining <= 1;
+  // Só falamos de limite/Premium quando as utilizações gratuitas acabaram.
+  const usageExhausted = !usage.unlimited && usage.remaining === 0;
 
   const usageSubtitle = usage.unlimited
     ? 'Uso ilimitado de ferramentas'
-    : usageLow
-      ? usage.remaining === 0
-        ? 'Saldo de ferramentas esgotado'
-        : `Restam ${usage.remaining} de ${usage.limit} usos`
+    : usageExhausted
+      ? '5 utilizações gratuitas esgotadas'
       : null;
 
   return (
@@ -85,7 +82,7 @@ export function PremiumHeader() {
                   <Crown className="h-3.5 w-3.5" />
                   Uso ilimitado
                 </Link>
-              ) : usageLow ? (
+              ) : usageExhausted ? (
                 <Button asChild size="sm" className="hidden sm:inline-flex">
                   <Link href="/conta?upgrade=premium">
                     <Crown className="h-3.5 w-3.5 text-amber-200" />
@@ -119,7 +116,7 @@ export function PremiumHeader() {
                 aria-label={`Minha conta, plano ${plan.name}`}
               >
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-[10px] text-white">{initials}</span>
-                {usage.unlimited ? 'Premium' : usageLow && usage.remaining === 0 ? 'Esgotado' : plan.name}
+                {usage.unlimited ? 'Premium' : usageExhausted ? 'Esgotado' : plan.name}
               </Link>
             </>
           ) : (
@@ -169,11 +166,11 @@ export function PremiumHeader() {
                     Premium · uso ilimitado
                     {usage.premiumExpiresAt ? ` até ${formatDate(usage.premiumExpiresAt)}` : ''}
                   </div>
-                ) : usageLow ? (
+                ) : usageExhausted ? (
                   <Button asChild className="mt-2">
                     <Link href="/conta?upgrade=premium" onClick={() => setMobileOpen(false)}>
                       <Crown className="h-4 w-4 text-amber-200" />
-                      Liberar ilimitado por 1 mês
+                      Liberar ilimitado por 30 dias
                     </Link>
                   </Button>
                 ) : null}
@@ -186,7 +183,7 @@ export function PremiumHeader() {
                   <span>
                     <span className="block text-sm font-bold">{session?.user.name}</span>
                     <span className="block text-xs text-slate-300">
-                      {usage.unlimited ? planSubtitle : usageLow ? usageSubtitle : `Plano ${plan.name}`}
+                      {usage.unlimited ? planSubtitle : usageExhausted ? usageSubtitle : `Plano ${plan.name}`}
                     </span>
                   </span>
                 </Link>

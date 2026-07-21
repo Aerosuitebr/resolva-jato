@@ -283,13 +283,13 @@ export const valueHighlights = [
     icon: FileText
   },
   {
-    title: 'Comece com 5 usos grátis',
-    description: 'Cadastre-se com e-mail e teste as ferramentas antes de decidir assinar.',
+    title: 'Comece grátis, com qualidade',
+    description: 'Cadastre-se com e-mail e use currículos, contratos, recibos e mais sem cartão.',
     icon: GraduationCap
   },
   {
-    title: 'Premium por R$ 4,99/mês',
-    description: 'Quando fizer sentido, desbloqueie uso ilimitado e recursos avançados.',
+    title: 'Layouts profissionais',
+    description: 'Documentos com cara de escritório, prontos para enviar ou baixar em PDF.',
     icon: CalendarDays
   }
 ];

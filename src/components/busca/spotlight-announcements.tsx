@@ -44,7 +44,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/curriculo',
     learnHref: '/ferramentas',
     cta: 'Criar meu currículo',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Faça login e abra Currículos',
       '2. Preencha experiência, formação e idiomas',
@@ -60,7 +60,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/pix',
     learnHref: '/ferramentas',
     cta: 'Gerar Pix agora',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Abra Cobrança Pix e informe sua chave',
       '2. Gere o QR ou o código Copia e Cola',
@@ -76,7 +76,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/trabalhos',
     learnHref: '/ferramentas',
     cta: 'Fazer minha capa',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Abra Capas de Trabalho',
       '2. Escolha o modelo e preencha os campos',
@@ -92,7 +92,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/contratos',
     learnHref: '/ferramentas',
     cta: 'Abrir contratos',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       'Prestação de serviços · Aluguel residencial',
       'Locação comercial · Contrato de trabalho',
@@ -108,7 +108,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/propostas',
     learnHref: '/ferramentas',
     cta: 'Criar proposta',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Abra Propostas Comerciais',
       '2. Cadastre empresa, cliente e itens',
@@ -124,7 +124,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/orcamentos',
     learnHref: '/ferramentas',
     cta: 'Abrir orçamentos',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Abra Orçamentos e cadastre os itens',
       '2. Gere o link público para o cliente',
@@ -140,7 +140,7 @@ export const SPOTLIGHT_SLIDES: SpotlightToolSlide[] = [
     href: '/ferramentas/recibos',
     learnHref: '/ferramentas',
     cta: 'Emitir recibo',
-    badge: '5 usos gratuitos',
+    badge: 'Gratuito',
     steps: [
       '1. Abra Recibos',
       '2. Preencha as partes, valor e referência',
@@ -231,8 +231,7 @@ export function SpotlightAnnouncements() {
           Resolva tarefas profissionais em poucos cliques
         </h2>
         <p className="mt-2 max-w-2xl text-[15px] leading-6 text-slate-700 sm:text-base sm:leading-7">
-          Ferramentas criadas pelo Resolva Jato para gerar documentos e concluir tarefas. Seu plano inclui 5 usos
-          gratuitos de ferramentas.
+          Ferramentas criadas pelo Resolva Jato para gerar documentos e concluir tarefas com qualidade profissional.
         </p>
       </div>
 

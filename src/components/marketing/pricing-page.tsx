@@ -12,8 +12,8 @@ export function PricingPage() {
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Escolha como quer usar</h1>
         <ul className="mx-auto mt-5 max-w-md space-y-2 text-left text-sm leading-6 text-slate-700 sm:text-center">
           <li>· Busca 100% gratuita, sempre</li>
-          <li>· Grátis: ferramentas profissionais liberadas na hora</li>
-          <li>· Premium: ilimitado quando fizer sentido pra você</li>
+          <li>· Ferramentas profissionais liberadas na hora</li>
+          <li>· Uso ilimitado disponível quando você precisar</li>
         </ul>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">

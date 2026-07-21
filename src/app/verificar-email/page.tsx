@@ -25,7 +25,7 @@ function VerifyContent() {
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
           <h1 className="text-2xl font-bold text-slate-900">E-mail confirmado</h1>
           <p className="text-sm leading-6 text-slate-600">
-            Sua conta está ativa e as 5 utilizações gratuitas foram liberadas.
+            Sua conta está ativa. As ferramentas profissionais já estão liberadas.
           </p>
           <Button asChild className="w-full">
             <Link href="/ferramentas">Abrir ferramentas</Link>

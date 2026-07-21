@@ -329,7 +329,7 @@ export function BuscaClient() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
             Mais de {publicSearchResources.length} recursos gratuitos para consultar sem limite. Use também
-            nossas ferramentas profissionais com 5 usos incluídos no plano grátis.
+            nossas ferramentas profissionais — currículos, contratos, recibos e mais.
           </p>
 
           <form
@@ -524,8 +524,7 @@ export function BuscaClient() {
               Ferramentas Resolva Jato
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Soluções criadas na plataforma para gerar documentos e executar tarefas — com 5 usos no plano
-              grátis.
+              Soluções criadas na plataforma para gerar documentos e executar tarefas com qualidade profissional.
             </p>
           </div>
           <div className="grid gap-5 lg:grid-cols-3">

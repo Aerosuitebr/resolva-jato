@@ -48,7 +48,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function FerramentasPage() {
-  const { usage, plan } = useAuth();
+  const { usage } = useAuth();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [spyCategory, setSpyCategory] = useState<ToolCategoryId | 'todas'>('todas');
@@ -187,7 +187,7 @@ export default function FerramentasPage() {
   return (
     <AuthGate
       title="Ferramentas profissionais"
-      description="Cadastre-se gratuitamente para acessar currículos, recibos, propostas e agenda. Você começa com 5 utilizações no plano grátis."
+      description="Cadastre-se gratuitamente para acessar currículos, recibos, propostas, contratos e agenda — com qualidade profissional."
     >
       <div className="space-y-5">
         <PageHero
@@ -196,33 +196,31 @@ export default function FerramentasPage() {
           icon={Sparkles}
           actions={
             <div className="flex flex-col items-start gap-2 sm:items-end">
-              <p className="rj-display text-base font-bold text-sky-100">Plano {plan.name}</p>
+              <p className="rj-display text-base font-bold text-sky-100">
+                {usage.unlimited ? 'Uso ilimitado' : 'Ferramentas profissionais'}
+              </p>
               <p className="text-xs font-medium leading-5 text-slate-300">
                 {usage.unlimited
                   ? usage.premiumExpiresAt
-                    ? `Uso ilimitado até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
-                    : 'Uso ilimitado de ferramentas'
+                    ? `Ativo até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
+                    : 'Salve e baixe à vontade'
                   : usage.remaining === 0
-                    ? 'Sem usos restantes — assine o Premium'
-                    : `Restam ${usage.remaining ?? 0} de ${usage.limit ?? 0} usos no plano grátis`}
+                    ? 'Suas 5 utilizações gratuitas acabaram'
+                    : 'Crie e baixe documentos com qualidade profissional'}
               </p>
-              {!usage.unlimited ? (
-                <div className="h-1.5 w-36 overflow-hidden rounded-full bg-white/15" aria-hidden>
-                  <div
-                    className="h-full rounded-full bg-amber-300"
-                    style={{
-                      width: `${Math.min(100, ((usage.current || 0) / (usage.limit || 1)) * 100)}%`
-                    }}
-                  />
-                </div>
-              ) : (
+              {usage.unlimited ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200">
                   Premium ativo
                 </span>
+              ) : usage.remaining === 0 ? (
+                <Button asChild size="sm" className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">
+                  <Link href="/conta?upgrade=premium">Liberar ilimitado por 30 dias</Link>
+                </Button>
+              ) : (
+                <Button asChild size="sm" className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">
+                  <Link href="/conta">Minha conta</Link>
+                </Button>
               )}
-              <Button asChild size="sm" className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">
-                <Link href="/conta">Ver meu plano</Link>
-              </Button>
             </div>
           }
         />

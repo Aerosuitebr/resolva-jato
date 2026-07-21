@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Resolva Jato',
-  description: 'Recursos gratuitos, ferramentas profissionais e plano Premium por R$ 4,99/mês',
+  description: 'Currículos, contratos, recibos e propostas — grátis e com qualidade profissional.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,

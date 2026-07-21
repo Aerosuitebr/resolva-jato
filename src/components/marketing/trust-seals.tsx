@@ -5,7 +5,7 @@ const SEALS = [
   { icon: ShieldCheck, label: 'Pagamento seguro', detail: 'Mercado Pago' },
   { icon: Lock, label: 'Dados protegidos', detail: 'HTTPS / SSL' },
   { icon: CreditCard, label: 'Cancele quando quiser', detail: 'Sem fidelidade' },
-  { icon: Sparkles, label: '5 usos grátis', detail: 'Antes de assinar' }
+  { icon: Sparkles, label: 'Ferramentas grátis', detail: 'Qualidade profissional' }
 ] as const;
 
 export function TrustSeals({

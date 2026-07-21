@@ -15,7 +15,7 @@ interface SidebarUserCardProps {
 export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
   const router = useRouter();
   const { session, plan, usage, logout, isAuthenticated } = useAuth();
-  const usageLow = !usage.unlimited && usage.remaining !== null && usage.remaining <= 1;
+  const usageExhausted = !usage.unlimited && usage.remaining === 0;
 
   if (!isAuthenticated) {
     if (collapsed) {
@@ -33,7 +33,9 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
     return (
       <section className="border-b border-white/10 bg-black/10 px-4 py-4">
         <p className="text-sm font-bold text-white">Acesse suas ferramentas</p>
-        <p className="mt-1 text-xs leading-5 text-slate-400">Cadastro grátis com 5 utilizações. A busca continua aberta.</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">
+          Conta grátis para currículos, contratos, recibos e mais. A busca continua aberta.
+        </p>
         <div className="mt-3 flex gap-2">
           <Button size="sm" className="flex-1" onClick={() => router.push('/cadastro')}>
             Criar conta
@@ -67,8 +69,8 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
           <p className="truncate text-xs font-medium text-slate-400">
             {plan.id === 'premium'
               ? 'Premium · uso ilimitado'
-              : usageLow
-                ? `${plan.name} · ${usage.remaining === 0 ? 'saldo esgotado' : `${usage.remaining} de ${usage.limit} restantes`}`
+              : usageExhausted
+                ? 'Grátis · utilizações esgotadas'
                 : plan.name}
           </p>
         </div>
