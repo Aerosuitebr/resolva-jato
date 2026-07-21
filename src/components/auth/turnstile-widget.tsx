@@ -38,6 +38,7 @@ export const TurnstileWidget = forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [missingKey, setMissingKey] = useState(false);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || '';
 
   useImperativeHandle(ref, () => ({
@@ -56,19 +57,36 @@ export const TurnstileWidget = forwardRef<
       return;
     }
 
+    let cancelled = false;
+    setStatus('loading');
+
     function renderWidget() {
-      if (!containerRef.current || !window.turnstile) return;
+      if (cancelled || !containerRef.current || !window.turnstile) return;
       if (widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
-      widgetIdRef.current = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        callback: (token) => onToken(token),
-        'expired-callback': () => onToken(''),
-        'error-callback': () => onToken(''),
-        theme: 'light'
-      });
+      try {
+        widgetIdRef.current = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          callback: (token) => {
+            setStatus('ready');
+            onToken(token);
+          },
+          'expired-callback': () => {
+            setStatus('ready');
+            onToken('');
+          },
+          'error-callback': () => {
+            setStatus('error');
+            onToken('');
+          },
+          theme: 'light'
+        });
+        setStatus('ready');
+      } catch {
+        setStatus('error');
+      }
     }
 
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
@@ -76,16 +94,19 @@ export const TurnstileWidget = forwardRef<
       renderWidget();
     } else if (existing) {
       existing.addEventListener('load', renderWidget);
+      existing.addEventListener('error', () => setStatus('error'));
     } else {
       const script = document.createElement('script');
       script.id = SCRIPT_ID;
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
       script.onload = renderWidget;
+      script.onerror = () => setStatus('error');
       document.head.appendChild(script);
     }
 
     return () => {
+      cancelled = true;
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
@@ -102,5 +123,17 @@ export const TurnstileWidget = forwardRef<
     );
   }
 
-  return <div ref={containerRef} className={cn('flex justify-center', className)} />;
+  return (
+    <div className={cn('space-y-2', className)}>
+      <div ref={containerRef} className="flex min-h-[65px] justify-center" />
+      {status === 'loading' ? (
+        <p className="text-center text-xs text-slate-500">Carregando verificação de segurança…</p>
+      ) : null}
+      {status === 'error' ? (
+        <p className="text-center text-xs text-rose-600">
+          Não foi possível carregar o captcha. Atualize a página ou desative bloqueadores.
+        </p>
+      ) : null}
+    </div>
+  );
 });
