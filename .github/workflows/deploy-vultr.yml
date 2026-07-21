@@ -28,6 +28,7 @@ jobs:
           set -euo pipefail
           HOST="${VULTR_HOST:-216.238.102.195}"
           USER="${VULTR_SSH_USER:-root}"
+          mkdir -p ~/.ssh
           printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/vultr_deploy
           chmod 600 ~/.ssh/vultr_deploy
           SSH_OPTS="-i ~/.ssh/vultr_deploy -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
