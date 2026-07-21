@@ -151,7 +151,7 @@ export function LandingPage() {
               <Logo variant="hero" />
             </div>
             <h1 className="rj-display rj-animate-fade-up-delay mt-6 text-[clamp(1.9rem,4.2vw,3.25rem)] font-extrabold leading-[1.08] tracking-tight text-white">
-              Currículos, contratos, recibos e propostas — grátis e profissionais.
+              Currículos, contratos, recibos e propostas grátis e profissionais.
             </h1>
             <p className="rj-animate-fade-up-delay-2 mt-4 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">
               Crie documentos com cara de profissional em minutos, sem cartão e sem pegadinha.
@@ -193,7 +193,7 @@ export function LandingPage() {
             <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-sky-400/20 via-transparent to-amber-300/10 blur-2xl" />
             <PromoVideoPlayer compact className="relative" />
             <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-sky-200/90">
-              Veja o fluxo em 60 segundos · ao lado do cadastro
+              Veja o fluxo em 60 segundos
             </p>
           </div>
         </div>
