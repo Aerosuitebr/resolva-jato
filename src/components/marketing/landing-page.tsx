@@ -63,7 +63,7 @@ function FeatureChecks({
 
 export function LandingPage() {
   return (
-    <div className="bg-[image:var(--rj-page-bg)]">
+    <div className="overflow-x-hidden bg-[image:var(--rj-page-bg)]">
       {/* Hero: marca + CTAs + vídeo no fluxo de conversão */}
       <section className="relative overflow-hidden bg-[linear-gradient(145deg,#020617_0%,#0f172a_42%,#0c4a6e_100%)] text-white">
         <div className="pointer-events-none absolute inset-0">

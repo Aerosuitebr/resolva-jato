@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CheckCircle2, MessageCircle, ThumbsUp } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ContabilPreview } from '@/components/contabeis/contabil-preview';
@@ -21,6 +21,9 @@ import { SAMPLE_RECEIPT } from '@/lib/recibos/defaults';
 import { SAMPLE_TRABALHO } from '@/lib/trabalhos/defaults';
 import { cn } from '@/lib/utils';
 
+/** Largura A4 em px (96dpi) — base do scale responsivo. */
+const A4_WIDTH_PX = (210 * 96) / 25.4;
+
 type FrameTone = 'light' | 'sky' | 'dark' | 'emerald' | 'amber';
 type FrameTilt = 'flat' | 'left' | 'right';
 
@@ -28,42 +31,96 @@ function LandingDocFrame({
   children,
   tone = 'light',
   tilt = 'flat',
-  maxHeightClass = 'max-h-[440px]',
-  scaleClass = 'scale-[0.46]',
+  /** Fração da altura A4 visível (topo do documento = ângulo mais bonito). */
+  crop = 0.58,
   className
 }: {
   children: ReactNode;
   tone?: FrameTone;
   tilt?: FrameTilt;
-  maxHeightClass?: string;
-  scaleClass?: string;
+  crop?: number;
   className?: string;
 }) {
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.42);
+
+  useEffect(() => {
+    const node = shellRef.current;
+    if (!node) return;
+
+    const update = () => {
+      const width = node.clientWidth;
+      if (width <= 0) return;
+      setScale(Math.min(width / A4_WIDTH_PX, 0.72));
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   const toneClass =
     tone === 'dark'
-      ? 'bg-slate-900/40'
+      ? 'bg-slate-900/35'
       : tone === 'sky'
         ? 'bg-sky-100/90'
         : tone === 'emerald'
           ? 'bg-emerald-100/80'
           : tone === 'amber'
             ? 'bg-amber-100/70'
-            : 'bg-white';
+            : 'bg-slate-100/90';
+
+  const frameHeight = Math.round(A4_WIDTH_PX * (297 / 210) * scale * crop);
 
   return (
-    <div className={cn('relative mx-auto w-full max-w-[420px]', className)}>
-      <div className={cn('absolute -inset-4 rounded-[2rem]', toneClass)} />
-      <div
-        className={cn(
-          'relative overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-100/90 p-2.5 shadow-[0_28px_70px_-28px_rgba(15,23,42,0.55)] sm:p-3',
-          tilt === 'left' && 'sm:[transform:perspective(1400px)_rotateY(7deg)_rotateX(2deg)]',
-          tilt === 'right' && 'sm:[transform:perspective(1400px)_rotateY(-7deg)_rotateX(2deg)]'
-        )}
-      >
-        <div className={cn('overflow-hidden rounded-xl bg-white shadow-md', maxHeightClass)}>
-          <div className={cn('origin-top', scaleClass)} style={{ width: '210mm' }}>
+    <div className={cn('mx-auto w-full max-w-[400px] overflow-hidden px-1', className)}>
+      <div className={cn('rounded-[1.75rem] p-3 sm:p-4', toneClass)}>
+        <div
+          ref={shellRef}
+          className={cn(
+            'relative w-full overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-24px_rgba(15,23,42,0.45)]',
+            tilt === 'left' && 'sm:[transform:perspective(1400px)_rotateY(5deg)_rotateX(1.5deg)]',
+            tilt === 'right' && 'sm:[transform:perspective(1400px)_rotateY(-5deg)_rotateX(1.5deg)]'
+          )}
+          style={{ height: frameHeight || 360 }}
+        >
+          <div
+            className="pointer-events-none absolute left-0 top-0 origin-top-left"
+            style={{
+              width: A4_WIDTH_PX,
+              transform: `scale(${scale})`
+            }}
+          >
             {children}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SoftCard({
+  children,
+  toneClass,
+  tiltClass,
+  className
+}: {
+  children: ReactNode;
+  toneClass: string;
+  tiltClass?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('mx-auto w-full max-w-[400px] overflow-hidden px-1', className)}>
+      <div className={cn('rounded-[1.75rem] p-3 sm:p-4', toneClass)}>
+        <div
+          className={cn(
+            'overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-24px_rgba(15,23,42,0.45)]',
+            tiltClass
+          )}
+        >
+          {children}
         </div>
       </div>
     </div>
@@ -73,7 +130,7 @@ function LandingDocFrame({
 /** Capa universitária ABNT — ângulo limpo, tipografia central. */
 export function LandingTrabalhoPreview() {
   return (
-    <LandingDocFrame tone="light" tilt="left" scaleClass="scale-[0.48]">
+    <LandingDocFrame tone="light" tilt="left" crop={0.62}>
       <TrabalhoPreview data={SAMPLE_TRABALHO} />
     </LandingDocFrame>
   );
@@ -82,7 +139,7 @@ export function LandingTrabalhoPreview() {
 /** Currículo moderno — layout com barra lateral, o mais visual. */
 export function LandingCurriculoPreview() {
   return (
-    <LandingDocFrame tone="sky" tilt="right" scaleClass="scale-[0.44]">
+    <LandingDocFrame tone="sky" tilt="right" crop={0.55}>
       <ResumePreview data={{ ...SAMPLE_RESUME, templateId: 'modern' }} />
     </LandingDocFrame>
   );
@@ -91,7 +148,7 @@ export function LandingCurriculoPreview() {
 /** Proposta criativa — o layout mais marcante da ferramenta. */
 export function LandingPropostaPreview() {
   return (
-    <LandingDocFrame tone="dark" tilt="left" scaleClass="scale-[0.42]" maxHeightClass="max-h-[460px]">
+    <LandingDocFrame tone="dark" tilt="left" crop={0.52}>
       <PropostaPreview data={{ ...SAMPLE_PROPOSAL, templateId: 'criativa' }} />
     </LandingDocFrame>
   );
@@ -100,7 +157,7 @@ export function LandingPropostaPreview() {
 /** Contrato de prestação — cabeçalho e cláusulas reais. */
 export function LandingContratoPreview() {
   return (
-    <LandingDocFrame tone="sky" tilt="right" scaleClass="scale-[0.44]">
+    <LandingDocFrame tone="sky" tilt="right" crop={0.5}>
       <ContratoPreview data={SAMPLE_CONTRATO} />
     </LandingDocFrame>
   );
@@ -109,7 +166,7 @@ export function LandingContratoPreview() {
 /** Recibo moderno — faixa de valor em destaque. */
 export function LandingReciboPreview() {
   return (
-    <LandingDocFrame tone="emerald" tilt="left" scaleClass="scale-[0.48]" maxHeightClass="max-h-[400px]">
+    <LandingDocFrame tone="emerald" tilt="left" crop={0.55}>
       <ReciboPreview data={{ ...SAMPLE_RECEIPT, templateId: 'moderno' }} />
     </LandingDocFrame>
   );
@@ -118,7 +175,7 @@ export function LandingReciboPreview() {
 /** Procuração ad judicia — documento jurídico real. */
 export function LandingJuridicoPreview() {
   return (
-    <LandingDocFrame tone="sky" tilt="right" scaleClass="scale-[0.44]">
+    <LandingDocFrame tone="sky" tilt="right" crop={0.5}>
       <JuridicoPreview data={SAMPLE_LEGAL_DOCUMENT} />
     </LandingDocFrame>
   );
@@ -127,7 +184,7 @@ export function LandingJuridicoPreview() {
 /** Serviços contábeis — CRC e cláusulas reais. */
 export function LandingContabilPreview() {
   return (
-    <LandingDocFrame tone="light" tilt="left" scaleClass="scale-[0.44]">
+    <LandingDocFrame tone="light" tilt="left" crop={0.5}>
       <ContabilPreview data={SAMPLE_CONTABIL_DOCUMENT} />
     </LandingDocFrame>
   );
@@ -136,69 +193,66 @@ export function LandingContabilPreview() {
 /** Lattes no visual acadêmico CNPq (mesma estrutura da ferramenta). */
 export function LandingLattesPreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[420px]">
-      <div className="absolute -inset-4 rounded-[2rem] bg-amber-400/15" />
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_70px_-28px_rgba(15,23,42,0.55)] sm:[transform:perspective(1400px)_rotateY(6deg)_rotateX(2deg)]">
-        <div className="border-b-4 border-amber-500 bg-[#1a365d] px-5 py-4 text-white">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-300">
-            Currículo Lattes · CNPq
+    <SoftCard
+      toneClass="bg-amber-400/15"
+      tiltClass="sm:[transform:perspective(1400px)_rotateY(5deg)_rotateX(1.5deg)]"
+    >
+      <div className="border-b-4 border-amber-500 bg-[#1a365d] px-5 py-4 text-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-300">
+          Currículo Lattes · CNPq
+        </p>
+        <p className="mt-1 text-lg font-bold leading-tight">Prof. Dr. Rafael Nogueira Silva</p>
+        <p className="mt-1 text-xs text-slate-300">Ciência da Computação · Universidade Federal de Minas Gerais</p>
+      </div>
+      <div className="space-y-0 text-[12px] text-slate-800">
+        <section className="border-b border-slate-100 px-5 py-3.5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1a365d]">Resumo</p>
+          <p className="mt-1.5 leading-5 text-slate-600">
+            Pesquisador em inteligência artificial aplicada à educação, com foco em redes neurais e sistemas
+            tutores inteligentes. Bolsista CNPq PQ-2.
           </p>
-          <p className="mt-1 text-lg font-bold leading-tight">Prof. Dr. Rafael Nogueira Silva</p>
-          <p className="mt-1 text-xs text-slate-300">Ciência da Computação · Universidade Federal de Minas Gerais</p>
-        </div>
-        <div className="space-y-0 text-[12px] text-slate-800">
-          <section className="border-b border-slate-100 px-5 py-3.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1a365d]">Resumo</p>
-            <p className="mt-1.5 leading-5 text-slate-600">
-              Pesquisador em inteligência artificial aplicada à educação, com foco em redes neurais e sistemas
-              tutores inteligentes. Bolsista CNPq PQ-2.
-            </p>
+        </section>
+        {[
+          {
+            title: 'Formação acadêmica',
+            lines: [
+              'Doutorado em Ciência da Computação — UFMG (2018)',
+              'Mestrado em Ciência da Computação — Unicamp (2014)',
+              'Bacharelado em Sistemas de Informação — UFG (2011)'
+            ]
+          },
+          {
+            title: 'Produção bibliográfica',
+            lines: ['18 artigos em periódicos Qualis A1–A2', '4 capítulos de livro · 2 livros organizados']
+          },
+          {
+            title: 'Projetos de pesquisa',
+            lines: ['IA na Educação Básica — CNPq (2023–2026)', 'Tutores inteligentes — FAPEMIG (2021–2023)']
+          }
+        ].map((block) => (
+          <section key={block.title} className="border-b border-slate-100 px-5 py-3.5 last:border-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1a365d]">{block.title}</p>
+            <ul className="mt-1.5 space-y-1 text-slate-600">
+              {block.lines.map((line) => (
+                <li key={line} className="leading-5">
+                  · {line}
+                </li>
+              ))}
+            </ul>
           </section>
-          {[
-            {
-              title: 'Formação acadêmica',
-              lines: [
-                'Doutorado em Ciência da Computação — UFMG (2018)',
-                'Mestrado em Ciência da Computação — Unicamp (2014)',
-                'Bacharelado em Sistemas de Informação — UFG (2011)'
-              ]
-            },
-            {
-              title: 'Produção bibliográfica',
-              lines: [
-                '18 artigos em periódicos Qualis A1–A2',
-                '4 capítulos de livro · 2 livros organizados'
-              ]
-            },
-            {
-              title: 'Projetos de pesquisa',
-              lines: ['IA na Educação Básica — CNPq (2023–2026)', 'Tutores inteligentes — FAPEMIG (2021–2023)']
-            }
-          ].map((block) => (
-            <section key={block.title} className="border-b border-slate-100 px-5 py-3.5 last:border-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1a365d]">{block.title}</p>
-              <ul className="mt-1.5 space-y-1 text-slate-600">
-                {block.lines.map((line) => (
-                  <li key={line} className="leading-5">
-                    · {line}
-                  </li>
-                ))}
-              </ul>
-            </section>
+        ))}
+        <div className="flex flex-wrap gap-1.5 bg-slate-50 px-5 py-3">
+          {['Inteligência Artificial', 'Educação', 'Redes Neurais'].map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-900"
+            >
+              {tag}
+            </span>
           ))}
-          <div className="flex flex-wrap gap-1.5 bg-slate-50 px-5 py-3">
-            {['Inteligência Artificial', 'Educação', 'Redes Neurais'].map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-900"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
-    </div>
+    </SoftCard>
   );
 }
 
@@ -211,9 +265,12 @@ export function LandingOrcamentoPreview() {
   const total = itens.reduce((sum, item) => sum + item.quantidade * item.valorUnitario, 0);
 
   return (
-    <div className="relative mx-auto w-full max-w-[380px]">
-      <div className="absolute -inset-3 rounded-[2rem] bg-emerald-100/70" />
-      <div className="relative overflow-hidden rounded-[24px] border border-emerald-200 bg-[linear-gradient(180deg,#fff_0%,#ecfdf5_100%)] p-3 shadow-[0_24px_50px_-24px_rgba(6,95,70,0.45)] sm:[transform:perspective(1200px)_rotateY(5deg)_rotateX(2deg)]">
+    <SoftCard
+      toneClass="bg-emerald-100/70"
+      tiltClass="sm:[transform:perspective(1200px)_rotateY(4deg)_rotateX(1.5deg)]"
+      className="max-w-[380px]"
+    >
+      <div className="bg-[linear-gradient(180deg,#fff_0%,#ecfdf5_100%)] p-3">
         <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Orçamento digital</p>
           <p className="mt-1 text-lg font-extrabold text-slate-900">Elétrica Norte Serviços</p>
@@ -261,7 +318,7 @@ export function LandingOrcamentoPreview() {
           </div>
         </div>
       </div>
-    </div>
+    </SoftCard>
   );
 }
 
@@ -278,9 +335,12 @@ export function LandingPixPreview() {
   });
 
   return (
-    <div className="relative mx-auto w-full max-w-[340px]">
-      <div className="absolute -inset-3 rounded-[2rem] bg-emerald-100/70" />
-      <div className="relative overflow-hidden rounded-[24px] border border-emerald-200 bg-white p-5 shadow-[0_24px_50px_-24px_rgba(6,95,70,0.45)] sm:[transform:perspective(1200px)_rotateY(-5deg)_rotateX(2deg)]">
+    <SoftCard
+      toneClass="bg-emerald-100/70"
+      tiltClass="sm:[transform:perspective(1200px)_rotateY(-4deg)_rotateX(1.5deg)]"
+      className="max-w-[340px]"
+    >
+      <div className="p-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Cobrança Pix</p>
         <p className="mt-1 text-lg font-extrabold text-slate-900">Ana Lima Design</p>
         <p className="text-xs text-slate-500">Mercado Central Ltda</p>
@@ -293,7 +353,7 @@ export function LandingPixPreview() {
           QR Code e Copia e Cola prontos
         </div>
       </div>
-    </div>
+    </SoftCard>
   );
 }
 
@@ -304,72 +364,72 @@ export function LandingAgendaPreview() {
   const today = 14;
 
   return (
-    <div className="relative mx-auto w-full max-w-[420px]">
-      <div className="absolute -inset-4 rounded-[2rem] bg-sky-50" />
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_70px_-28px_rgba(15,23,42,0.4)] sm:[transform:perspective(1400px)_rotateY(-6deg)_rotateX(2deg)]">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-5 py-4 text-white">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-300">Calendário inteligente</p>
-            <p className="mt-0.5 text-base font-bold">Julho 2026</p>
-          </div>
-          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold">Hoje</span>
+    <SoftCard
+      toneClass="bg-sky-50"
+      tiltClass="sm:[transform:perspective(1400px)_rotateY(-5deg)_rotateX(1.5deg)]"
+    >
+      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-5 py-4 text-white">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-300">Calendário inteligente</p>
+          <p className="mt-0.5 text-base font-bold">Julho 2026</p>
         </div>
-        <div className="grid grid-cols-4 gap-2 border-b border-slate-100 px-4 py-3">
-          {[
-            { label: 'Hoje', value: '2' },
-            { label: 'Próximos', value: '5' },
-            { label: 'Conflitos', value: '0' },
-            { label: 'Atrasados', value: '1' }
-          ].map((kpi) => (
-            <div key={kpi.label} className="rounded-xl bg-sky-50 px-2 py-2 text-center">
-              <p className="text-sm font-black text-sky-800">{kpi.value}</p>
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-sky-600">{kpi.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1 px-4 pt-3 text-center text-[10px] font-semibold text-slate-400">
-          {weekLabels.map((d, i) => (
-            <span key={`${d}-${i}`}>{d}</span>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1 px-4 pb-3 pt-1 text-center text-[11px]">
-          {Array.from({ length: 28 }).map((_, i) => {
-            const day = i + 1;
-            const active = day === today;
-            const hasEvent = eventDays.has(day) && !active;
-            return (
-              <div
-                key={day}
-                className={cn(
-                  'relative rounded-lg py-1.5',
-                  active ? 'bg-sky-600 font-bold text-white' : 'text-slate-600'
-                )}
-              >
-                {day}
-                {hasEvent ? (
-                  <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-500" />
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        <div className="space-y-2 border-t border-slate-100 px-4 py-3">
-          {[
-            { time: '09:00', title: 'Reunião com cliente', tag: 'Confirmado', tagClass: 'bg-emerald-100 text-emerald-700' },
-            { time: '14:30', title: 'Entrega da proposta', tag: 'Urgente', tagClass: 'bg-rose-100 text-rose-700' }
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-[11px]"
-            >
-              <p className="font-bold text-slate-900">
-                {item.time} · {item.title}
-              </p>
-              <span className={cn('rounded-full px-2 py-1 text-[10px] font-bold', item.tagClass)}>{item.tag}</span>
-            </div>
-          ))}
-        </div>
+        <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold">Hoje</span>
       </div>
-    </div>
+      <div className="grid grid-cols-4 gap-2 border-b border-slate-100 px-4 py-3">
+        {[
+          { label: 'Hoje', value: '2' },
+          { label: 'Próximos', value: '5' },
+          { label: 'Conflitos', value: '0' },
+          { label: 'Atrasados', value: '1' }
+        ].map((kpi) => (
+          <div key={kpi.label} className="rounded-xl bg-sky-50 px-2 py-2 text-center">
+            <p className="text-sm font-black text-sky-800">{kpi.value}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-sky-600">{kpi.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1 px-4 pt-3 text-center text-[10px] font-semibold text-slate-400">
+        {weekLabels.map((d, i) => (
+          <span key={`${d}-${i}`}>{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1 px-4 pb-3 pt-1 text-center text-[11px]">
+        {Array.from({ length: 28 }).map((_, i) => {
+          const day = i + 1;
+          const active = day === today;
+          const hasEvent = eventDays.has(day) && !active;
+          return (
+            <div
+              key={day}
+              className={cn(
+                'relative rounded-lg py-1.5',
+                active ? 'bg-sky-600 font-bold text-white' : 'text-slate-600'
+              )}
+            >
+              {day}
+              {hasEvent ? (
+                <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-500" />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      <div className="space-y-2 border-t border-slate-100 px-4 py-3">
+        {[
+          { time: '09:00', title: 'Reunião com cliente', tag: 'Confirmado', tagClass: 'bg-emerald-100 text-emerald-700' },
+          { time: '14:30', title: 'Entrega da proposta', tag: 'Urgente', tagClass: 'bg-rose-100 text-rose-700' }
+        ].map((item) => (
+          <div
+            key={item.title}
+            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-[11px]"
+          >
+            <p className="font-bold text-slate-900">
+              {item.time} · {item.title}
+            </p>
+            <span className={cn('rounded-full px-2 py-1 text-[10px] font-bold', item.tagClass)}>{item.tag}</span>
+          </div>
+        ))}
+      </div>
+    </SoftCard>
   );
 }
