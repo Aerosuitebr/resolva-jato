@@ -187,7 +187,7 @@ export default function FerramentasPage() {
   return (
     <AuthGate
       title="Ferramentas profissionais"
-      description="Cadastre-se gratuitamente para acessar currículos, recibos, propostas e agenda. Você começa com 5 utilizações no plano grátis."
+      description="Cadastre-se gratuitamente para acessar currículos, recibos, propostas e agenda."
     >
       <div className="space-y-5">
         <PageHero
@@ -203,23 +203,14 @@ export default function FerramentasPage() {
                     ? `Uso ilimitado até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
                     : 'Uso ilimitado de ferramentas'
                   : usage.remaining === 0
-                    ? 'Sem usos restantes — assine o Premium'
-                    : `Restam ${usage.remaining ?? 0} de ${usage.limit ?? 0} usos no plano grátis`}
+                    ? 'Máximo de utilizações atingido'
+                    : 'Crie e baixe documentos com qualidade profissional'}
               </p>
-              {!usage.unlimited ? (
-                <div className="h-1.5 w-36 overflow-hidden rounded-full bg-white/15" aria-hidden>
-                  <div
-                    className="h-full rounded-full bg-amber-300"
-                    style={{
-                      width: `${Math.min(100, ((usage.current || 0) / (usage.limit || 1)) * 100)}%`
-                    }}
-                  />
-                </div>
-              ) : (
+              {usage.unlimited ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200">
                   Premium ativo
                 </span>
-              )}
+              ) : null}
               <Button asChild size="sm" className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">
                 <Link href="/conta">Ver meu plano</Link>
               </Button>

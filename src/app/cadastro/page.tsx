@@ -72,8 +72,8 @@ function CadastroForm() {
       <div className="space-y-4 text-center">
         <p className="text-lg font-bold text-slate-900">Confirme seu e-mail</p>
         <p className="text-sm leading-6 text-slate-600">
-          Enviamos um link para <strong>{doneEmail}</strong>. Sem a confirmação, as 5 utilizações
-          gratuitas não são liberadas.
+          Enviamos um link para <strong>{doneEmail}</strong>. Sem a confirmação, as ferramentas
+          não são liberadas para salvamento e download.
         </p>
         <Button asChild className="w-full">
           <Link href={`/login?next=${encodeURIComponent(next)}&email=${encodeURIComponent(doneEmail)}`}>
@@ -92,7 +92,7 @@ function CadastroForm() {
       <ReferralCapture />
       <AuthReturnBanner nextHref={searchParams.get('next')} />
       <p className="text-center text-sm text-slate-600">
-        Sem cartão. Confirme o e-mail para liberar 5 usos.
+        Sem cartão. Confirme o e-mail para liberar as ferramentas.
       </p>
       {referralCode ? (
         <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-900">
@@ -163,7 +163,7 @@ function CadastroForm() {
 
 export default function CadastroPage() {
   return (
-    <AuthShell subtitle="Crie sua conta gratuita. Confirme o e-mail e ganhe 5 utilizações.">
+    <AuthShell subtitle="Crie sua conta gratuita. Confirme o e-mail e libere as ferramentas.">
       <Suspense>
         <CadastroForm />
       </Suspense>

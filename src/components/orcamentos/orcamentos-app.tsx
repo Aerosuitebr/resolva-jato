@@ -1091,7 +1091,9 @@ export function OrcamentosApp() {
                 <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
                   {usage.unlimited
                     ? 'Uso ilimitado de ferramentas (Premium)'
-                    : `${usage.remaining ?? 0} de ${usage.limit ?? 0} usos de ferramentas restantes`}
+                    : usage.remaining === 0
+                      ? 'Máximo de utilizações atingido'
+                      : 'Ferramentas profissionais liberadas na sua conta'}
                 </div>
 
                 <ul className="mt-4 space-y-2 border-t border-slate-100 pt-4" aria-label="Checklist do orçamento">

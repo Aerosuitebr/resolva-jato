@@ -40,7 +40,7 @@ export async function sendVerificationEmail(input: {
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a;max-width:560px">
       <h2 style="margin:0 0 12px">Confirme seu e-mail</h2>
       <p>Olá${input.name ? ` ${input.name}` : ''},</p>
-      <p>Para ativar sua conta no Resolva Jato e liberar as 5 utilizações gratuitas, confirme seu e-mail:</p>
+      <p>Para ativar sua conta no Resolva Jato e liberar as ferramentas, confirme seu e-mail:</p>
       <p style="margin:24px 0">
         <a href="${input.verifyUrl}"
            style="display:inline-block;background:#0284c7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700">

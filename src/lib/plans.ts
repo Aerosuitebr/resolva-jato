@@ -43,7 +43,7 @@ export const PLANS: Record<PlanId, Plan> = {
     benefits: [
       { icon: 'search', title: 'Busca ilimitada', text: 'Links úteis sempre grátis' },
       { icon: 'user', title: 'Conta gratuita', text: 'E-mail e senha em segundos' },
-      { icon: 'gift', title: '5 usos/mês', text: 'Teste as ferramentas sem custo' },
+      { icon: 'gift', title: 'Ferramentas grátis', text: 'Teste sem custo para começar' },
       { icon: 'tools', title: 'Todas as ferramentas', text: 'Currículos, contratos, Pix e mais' },
       { icon: 'test', title: 'Sem cartão', text: 'Ideal para experimentar primeiro' }
     ]
@@ -58,7 +58,7 @@ export const PLANS: Record<PlanId, Plan> = {
     highlight: true,
     toolUsesLimit: null,
     benefits: [
-      { icon: 'infinity', title: 'Uso ilimitado', text: 'Salve e baixe sem contar usos' },
+      { icon: 'infinity', title: 'Uso ilimitado', text: 'Salve e baixe sem interrupção' },
       { icon: 'zap', title: '30 dias completos', text: 'Um mês inteiro no seu ritmo' },
       { icon: 'sparkles', title: 'Tudo liberado', text: 'Orçamentos, Pix e demais tools' },
       { icon: 'calendar', title: 'Agenda Premium', text: 'Calendário e alertas' },

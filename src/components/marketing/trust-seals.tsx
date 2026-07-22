@@ -1,11 +1,11 @@
-import { CreditCard, Lock, ShieldCheck, Sparkles } from 'lucide-react';
+import { FileText, Lock, Search, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const SEALS = [
-  { icon: ShieldCheck, label: 'Pagamento seguro', detail: 'Mercado Pago' },
-  { icon: Lock, label: 'Dados protegidos', detail: 'HTTPS / SSL' },
-  { icon: CreditCard, label: 'Cancele quando quiser', detail: 'Sem fidelidade' },
-  { icon: Sparkles, label: '5 usos grátis', detail: 'Antes de assinar' }
+  { icon: FileText, label: 'Documentos profissionais', detail: 'PDF pronto para enviar' },
+  { icon: Sparkles, label: 'Totalmente grátis', detail: 'Sem cartão' },
+  { icon: Search, label: 'Busca gratuita', detail: 'Links úteis sem cadastro' },
+  { icon: Lock, label: 'Dados protegidos', detail: 'HTTPS / SSL' }
 ] as const;
 
 export function TrustSeals({

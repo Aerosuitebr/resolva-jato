@@ -33,7 +33,7 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
     return (
       <section className="border-b border-white/10 bg-black/10 px-4 py-4">
         <p className="text-sm font-bold text-white">Acesse suas ferramentas</p>
-        <p className="mt-1 text-xs leading-5 text-slate-400">Cadastro grátis com 5 utilizações. A busca continua aberta.</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">Cadastro grátis. A busca continua aberta.</p>
         <div className="mt-3 flex gap-2">
           <Button size="sm" className="flex-1" onClick={() => router.push('/cadastro')}>
             Criar conta

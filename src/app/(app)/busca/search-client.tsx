@@ -328,8 +328,8 @@ export function BuscaClient() {
             Digite o problema. A gente aponta a saída.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-            Mais de {publicSearchResources.length} recursos gratuitos para consultar sem limite. Use também
-            nossas ferramentas profissionais com 5 usos incluídos no plano grátis.
+            Mais de {publicSearchResources.length} recursos gratuitos para consultar. Use também
+            nossas ferramentas para gerar documentos profissionais — totalmente grátis.
           </p>
 
           <form
@@ -353,8 +353,8 @@ export function BuscaClient() {
               </Button>
             </div>
             <p className="mt-2 px-1 text-xs text-slate-500">
-              A busca de links é sempre gratuita e ilimitada. Gerar documentos nas ferramentas consome usos do
-              plano.
+              A busca de links é gratuita. As ferramentas geram documentos profissionais em PDF —
+              também de graça.
             </p>
           </form>
 
@@ -524,8 +524,7 @@ export function BuscaClient() {
               Ferramentas Resolva Jato
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Soluções criadas na plataforma para gerar documentos e executar tarefas — com 5 usos no plano
-              grátis.
+              Soluções criadas na plataforma para gerar documentos profissionais — totalmente grátis.
             </p>
           </div>
           <div className="grid gap-5 lg:grid-cols-3">

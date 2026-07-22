@@ -1,62 +1,58 @@
 import Link from 'next/link';
+import { ArrowRight, Check } from 'lucide-react';
 import { AuthAwareLink } from '@/components/auth/auth-aware-link';
-import { PlanBenefitsList } from '@/components/marketing/plan-benefits-list';
 import { TrustSeals } from '@/components/marketing/trust-seals';
 import { Button } from '@/components/ui/button';
-import { PLANS, PLAN_ORDER } from '@/lib/plans';
 
 export function PricingPage() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="mx-auto mb-10 max-w-2xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Escolha como quer usar</h1>
-        <ul className="mx-auto mt-5 max-w-md space-y-2 text-left text-sm leading-6 text-slate-700 sm:text-center">
-          <li>· Busca 100% gratuita</li>
-          <li>· Grátis: 5 usos/mês nas ferramentas</li>
-          <li>· Premium: ilimitado por R$ 4,99/mês</li>
+        <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
+          Totalmente grátis
+        </p>
+        <h1 className="rj-display mt-3 text-4xl font-bold tracking-tight text-slate-900">
+          Documentos profissionais sem pagar nada
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-slate-600">
+          Orçamento com Pix, recibo, contrato, currículo, proposta e capa ABNT — PDF pronto para
+          enviar, sem cartão.
+        </p>
+      </div>
+
+      <div className="mx-auto max-w-3xl overflow-hidden rounded-[28px] border border-slate-800 bg-[linear-gradient(135deg,#0f172a_0%,#064e3b_55%,#047857_100%)] p-8 text-white sm:p-10">
+        <h2 className="rj-display text-3xl font-extrabold tracking-tight">Escritório digital gratuito</h2>
+        <ul className="mt-6 space-y-3 text-sm text-slate-100">
+          {[
+            'Gere PDFs com cara profissional',
+            'Fluxo pensado para WhatsApp',
+            'Busca de recursos sempre aberta',
+            'Sem cartão e sem burocracia'
+          ].map((item) => (
+            <li key={item} className="flex items-center gap-2.5">
+              <Check className="h-4 w-4 shrink-0 text-amber-300" />
+              {item}
+            </li>
+          ))}
         </ul>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Button asChild size="lg" className="flex-1 bg-white font-bold text-slate-950 hover:bg-emerald-50">
+            <AuthAwareLink href="/ferramentas">
+              Gerar documento grátis
+              <ArrowRight className="h-4 w-4" />
+            </AuthAwareLink>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="flex-1 border-white/25 bg-white/5 text-white hover:bg-white/10"
+          >
+            <Link href="/cadastro">Criar conta grátis</Link>
+          </Button>
+        </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        {PLAN_ORDER.map((planId) => {
-          const plan = PLANS[planId];
-          return (
-            <article
-              key={plan.id}
-              className={`rounded-[28px] border p-8 shadow-sm ${
-                plan.highlight ? 'border-sky-300 bg-gradient-to-b from-sky-50 to-white' : 'border-slate-200 bg-white'
-              }`}
-            >
-              <h2 className="text-2xl font-bold text-slate-900">{plan.name}</h2>
-              <p className="mt-1 text-sm text-slate-700">{plan.tagline}</p>
-              <div className="mt-6 flex items-end gap-2">
-                <span className="text-4xl font-bold text-slate-900">{plan.priceLabel}</span>
-                <span className="pb-1 text-sm font-medium text-slate-600">{plan.period}</span>
-              </div>
-              <PlanBenefitsList
-                benefits={plan.benefits}
-                className="mt-6"
-                itemClassName={
-                  plan.highlight
-                    ? 'border-sky-100 bg-sky-50/60'
-                    : 'border-slate-100 bg-slate-50'
-                }
-                iconWrapClassName={
-                  plan.highlight ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'
-                }
-                titleClassName="text-slate-900"
-                textClassName="text-slate-600"
-              />
-              <Button asChild className="mt-8 w-full" variant={plan.highlight ? 'default' : 'outline'}>
-                {plan.id === 'premium' ? (
-                  <AuthAwareLink href="/conta?upgrade=premium">Assinar Premium</AuthAwareLink>
-                ) : (
-                  <Link href="/cadastro">Criar conta grátis</Link>
-                )}
-              </Button>
-            </article>
-          );
-        })}
-      </div>
+
       <TrustSeals className="mt-10" />
     </section>
   );

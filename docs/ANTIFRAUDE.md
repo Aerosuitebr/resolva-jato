@@ -1,10 +1,10 @@
 # Antifraude — Fases 1 e 2
 
-Defense in depth contra múltiplas contas para burlar as 5 utilizações gratuitas.
+Defense in depth contra múltiplas contas para burlar o plano gratuito.
 
 ## Camadas ativas
 
-1. **Confirmação de e-mail** — cadastro cria usuário sem usos; link Resend ativa e libera 5 usos
+1. **Confirmação de e-mail** — cadastro cria usuário sem usos; link Resend ativa e libera o pacote gratuito
 2. **E-mails descartáveis** — lista local de domínios bloqueados no register
 3. **Cloudflare Turnstile** — token validado no servidor
 4. **Rate limit por IP** — cadastro 3/24h, login 10/15min, reenvio 5/h (Postgres)
@@ -29,7 +29,7 @@ Em desenvolvimento, sem Turnstile o captcha é ignorado; sem Resend o link de ve
 
 1. Middleware garante cookie de dispositivo
 2. `POST /api/auth/register` → Turnstile → disposable → blacklist → rate → risk → user + e-mail
-3. Usuário abre link → `GET /api/auth/verify-email` → `emailVerifiedAt` + `ToolUsage` com 5 usos
+3. Usuário abre link → `GET /api/auth/verify-email` → `emailVerifiedAt` + `ToolUsage` com pacote gratuito
 4. Login define cookie httpOnly; `GET /api/auth/me` hidrata o client
 5. `POST /api/billing/consume` debita usos no Postgres
 
@@ -42,4 +42,5 @@ Em desenvolvimento, sem Turnstile o captcha é ignorado; sem Resend o link de ve
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 - `POST /api/billing/consume`
-- `POST /api/billing/grant-premium`
+- `GET /api/billing/confirm` (libera Premium só após pagamento aprovado no Mercado Pago)
+- `POST /api/billing/grant-premium` (desativado — retorna 403)

@@ -13,13 +13,11 @@ import {
 import { AuthAwareLink } from '@/components/auth/auth-aware-link';
 import { Logo } from '@/components/brand/logo';
 import { HeroOrcamentoDemo } from '@/components/marketing/hero-orcamento-demo';
-import { PlanBenefitsList } from '@/components/marketing/plan-benefits-list';
 import { PromoVideoPlayer } from '@/components/marketing/promo-video-section';
 import { TestimonialsSection } from '@/components/marketing/testimonials-section';
 import { TrustSeals } from '@/components/marketing/trust-seals';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { Button } from '@/components/ui/button';
-import { PLANS } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
 const primaryCtaClass =
@@ -86,12 +84,8 @@ function FeatureChecks({
 }
 
 export function LandingPage() {
-  const premium = PLANS.premium;
-  const gratis = PLANS.gratis;
-
   return (
     <div className="bg-[image:var(--rj-page-bg)]">
-      {/* Hero: uma cena — orçamento + Pix */}
       <section className="relative overflow-hidden bg-[linear-gradient(145deg,#020617_0%,#0f172a_42%,#064e3b_100%)] text-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl rj-animate-drift" />
@@ -112,14 +106,14 @@ export function LandingPage() {
               Mande o orçamento. Cliente aprova. Pix na hora.
             </h1>
             <p className="rj-animate-fade-up-delay-2 mt-4 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">
-              Sem app, sem cartão. O cliente abre o link no celular, aprova e você cobra com QR Code
-              pronto para colar no WhatsApp.
+              Documentos profissionais gratuitos. O cliente abre o link no celular, aprova e você
+              cobra com QR Code pronto para o WhatsApp — sem app e sem cartão.
             </p>
             <ul className="rj-animate-fade-up-delay-2 mt-5 space-y-2 text-sm text-slate-200">
               {[
                 'Aprovação no celular, sem instalar nada',
                 'QR Pix e Copia e Cola prontos',
-                `${gratis.toolUsesLimit} usos grátis para testar de verdade`
+                'PDF profissional, totalmente grátis'
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 shrink-0 text-amber-300" />
@@ -144,8 +138,7 @@ export function LandingPage() {
               </Button>
             </div>
             <p className="mt-4 text-xs text-slate-400">
-              Também tem currículo, contrato, proposta e capa ABNT — depois do primeiro Pix.
-              Indique 3 amigos ativos e ganhe 1 mês Premium na sua conta.
+              Também tem currículo, contrato, proposta, recibo e capa ABNT — tudo grátis.
             </p>
           </div>
 
@@ -156,7 +149,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Vídeo curto */}
       <section id="demo-60s" className="scroll-mt-20 border-b border-slate-200 bg-slate-950 text-white">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12 lg:py-16">
           <div>
@@ -173,7 +165,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Profundidade do âncora */}
       <section className="border-b border-slate-200 bg-emerald-50/70">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16">
           <div>
@@ -240,7 +231,6 @@ export function LandingPage() {
 
       <TestimonialsSection />
 
-      {/* Personas */}
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
@@ -302,7 +292,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Outras ferramentas — secundárias */}
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
@@ -312,8 +301,8 @@ export function LandingPage() {
             Depois do Pix, o restante do escritório.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-            Currículo, proposta, contrato e capa ABNT com a mesma qualidade — sem competir com o
-            fluxo que fecha venda.
+            Currículo, proposta, contrato e capa ABNT com a mesma qualidade — documentos
+            profissionais, totalmente grátis.
           </p>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {OTHER_TOOLS.map((tool) => (
@@ -338,21 +327,20 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Preço acessível */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
           <div className="flex flex-col justify-center">
             <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
-              Acesso acessível
+              Totalmente grátis
             </p>
             <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Comece grátis. Ilimitado por um cafezinho.
+              Gere documentos profissionais sem pagar nada.
             </h2>
             <ul className="mt-5 space-y-2.5 text-sm text-slate-700">
               {[
-                'Busca sempre gratuita',
-                `Teste com ${gratis.toolUsesLimit} usos`,
-                'Orçamento + Pix liberados desde o primeiro acesso'
+                'Orçamento, recibo, contrato, currículo e mais',
+                'PDF limpo, pronto para imprimir ou enviar',
+                'Sem cartão e sem burocracia'
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 shrink-0 text-sky-600" />
@@ -363,36 +351,45 @@ export function LandingPage() {
             <TrustSeals className="mt-8" />
           </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-slate-800 bg-[linear-gradient(135deg,#0f172a_0%,#064e3b_55%,#047857_100%)] p-8 text-white rj-price-shine bg-[length:200%_200%]">
-            <p className="text-sm font-semibold text-emerald-200">Premium · 30 dias</p>
-            <div className="mt-3 flex items-end gap-2">
-              <span className="rj-display text-5xl font-extrabold tracking-tight">{premium.priceLabel}</span>
-              <span className="pb-2 text-sm text-slate-300">{premium.period}</span>
-            </div>
-            <PlanBenefitsList
-              benefits={premium.benefits}
-              limit={4}
-              className="mt-6 sm:grid-cols-1"
-              iconWrapClassName="bg-amber-300/15 text-amber-300"
-              titleClassName="text-white"
-              textClassName="text-slate-300"
-            />
+          <div className="overflow-hidden rounded-[28px] border border-slate-800 bg-[linear-gradient(135deg,#0f172a_0%,#064e3b_55%,#047857_100%)] p-8 text-white">
+            <p className="text-sm font-semibold text-emerald-200">Resolva Jato</p>
+            <h3 className="rj-display mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Escritório digital gratuito
+            </h3>
+            <p className="mt-4 text-sm leading-7 text-slate-200">
+              Crie a conta, preencha e baixe. Orçamento com Pix, recibo, proposta, contrato e capa
+              ABNT — com cara profissional, de graça.
+            </p>
+            <ul className="mt-6 space-y-3 text-sm text-slate-100">
+              {[
+                'Documentos em PDF profissionais',
+                'Fluxo pensado para WhatsApp',
+                'Busca de recursos sempre aberta'
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <Check className="h-4 w-4 shrink-0 text-amber-300" />
+                  {item}
+                </li>
+              ))}
+            </ul>
             <div className="mt-8 flex flex-col gap-3">
               <Button asChild size="lg" className="w-full bg-white font-bold text-slate-950 hover:bg-emerald-50">
-                <Link href="/conta?upgrade=premium">Liberar ilimitado</Link>
+                <AuthAwareLink href="/ferramentas">
+                  Gerar documento grátis
+                  <ArrowRight className="h-4 w-4" />
+                </AuthAwareLink>
               </Button>
               <Link
                 href="/cadastro"
                 className="text-center text-sm font-semibold text-emerald-100 underline-offset-4 transition hover:text-white hover:underline"
               >
-                Ou testar {gratis.toolUsesLimit} usos gratuitos
+                Criar conta grátis
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Busca gratuita */}
       <section className="border-y border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-16 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-20">
           <div className="max-w-2xl">
@@ -403,8 +400,8 @@ export function LandingPage() {
               Centenas de links úteis, sem cadastro.
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              A busca continua 100% grátis. As ferramentas usam os {gratis.toolUsesLimit} usos do
-              plano gratuito.
+              A busca continua 100% grátis. E as ferramentas de documentos também — use quando
+              precisar gerar um PDF profissional.
             </p>
           </div>
           <Button asChild size="lg" variant="outline" className="h-12 shrink-0">
@@ -416,13 +413,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* CTA final */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="relative overflow-hidden rounded-[32px] bg-slate-950 px-6 py-12 text-white sm:px-12">
           <div className="pointer-events-none absolute -right-10 top-0 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
           <div className="relative max-w-2xl">
             <h2 className="rj-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Pronto para cobrar pelo WhatsApp?
+              Pronto para gerar documentos profissionais grátis?
             </h2>
             <ul className="mt-5 space-y-2 text-sm text-slate-300">
               <li className="flex gap-2">
@@ -432,6 +428,10 @@ export function LandingPage() {
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                 Cliente aprova no celular e você gera o Pix
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                Currículo, recibo e contrato no mesmo lugar
               </li>
             </ul>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">

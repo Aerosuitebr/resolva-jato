@@ -61,7 +61,7 @@ export const SEO_LANDINGS: Record<SeoLandingId, SeoLandingContent> = {
       },
       {
         q: 'É grátis?',
-        a: 'Sim para começar: há usos gratuitos no mês. A busca de recursos continua sempre grátis.'
+        a: 'Sim — documentos profissionais gratuitos. A busca de recursos também é grátis.'
       },
       {
         q: 'Serve para qualquer serviço?',
@@ -88,7 +88,7 @@ export const SEO_LANDINGS: Record<SeoLandingId, SeoLandingContent> = {
       'Sem cartão para começar'
     ],
     primaryCta: 'Começar como MEI',
-    secondaryCta: { label: 'Ver planos', href: '/planos' },
+    secondaryCta: { label: 'Ver ferramentas', href: '/ferramentas' },
     sections: [
       {
         title: 'Seu cliente já está no WhatsApp',
@@ -138,7 +138,7 @@ export const SEO_LANDINGS: Record<SeoLandingId, SeoLandingContent> = {
       },
       {
         title: 'Menos Word, mais fechamento',
-        body: 'Modelos prontos, PDF em um clique e marca Resolva Jato só no plano gratuito (você controla o essencial).'
+        body: 'Modelos prontos e PDF em um clique — com cara profissional, de graça.'
       }
     ],
     faqs: [
@@ -193,7 +193,7 @@ export const SEO_LANDINGS: Record<SeoLandingId, SeoLandingContent> = {
       },
       {
         q: 'Preciso pagar?',
-        a: 'Não para começar. Há usos gratuitos; a busca de recursos é sempre gratuita.'
+        a: 'Não. Gere documentos profissionais de graça; a busca de recursos também é gratuita.'
       }
     ],
     related: [

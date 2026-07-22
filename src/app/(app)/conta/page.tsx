@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  CalendarClock,
   CheckCircle2,
   Crown,
   Gauge,
@@ -24,7 +23,7 @@ import { PageHero } from '@/components/shared/page-hero';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
-import { formatDate, formatDateTime, grantPremiumMonth, cancelPremium } from '@/lib/billing';
+import { formatDate, formatDateTime, cancelPremium } from '@/lib/billing';
 import { PLANS } from '@/lib/plans';
 
 function firstValidParam(searchParams: URLSearchParams, keys: string[]) {
@@ -77,24 +76,10 @@ function ContaContent() {
       return;
     }
 
-    async function activatePremium(label: string) {
-      await grantPremiumMonth();
-      await refresh();
-      setBillingMessage({ type: 'success', text: label });
-      toast('Premium ativado — uso ilimitado liberado.');
-      router.replace('/conta');
-    }
-
-    // Retorno aprovado sem id (comum no sandbox): libera localmente
-    if (billingStatus === 'success' && mpStatus === 'approved' && !paymentId && !merchantOrderId) {
-      void activatePremium('Pagamento aprovado no Mercado Pago. Premium liberado por 30 dias.');
-      return;
-    }
-
     if (!paymentId && !merchantOrderId) {
       setBillingMessage({
         type: 'pending',
-        text: 'Retorno do Mercado Pago recebido, mas sem id de pagamento. Se o pagamento foi aprovado, use o botão “Já paguei — liberar Premium” abaixo.'
+        text: 'Retorno do Mercado Pago recebido, mas sem id de pagamento. Atualize a página em alguns segundos ou entre em contato se o valor já tiver sido cobrado.'
       });
       router.replace('/conta');
       return;
@@ -104,12 +89,18 @@ function ContaContent() {
     if (paymentId) qs.set('payment_id', paymentId);
     if (merchantOrderId) qs.set('merchant_order_id', merchantOrderId);
 
-    fetch(`/api/billing/confirm?${qs.toString()}`)
+    fetch(`/api/billing/confirm?${qs.toString()}`, { credentials: 'include' })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
-        if (data.approved || mpStatus === 'approved') {
-          await activatePremium('Pagamento aprovado! Premium liberado por 30 dias com uso ilimitado.');
+        if (data.approved) {
+          await refresh();
+          setBillingMessage({
+            type: 'success',
+            text: 'Pagamento aprovado! Premium liberado por 30 dias com uso ilimitado.'
+          });
+          toast('Premium ativado — uso ilimitado liberado.');
+          router.replace('/conta');
         } else {
           setBillingMessage({
             type: 'pending',
@@ -118,14 +109,7 @@ function ContaContent() {
           router.replace('/conta');
         }
       })
-      .catch(async (error) => {
-        // Se o MP já marcou approved na URL, libera mesmo se a API falhar (ex.: rede/token)
-        if (mpStatus === 'approved' || billingStatus === 'success') {
-          await activatePremium(
-            'Pagamento indicado como aprovado. Premium liberado neste aparelho por 30 dias.'
-          );
-          return;
-        }
+      .catch((error) => {
         setBillingMessage({
           type: 'error',
           text: error instanceof Error ? error.message : 'Falha ao confirmar pagamento.'
@@ -158,20 +142,6 @@ function ContaContent() {
       const message = error instanceof Error ? error.message : 'Falha ao abrir o Mercado Pago.';
       setBillingMessage({ type: 'error', text: message });
       toast(message);
-    }
-  }
-
-  async function handleManualPremiumUnlock() {
-    try {
-      await grantPremiumMonth();
-      await refresh();
-      setBillingMessage({
-        type: 'success',
-        text: 'Premium liberado por 30 dias. Uso ilimitado ativo.'
-      });
-      toast('Premium ativado.');
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'Falha ao liberar Premium.');
     }
   }
 
@@ -240,51 +210,41 @@ function ContaContent() {
                 </div>
                 <span
                   className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${
-                    usage.unlimited ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-800'
+                    usage.unlimited
+                      ? 'bg-amber-100 text-amber-900'
+                      : usage.remaining === 0
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-sky-100 text-sky-800'
                   }`}
                 >
                   {usage.unlimited ? <Crown className="h-3.5 w-3.5" /> : <Gauge className="h-3.5 w-3.5" />}
                   {usage.unlimited
                     ? 'Uso ilimitado'
                     : usage.remaining === 0
-                      ? 'Sem usos restantes'
-                      : `Restam ${usage.remaining} usos`}
+                      ? 'Máximo de utilizações atingido'
+                      : 'Ferramentas liberadas'}
                 </span>
               </div>
 
-              {!usage.unlimited ? (
-                <div className="mt-6">
-                  <div className="mb-2 flex justify-between text-sm font-semibold text-slate-700">
-                    <span>Usos já consumidos</span>
-                    <span>
-                      {usage.current} de {usage.limit}
-                    </span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={`h-full rounded-full transition-all ${usage.remaining === 0 ? 'bg-rose-500' : 'bg-sky-600'}`}
-                      style={{
-                        width: `${Math.max(((usage.current || 0) / (usage.limit || 5)) * 100, 0)}%`
-                      }}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Cada salvamento manual ou download concluído consome uma utilização. O salvamento automático não
-                    consome saldo.
-                  </p>
-                  {usage.nextReleaseAt ? (
-                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-                      <div>
-                        <p className="text-sm font-bold text-amber-950">Próxima liberação de 5 utilizações</p>
-                        <p className="mt-1 text-sm text-amber-900">{formatDateTime(usage.nextReleaseAt)}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-xs text-slate-500">
-                      O prazo de 30 dias começa quando a quinta utilização for consumida.
+              {!usage.unlimited && usage.remaining === 0 ? (
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <p className="text-sm font-bold text-rose-950">Máximo de utilizações atingido</p>
+                    <p className="mt-1 text-sm leading-6 text-rose-900">
+                      Assine o Premium para liberar uso ilimitado durante 30 dias
+                      {usage.nextReleaseAt
+                        ? `, ou aguarde um novo pacote em ${formatDateTime(usage.nextReleaseAt)}`
+                        : ''}
+                      .
                     </p>
-                  )}
+                  </div>
+                </div>
+              ) : !usage.unlimited ? (
+                <div className="mt-6">
+                  <p className="text-sm leading-6 text-slate-600">
+                    Crie e baixe currículos, contratos, recibos e outros documentos com qualidade profissional —
+                    sem precisar contar utilizações no dia a dia.
+                  </p>
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
@@ -321,11 +281,6 @@ function ContaContent() {
                 <Button asChild variant="outline">
                   <Link href="/ferramentas">Ir para ferramentas</Link>
                 </Button>
-                {!usage.unlimited ? (
-                  <Button onClick={handleManualPremiumUnlock}>
-                    Já paguei — liberar Premium
-                  </Button>
-                ) : null}
                 <Button variant="ghost" onClick={logout}>
                   Sair da conta
                 </Button>
@@ -396,7 +351,7 @@ function ContaContent() {
             )}
             <p className="mt-4 text-xs leading-5 text-slate-400">
               {plan.id === 'premium'
-                ? 'Após o vencimento, a conta volta ao plano grátis com 5 utilizações.'
+                ? 'Após o vencimento, a conta volta ao plano grátis.'
                 : 'Você será redirecionado ao Checkout Pro do Mercado Pago (cartão, Pix e outros). Após o pagamento aprovado, o Premium libera automaticamente por 30 dias.'}
             </p>
           </aside>

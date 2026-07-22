@@ -209,7 +209,7 @@ export const toolsCatalog: ToolDefinition[] = [
   },
   {
     id: 'agenda',
-    name: 'Agenda Premium',
+    name: 'Agenda',
     description: 'Compromissos, lembretes e visão semanal dos seus prazos.',
     href: '/ferramentas/agenda',
     icon: CalendarDays,
@@ -274,22 +274,22 @@ export function searchTools(query: string): ToolDefinition[] {
 export const valueHighlights = [
   {
     title: 'Busca sempre gratuita',
-    description: 'Explore centenas de links úteis sem cadastro, sem limite e sem custo.',
+    description: 'Explore centenas de links úteis sem cadastro e sem custo.',
     icon: Sparkles
   },
   {
-    title: 'Ferramentas que resolvem',
-    description: 'Orçamentos, Pix, documentos e agenda para a rotina de quem trabalha por conta.',
+    title: 'Documentos profissionais',
+    description: 'Orçamentos, Pix, recibos, contratos e currículo em PDF.',
     icon: FileText
   },
   {
-    title: 'Comece com 5 usos grátis',
-    description: 'Cadastre-se com e-mail e teste as ferramentas antes de decidir assinar.',
+    title: 'Totalmente grátis',
+    description: 'Cadastre-se com e-mail e gere documentos sem pagar nada.',
     icon: GraduationCap
   },
   {
-    title: 'Premium por R$ 4,99/mês',
-    description: 'Quando fizer sentido, desbloqueie uso ilimitado e recursos avançados.',
+    title: 'Pronto para o WhatsApp',
+    description: 'Links, QR Pix e PDFs pensados para enviar na hora.',
     icon: CalendarDays
   }
 ];
