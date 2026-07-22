@@ -43,7 +43,7 @@ export function ContratoPreview({ data }: ContratoPreviewProps) {
 
       <div className="mt-8 space-y-5">
         {data.clauses.map((item, index) => (
-          <section key={item.id}>
+          <section key={item.id} data-rj-keep>
             <h2 className="text-[13px] font-bold uppercase tracking-wide text-slate-950">
               CLÁUSULA {index + 1}ª · {item.title}
             </h2>
@@ -60,30 +60,30 @@ export function ContratoPreview({ data }: ContratoPreviewProps) {
         </p>
       ) : null}
 
-      <p className="mt-8 text-justify text-[13px] leading-7 text-slate-800">
-        E, por estarem assim justas e contratadas, as partes assinam o presente instrumento em 2
-        (duas) vias de igual teor, na presença das testemunhas abaixo, se houver, para que produza
-        seus efeitos legais.
-      </p>
+      <div data-rj-keep className="mt-8">
+        <p className="text-justify text-[13px] leading-7 text-slate-800">
+          E, por estarem assim justas e contratadas, as partes assinam o presente instrumento em 2
+          (duas) vias de igual teor, na presença das testemunhas abaixo, se houver, para que produza
+          seus efeitos legais.
+        </p>
 
-      <p className="mt-8 text-center text-[13px] text-slate-800">
-        {data.city || 'Cidade'}
-        {data.state ? `/${data.state}` : ''}, {data.signedAt || '____/____/______'}.
-      </p>
+        <p className="mt-8 text-center text-[13px] text-slate-800">
+          {data.city || 'Cidade'}
+          {data.state ? `/${data.state}` : ''}, {data.signedAt || '____/____/______'}.
+        </p>
 
-      <div className="mt-14 grid gap-10 sm:grid-cols-2">
-        <SignatureBlock label={meta.labels.partyA} name={data.partyA.name} />
-        <SignatureBlock label={meta.labels.partyB} name={data.partyB.name} />
-      </div>
-
-      {(data.witness1 || data.witness2) && (
-        <div className="mt-12 grid gap-10 sm:grid-cols-2">
-          <SignatureBlock label="Testemunha 1" name={data.witness1} />
-          <SignatureBlock label="Testemunha 2" name={data.witness2} />
+        <div className="mt-14 grid gap-10 sm:grid-cols-2">
+          <SignatureBlock label={meta.labels.partyA} name={data.partyA.name} />
+          <SignatureBlock label={meta.labels.partyB} name={data.partyB.name} />
         </div>
-      )}
 
-      {/* Branding Resolva Jato via DocumentExportShell no export */}
+        {(data.witness1 || data.witness2) && (
+          <div className="mt-12 grid gap-10 sm:grid-cols-2">
+            <SignatureBlock label="Testemunha 1" name={data.witness1} />
+            <SignatureBlock label="Testemunha 2" name={data.witness2} />
+          </div>
+        )}
+      </div>
     </article>
   );
 }

@@ -690,17 +690,11 @@ export function ContabeisApp() {
                 ref={previewRef}
                 className="mx-auto w-full max-w-[210mm] overflow-hidden rounded-[2px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.18),0_2px_8px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"
               >
-                <DocumentExportShell
-                  branded={brandDocuments}
-                  disclaimer="Modelo orientativo. Não substitui assessoria contábil ou jurídica. Revise os termos antes de assinar."
-                >
+                <DocumentExportShell branded={brandDocuments}>
                   <ContabilPreview data={doc} />
                 </DocumentExportShell>
               </div>
             </div>
-            <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-              Modelo orientativo. Revise com atenção antes de usar junto a clientes ou órgãos.
-            </p>
           </section>
         </div>
       </div>

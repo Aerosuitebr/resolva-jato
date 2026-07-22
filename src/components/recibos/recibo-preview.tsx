@@ -138,7 +138,7 @@ function ProfessionalLayout({ data, amountLabel, words, addressLine, dateLabel, 
         </div>
       </div>
 
-      <div className="mt-auto pt-14">
+      <div data-rj-keep className="mt-auto pt-14">
         <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" />
       </div>
     </div>
@@ -269,7 +269,7 @@ function ModernLayout({ data, amountLabel, words, addressLine, dateLabel, cityDa
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col items-end pt-12">
+        <div data-rj-keep className="mt-auto flex flex-col items-end pt-12">
           <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" className="text-right" />
         </div>
       </div>
@@ -363,7 +363,7 @@ function CompactLayout({ data, amountLabel, words, addressLine, dateLabel, cityD
         Firmo o presente recibo dando plena e total quitação do valor acima, nada mais tendo a reclamar.
       </p>
 
-      <div className="mt-auto pt-10">
+      <div data-rj-keep className="mt-auto pt-10">
         <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="md" />
       </div>
     </div>

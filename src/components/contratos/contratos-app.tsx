@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle,
   Download,
   Eraser,
   FilePlus2,
@@ -676,22 +675,9 @@ export function ContratosApp() {
                 ref={previewRef}
                 className="mx-auto w-full max-w-[210mm] overflow-hidden rounded-[2px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.18),0_2px_8px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"
               >
-                <DocumentExportShell
-                  branded={brandDocuments}
-                  disclaimer="Modelo orientativo. Não substitui assessoria jurídica especializada. Revise os termos antes de assinar."
-                >
+                <DocumentExportShell branded={brandDocuments}>
                   <ContratoPreview data={contrato} />
                 </DocumentExportShell>
-              </div>
-            </div>
-            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-              <div>
-                <p className="text-sm font-bold text-amber-950">Modelo orientativo</p>
-                <p className="mt-0.5 text-xs font-medium leading-5 text-amber-900">
-                  Não substitui assessoria jurídica. Revise com atenção e, se necessário, consulte um
-                  profissional de direito.
-                </p>
               </div>
             </div>
           </section>

@@ -45,7 +45,7 @@ export function JuridicoPreview({ data }: JuridicoPreviewProps) {
 
       <div className="mt-8 space-y-5">
         {data.clauses.map((item, index) => (
-          <section key={item.id}>
+          <section key={item.id} data-rj-keep>
             <h2 className="text-[13px] font-bold uppercase tracking-wide text-slate-950">
               {['notificacao', 'hipossuficiencia', 'peticao-inicial', 'contestacao', 'recurso-inominado', 'declaracao-residencia', 'fichamento-jurisprudencia', 'estudo-caso', 'parecer-academico', 'relatorio-audiencia', 'roteiro-peca'].includes(data.templateId)
                 ? `${index + 1}. ${item.title}`
@@ -64,35 +64,35 @@ export function JuridicoPreview({ data }: JuridicoPreviewProps) {
         </p>
       ) : null}
 
-      <ClosingParagraph data={data} />
+      <div data-rj-keep>
+        <ClosingParagraph data={data} />
 
-      <p className="mt-8 text-center text-[13px] text-slate-800">
-        {data.city || 'Cidade'}
-        {data.state ? `/${data.state}` : ''}, {data.signedAt || '____/____/______'}.
-      </p>
+        <p className="mt-8 text-center text-[13px] text-slate-800">
+          {data.city || 'Cidade'}
+          {data.state ? `/${data.state}` : ''}, {data.signedAt || '____/____/______'}.
+        </p>
 
-      {!academic ? (
-        <div className={cn('mt-14 grid gap-10', meta.labels.showPartyB ? 'sm:grid-cols-2' : '')}>
-          <SignatureBlock label={meta.labels.partyA} name={data.partyA.name} />
-          {meta.labels.showPartyB ? (
-            <SignatureBlock label={meta.labels.partyB} name={data.partyB.name} />
-          ) : null}
-        </div>
-      ) : (
-        <div className="mt-10 border-t border-slate-300 pt-4 text-[12px] leading-6 text-slate-600">
-          <p><strong>Autor(a):</strong> {data.partyA.name || '[nome do estudante]'}</p>
-          {data.partyA.email ? <p><strong>Contato:</strong> {data.partyA.email}</p> : null}
-        </div>
-      )}
+        {!academic ? (
+          <div className={cn('mt-14 grid gap-10', meta.labels.showPartyB ? 'sm:grid-cols-2' : '')}>
+            <SignatureBlock label={meta.labels.partyA} name={data.partyA.name} />
+            {meta.labels.showPartyB ? (
+              <SignatureBlock label={meta.labels.partyB} name={data.partyB.name} />
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-10 border-t border-slate-300 pt-4 text-[12px] leading-6 text-slate-600">
+            <p><strong>Autor(a):</strong> {data.partyA.name || '[nome do estudante]'}</p>
+            {data.partyA.email ? <p><strong>Contato:</strong> {data.partyA.email}</p> : null}
+          </div>
+        )}
 
-      {(data.witness1 || data.witness2) && (
-        <div className="mt-12 grid gap-10 sm:grid-cols-2">
-          <SignatureBlock label="Testemunha 1" name={data.witness1} />
-          <SignatureBlock label="Testemunha 2" name={data.witness2} />
-        </div>
-      )}
-
-      {/* Branding Resolva Jato via DocumentExportShell no export */}
+        {(data.witness1 || data.witness2) && (
+          <div className="mt-12 grid gap-10 sm:grid-cols-2">
+            <SignatureBlock label="Testemunha 1" name={data.witness1} />
+            <SignatureBlock label="Testemunha 2" name={data.witness2} />
+          </div>
+        )}
+      </div>
     </article>
   );
 }
