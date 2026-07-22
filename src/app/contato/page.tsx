@@ -16,10 +16,10 @@ export default function ContatoPage() {
       </p>
       <p>
         <a
-          href="mailto:contato@aerosuite.com.br"
+          href="mailto:contato@resolvajato.com.br"
           className="font-semibold text-sky-700 hover:text-sky-800"
         >
-          contato@aerosuite.com.br
+          contato@resolvajato.com.br
         </a>
       </p>
       <p>

@@ -9,8 +9,8 @@ export type SendMailInput = {
 
 export type SendMailResult = { sent: boolean; error?: string; provider?: 'smtp' | 'resend' };
 
-const DEFAULT_FROM = 'Resolva Jato <contato@aerosuite.com.br>';
-const DEFAULT_REPLY_TO = 'contato@aerosuite.com.br';
+const DEFAULT_FROM = 'Resolva Jato <contato@resolvajato.com.br>';
+const DEFAULT_REPLY_TO = 'contato@resolvajato.com.br';
 
 function env(name: string, fallback = '') {
   return (process.env[name] || fallback).trim();
@@ -84,7 +84,7 @@ async function sendViaResend(input: SendMailInput): Promise<SendMailResult> {
   const from =
     env('RESEND_FROM') ||
     env('SMTP_FROM') ||
-    'Resolva Jato <contato@aerosuite.com.br>';
+    'Resolva Jato <contato@resolvajato.com.br>';
   const replyTo = env('SMTP_REPLY_TO') || env('MAIL_REPLY_TO') || DEFAULT_REPLY_TO;
   if (!apiKey) {
     return { sent: false, error: 'RESEND_API_KEY não configurada.' };
