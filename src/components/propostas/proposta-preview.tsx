@@ -175,20 +175,25 @@ function TermsSection({
 
 function ProposalFooter({ data }: { data: ProposalData }) {
   return (
-    <footer className="mt-auto flex items-end justify-between gap-8 border-t border-slate-300 pt-12">
-      <DigitalSignatureDisplay
-        signature={{
-          ...data.signature,
-          text: data.signature.text.trim() || data.company.name
-        }}
-        subtitle={data.company.name || 'Responsável pela proposta'}
-        size="md"
-        className="min-w-64"
-      />
-      <div className="text-right text-[10px] text-slate-600">
-        <p className="font-semibold text-slate-800">{data.company.name || 'Nome ou empresa'}</p>
-        <p>{[data.company.email, data.company.phone].filter(Boolean).join(' · ')}</p>
+    <footer className="mt-auto space-y-4 border-t border-slate-300 pt-12">
+      <div className="flex items-end justify-between gap-8">
+        <DigitalSignatureDisplay
+          signature={{
+            ...data.signature,
+            text: data.signature.text.trim() || data.company.name
+          }}
+          subtitle={data.company.name || 'Responsável pela proposta'}
+          size="md"
+          className="min-w-64"
+        />
+        <div className="text-right text-[10px] text-slate-600">
+          <p className="font-semibold text-slate-800">{data.company.name || 'Nome ou empresa'}</p>
+          <p>{[data.company.email, data.company.phone].filter(Boolean).join(' · ')}</p>
+        </div>
       </div>
+      <p className="text-center text-[9px] font-semibold text-slate-400">
+        Criado no Resolva Jato · resolvajato.com.br
+      </p>
     </footer>
   );
 }

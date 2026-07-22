@@ -14,6 +14,11 @@ import { isBlacklisted } from '@/lib/security/blacklist';
 import { writeAuditLog } from '@/lib/security/audit';
 import { computeRegistrationRisk } from '@/lib/security/risk-score';
 import { getClientIp, getClientUserAgent } from '@/lib/security/request-meta';
+import {
+  ensureUserReferralCode,
+  normalizeReferralCode,
+  resolveReferrerIdByCode
+} from '@/lib/referral';
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -33,6 +38,7 @@ export async function POST(request: Request) {
       language?: string;
       timezone?: string;
       screen?: string;
+      referralCode?: string;
     };
 
     const email = (body.email || '').trim().toLowerCase();
@@ -164,16 +170,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const referralCode = normalizeReferralCode(body.referralCode);
+    const referredByUserId = referralCode
+      ? await resolveReferrerIdByCode(referralCode)
+      : null;
+
     const passwordHash = hashPassword(password);
     const user = await prisma.user.create({
       data: {
         email,
         name,
         passwordHash,
-        riskFlags: risk.reasons.length ? risk.reasons.join(',') : null
+        riskFlags: risk.reasons.length ? risk.reasons.join(',') : null,
+        referredByUserId: referredByUserId || null
       }
     });
 
+    await ensureUserReferralCode(user.id);
     await linkDeviceToUser(deviceId, user.id);
 
     const { raw, verifyUrl } = await createEmailVerificationToken(user.id);
@@ -193,6 +206,8 @@ export async function POST(request: Request) {
         language: body.language,
         timezone: body.timezone,
         screen: body.screen,
+        referredByUserId: referredByUserId || null,
+        referralCode: referralCode || null,
         // só em dev: ajuda a testar sem Resend
         ...(process.env.NODE_ENV !== 'production' ? { verifyToken: raw } : {})
       }

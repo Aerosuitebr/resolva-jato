@@ -94,7 +94,7 @@ export function JuridicoPreview({ data }: JuridicoPreviewProps) {
 
       <p className="mt-auto pt-10 text-center text-[10px] leading-5 text-slate-400">
         Modelo orientativo gerado no Resolva Jato. Não substitui assessoria jurídica especializada.
-        Revise os termos antes de assinar ou protocolar.
+        Revise os termos antes de assinar ou protocolar. Faça o seu em resolvajato.com.br
       </p>
     </article>
   );

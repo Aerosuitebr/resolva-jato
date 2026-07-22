@@ -57,16 +57,24 @@ model PushSubscription {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  name            String
-  passwordHash    String
-  emailVerifiedAt DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastLoginAt     DateTime?
-  lastLoginIp     String?
-  riskFlags       String?
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
+  passwordHash     String
+  emailVerifiedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  lastLoginAt      DateTime?
+  lastLoginIp      String?
+  riskFlags        String?
+  referralCode     String?   @unique
+  referredByUserId String?
+
+  referredBy                 User?                 @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals                  User[]                @relation("UserReferrals")
+  referralActivationsGiven   ReferralActivation[]  @relation("ReferrerActivations")
+  referralActivationReceived ReferralActivation?   @relation("ReferredActivation")
+  referralRewards            ReferralReward[]
 
   verificationTokens EmailVerificationToken[]
   toolUsage          ToolUsage?
@@ -75,7 +83,35 @@ model User {
   auditLogs          AuditLog[]
 
   @@index([createdAt])
+  @@index([referredByUserId])
   @@map("users")
+}
+
+model ReferralActivation {
+  id          String   @id @default(cuid())
+  referrerId  String
+  referredId  String   @unique
+  activatedAt DateTime @default(now())
+
+  referrer User @relation("ReferrerActivations", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("ReferredActivation", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@map("referral_activations")
+}
+
+model ReferralReward {
+  id          String   @id @default(cuid())
+  referrerId  String
+  grantedAt   DateTime @default(now())
+  expiresAt   DateTime
+  batchSize   Int      @default(3)
+  providerRef String   @unique
+
+  referrer User @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@map("referral_rewards")
 }
 
 model EmailVerificationToken {

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { EnablePushButton } from '@/components/push/enable-push-button';
+import { ReferralPanel } from '@/components/referral/referral-panel';
 import { WhatsAppEphemeralInfoCard } from '@/components/whatsapp/whatsapp-ephemeral-info-card';
 import { PageHero } from '@/components/shared/page-hero';
 import { Button } from '@/components/ui/button';
@@ -400,6 +401,8 @@ function ContaContent() {
             </p>
           </aside>
         </section>
+
+        <ReferralPanel />
 
         <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">

@@ -35,6 +35,7 @@ import { createEmptyContrato, SAMPLE_CONTRATO } from '@/lib/contratos/defaults';
 import { deleteContrato, listContratos, saveContrato } from '@/lib/contratos/storage';
 import { CONTRACT_TEMPLATES, getContractTemplate } from '@/lib/contratos/templates';
 import type { ContractClause, ContractData, ContractParty, ContractTemplateId } from '@/lib/contratos/types';
+import { ViralPdfShareModal, useViralPdfShare } from '@/components/marketing/viral-pdf-share';
 import { exportElementToPdf } from '@/lib/curriculo/pdf';
 import type { DocumentFontId } from '@/lib/documents/fonts';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export function ContratosApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const { refresh: refreshAuth } = useAuth();
   const { toast } = useToast();
+  const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [items, setItems] = useState<ContractData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [contrato, setContrato] = useState<ContractData>(createEmptyContrato());
@@ -292,7 +294,7 @@ export function ContratosApp() {
         return;
       }
       refreshAuth();
-      toast('PDF baixado com sucesso!');
+      afterPdfExport('contrato');
     } catch {
       setError('Não foi possível gerar o PDF. Tente novamente.');
     } finally {
@@ -305,6 +307,7 @@ export function ContratosApp() {
       title="Contratos exigem cadastro"
       description="Crie sua conta gratuita para montar contratos sob medida e baixar em PDF."
     >
+      <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-6">
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 px-5 py-6 text-white sm:px-6">

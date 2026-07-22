@@ -31,6 +31,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { performBillableAction } from '@/lib/billing';
+import { ViralPdfShareModal, useViralPdfShare } from '@/components/marketing/viral-pdf-share';
 import { exportElementToPdf } from '@/lib/curriculo/pdf';
 import {
   formatCpfCnpj,
@@ -88,6 +89,7 @@ export function PropostasApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { refresh: refreshAuth } = useAuth();
+  const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [proposals, setProposals] = useState<ProposalData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [proposal, setProposal] = useState<ProposalData>(createEmptyProposal());
@@ -274,6 +276,7 @@ export function PropostasApp() {
         return;
       }
       refreshAuth();
+      afterPdfExport('proposta');
     } catch {
       setError('Não foi possível gerar o PDF. Tente novamente.');
     } finally {
@@ -290,6 +293,7 @@ export function PropostasApp() {
       title="Propostas exigem cadastro"
       description="Crie sua conta gratuita para montar, salvar e baixar propostas comerciais profissionais."
     >
+      <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-5">
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

@@ -7,6 +7,7 @@ import {
   type BillableAction,
   type BillableToolId
 } from '@/lib/billing-server';
+import { maybeActivateReferral } from '@/lib/referral';
 
 export async function POST(request: Request) {
   try {
@@ -58,6 +59,10 @@ export async function POST(request: Request) {
       artifactId: body.artifactId,
       action: body.action
     });
+
+    if (result.charged) {
+      void maybeActivateReferral(user.id).catch((err) => console.error('[referral/activate]', err));
+    }
 
     return NextResponse.json({
       allowed: true,

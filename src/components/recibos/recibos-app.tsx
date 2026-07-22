@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 import { performBillableAction } from '@/lib/billing';
+import { ViralPdfShareModal, useViralPdfShare } from '@/components/marketing/viral-pdf-share';
 import { exportElementToPdf } from '@/lib/curriculo/pdf';
 import type { DocumentFontId } from '@/lib/documents/fonts';
 import { createEmptyReceipt, PAYMENT_METHODS, SAMPLE_RECEIPT } from '@/lib/recibos/defaults';
@@ -82,6 +83,7 @@ export function RecibosApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const { refresh: refreshAuth } = useAuth();
   const { toast } = useToast();
+  const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData>(createEmptyReceipt());
@@ -307,7 +309,7 @@ export function RecibosApp() {
         return;
       }
       refreshAuth();
-      toast('PDF baixado com sucesso');
+      afterPdfExport('recibo');
     } catch {
       setError('Não foi possível gerar o PDF. Tente novamente.');
       toast('Erro ao gerar PDF');
@@ -328,6 +330,7 @@ export function RecibosApp() {
       title="Recibos exigem cadastro"
       description="Crie sua conta gratuita para emitir, salvar e baixar recibos profissionais em PDF."
     >
+      <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-5">
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

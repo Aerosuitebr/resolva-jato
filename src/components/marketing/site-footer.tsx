@@ -12,10 +12,20 @@ const YEAR = new Date().getFullYear();
 
 const NAV_LINKS: { href: string; label: string; authAware?: boolean }[] = [
   { href: '/', label: 'Início' },
+  { href: '/orcamento-com-pix', label: 'Orçamento + Pix' },
   { href: '/busca', label: 'Busca grátis' },
   { href: '/ferramentas', label: 'Ferramentas', authAware: true },
   { href: '/planos', label: 'Planos' }
 ];
+
+const SEO_LINKS = [
+  { href: '/conta', label: 'Indique e ganhe' },
+  { href: '/para/mei', label: 'Para MEI' },
+  { href: '/para/freelancers', label: 'Para freelancers' },
+  { href: '/para/estudantes', label: 'Para estudantes' },
+  { href: '/gerador-de-curriculo', label: 'Currículo' },
+  { href: '/gerador-de-recibo', label: 'Recibo' }
+] as const;
 
 function FooterDisclosure({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -125,6 +135,24 @@ export function SiteFooter() {
             </li>
           </ul>
         </FooterDisclosure>
+      </div>
+
+      <div className="border-t border-slate-800/80">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-300/90">Guias</p>
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+            {SEO_LINKS.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="text-sm font-medium text-slate-400 transition-colors hover:text-sky-300"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <div className="border-t border-slate-800/80">

@@ -36,6 +36,7 @@ import {
   createLanguage,
   SAMPLE_RESUME
 } from '@/lib/curriculo/defaults';
+import { ViralPdfShareModal, useViralPdfShare } from '@/components/marketing/viral-pdf-share';
 import { exportElementToPdf } from '@/lib/curriculo/pdf';
 import { deleteResume, listResumes, saveResume } from '@/lib/curriculo/storage';
 import { RESUME_TEMPLATES } from '@/lib/curriculo/templates';
@@ -74,6 +75,7 @@ export function CurriculoApp() {
   const exportingLockRef = useRef(false);
   const { refresh: refreshAuth } = useAuth();
   const { toast } = useToast();
+  const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [resume, setResume] = useState<ResumeData>(createEmptyResume());
@@ -246,7 +248,7 @@ export function CurriculoApp() {
         return;
       }
       refreshAuth();
-      toast('PDF baixado com sucesso!');
+      afterPdfExport('currículo');
     } catch {
       setError('Não foi possível gerar o PDF. Tente novamente.');
       toast('Erro ao gerar PDF.');
@@ -261,6 +263,7 @@ export function CurriculoApp() {
       title="Currículos exigem cadastro"
       description="Crie sua conta gratuita para montar, salvar e baixar currículos profissionais."
     >
+      <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-5">
         <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <ToolsWatermark />

@@ -140,6 +140,9 @@ function ProfessionalLayout({ data, amountLabel, words, addressLine, dateLabel, 
 
       <div className="mt-auto pt-14">
         <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" />
+        <p className="mt-6 text-center text-[9px] font-semibold text-slate-400">
+          Criado no Resolva Jato · resolvajato.com.br
+        </p>
       </div>
     </div>
   );
@@ -269,8 +272,11 @@ function ModernLayout({ data, amountLabel, words, addressLine, dateLabel, cityDa
           </div>
         </div>
 
-        <div className="mt-auto flex justify-end pt-12">
+        <div className="mt-auto flex flex-col items-end pt-12">
           <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" className="text-right" />
+          <p className="mt-6 w-full text-center text-[9px] font-semibold text-slate-400">
+            Criado no Resolva Jato · resolvajato.com.br
+          </p>
         </div>
       </div>
     </div>
@@ -365,6 +371,9 @@ function CompactLayout({ data, amountLabel, words, addressLine, dateLabel, cityD
 
       <div className="mt-auto pt-10">
         <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="md" />
+        <p className="mt-6 text-center text-[9px] font-semibold text-slate-400">
+          Criado no Resolva Jato · resolvajato.com.br
+        </p>
       </div>
     </div>
   );

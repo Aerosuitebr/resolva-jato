@@ -11,11 +11,16 @@ import {
   ThumbsUp,
   XCircle
 } from 'lucide-react';
+import {
+  ViralRecruitCard,
+  ViralRecruitSticky
+} from '@/components/marketing/viral-recruit-cta';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { formatCurrency } from '@/lib/formatters';
 import type { OrcamentoPublic } from '@/lib/orcamentos/types';
+import { viralOrcamentoSignupPath } from '@/lib/viral-loop';
 import { cn } from '@/lib/utils';
 
 interface OrcamentoPublicViewProps {
@@ -261,8 +266,18 @@ export function OrcamentoPublicView({ initial }: OrcamentoPublicViewProps) {
 
         {error ? <p className="mt-4 text-sm font-medium text-rose-600">{error}</p> : null}
 
-        <p className="mt-8 text-center text-[11px] text-slate-400">
-          Powered by Resolva Jato · Documento gerado para análise do cliente
+        <ViralRecruitCard className="mt-6" />
+
+        <p className="mt-6 text-center text-[11px] text-slate-400">
+          Powered by{' '}
+          <a
+            href={viralOrcamentoSignupPath()}
+            className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Resolva Jato
+          </a>
+          {' · '}
+          Documento gerado para análise do cliente
         </p>
       </div>
 
@@ -308,7 +323,9 @@ export function OrcamentoPublicView({ initial }: OrcamentoPublicViewProps) {
             </Button>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <ViralRecruitSticky />
+      )}
     </div>
   );
 }

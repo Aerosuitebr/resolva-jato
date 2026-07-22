@@ -40,6 +40,7 @@ export function PromoVideoPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [started, setStarted] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -172,7 +173,7 @@ export function PromoVideoPlayer({
         playsInline
         muted={muted}
         preload="metadata"
-        onClick={togglePlay}
+        onClick={loadFailed ? undefined : togglePlay}
         onPlay={() => setPlaying(true)}
         onPause={() => {
           setPlaying(false);
@@ -183,10 +184,29 @@ export function PromoVideoPlayer({
           setControlsVisible(true);
         }}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onLoadedMetadata={(event) => {
+          const next = event.currentTarget.duration;
+          if (!Number.isFinite(next) || next <= 0) {
+            setLoadFailed(true);
+            return;
+          }
+          setLoadFailed(false);
+          setDuration(next);
+        }}
+        onError={() => setLoadFailed(true)}
       />
 
-      {!started ? (
+      {loadFailed ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-slate-950 via-slate-950/85 to-slate-900/70 px-6 text-center">
+          <span className="rounded-full bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200">
+            Fluxo em 60s
+          </span>
+          <p className="max-w-sm text-sm font-semibold leading-6 text-white sm:text-base">
+            Orçamento no celular → cliente aprova → Pix no WhatsApp.
+          </p>
+          <p className="text-xs text-slate-300">O vídeo não carregou neste dispositivo — o fluxo acima é o produto.</p>
+        </div>
+      ) : !started ? (
         <button
           type="button"
           onClick={togglePlay}
@@ -207,6 +227,7 @@ export function PromoVideoPlayer({
         </button>
       ) : null}
 
+      {!loadFailed ? (
       <div
         className={cn(
           'absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent px-3 pb-2.5 pt-8 transition-opacity duration-300 sm:px-4 sm:pb-3 sm:pt-10',
@@ -270,6 +291,7 @@ export function PromoVideoPlayer({
           </button>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
@@ -290,7 +312,7 @@ export function PromoVideoSection() {
             O Resolva Jato em ação
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-300">
-            Currículo, orçamento e Pix — veja o fluxo antes de criar sua conta.
+            Orçamento, aprovação e Pix — veja o fluxo antes de criar sua conta.
           </p>
         </div>
 

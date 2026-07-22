@@ -54,6 +54,7 @@ export async function registerUser(input: {
   email: string;
   password: string;
   turnstileToken?: string;
+  referralCode?: string;
 }) {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
@@ -63,6 +64,7 @@ export async function registerUser(input: {
       email: input.email,
       password: input.password,
       turnstileToken: input.turnstileToken,
+      referralCode: input.referralCode,
       language: typeof navigator !== 'undefined' ? navigator.language : undefined,
       timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined,
       screen:
