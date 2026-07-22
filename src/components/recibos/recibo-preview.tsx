@@ -139,7 +139,14 @@ function ProfessionalLayout({ data, amountLabel, words, addressLine, dateLabel, 
       </div>
 
       <div data-rj-keep className="mt-auto pt-14">
-        <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" />
+        <DigitalSignatureDisplay
+          signature={{
+            ...data.signature,
+            text: data.signature.text.trim() || data.receiver.name
+          }}
+          subtitle={cityDate}
+          size="lg"
+        />
       </div>
     </div>
   );
@@ -270,7 +277,15 @@ function ModernLayout({ data, amountLabel, words, addressLine, dateLabel, cityDa
         </div>
 
         <div data-rj-keep className="mt-auto flex flex-col items-end pt-12">
-          <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="lg" className="text-right" />
+          <DigitalSignatureDisplay
+            signature={{
+              ...data.signature,
+              text: data.signature.text.trim() || data.receiver.name
+            }}
+            subtitle={cityDate}
+            size="lg"
+            className="text-right"
+          />
         </div>
       </div>
     </div>
@@ -364,7 +379,14 @@ function CompactLayout({ data, amountLabel, words, addressLine, dateLabel, cityD
       </p>
 
       <div data-rj-keep className="mt-auto pt-10">
-        <DigitalSignatureDisplay signature={data.signature} subtitle={cityDate} size="md" />
+        <DigitalSignatureDisplay
+          signature={{
+            ...data.signature,
+            text: data.signature.text.trim() || data.receiver.name
+          }}
+          subtitle={cityDate}
+          size="md"
+        />
       </div>
     </div>
   );

@@ -10,12 +10,14 @@ type JsPdf = InstanceType<typeof import('jspdf').jsPDF>;
 
 type KeepRangeMm = { start: number; end: number };
 
-/** Margem inferior segura para impressão (mm) — alinhada ao preview. */
+/** Margem inferior do carimbo do rodapé (mm) — overlay, não reduz a área útil da página. */
 const PRINT_FOOTER_MARGIN_MM = 18;
-/** Última página com menos que isso = órfão (ex.: só assinaturas). */
+/** Última página com conteúdo real abaixo disso = órfão (assinaturas sozinhas). */
 const ORPHAN_LAST_PAGE_MM = 78;
-/** Escala mínima ao tentar caber o excedente na página anterior. */
-const MAX_SQUEEZE = 0.9;
+/** Página final com menos que isso = desnecessária (só marca d’água). */
+const EMPTY_TRAILING_MM = 28;
+/** Escala mínima ao comprimir para evitar página sobrando. */
+const MAX_SQUEEZE = 0.85;
 /** Progresso mínimo na página antes de antecipar quebra por bloco keep. */
 const MIN_PAGE_FILL = 0.3;
 
@@ -155,65 +157,92 @@ function avoidKeepSplit(
 
 /**
  * Planeja os pontos de corte do canvas.
- * Evita partir blocos keep e última página quase vazia (assinaturas órfãs).
+ * Evita partir blocos keep, páginas órfãs e páginas finais vazias (só marca).
  */
 function planPageStarts(
   contentHeightMm: number,
-  usablePageMm: number,
+  pageHeightMm: number,
   keepRanges: KeepRangeMm[]
-): { pageStarts: number[]; scale: number; drawHeightMm: number } {
-  if (contentHeightMm <= usablePageMm) {
-    return { pageStarts: [0], scale: 1, drawHeightMm: contentHeightMm };
+): { pageStarts: number[]; scale: number } {
+  // Cabe em uma página A4 (docs usam min-h 297mm — não reservar rodapé aqui)
+  if (contentHeightMm <= pageHeightMm + 0.75) {
+    return { pageStarts: [0], scale: 1 };
   }
 
-  const rawPages = Math.ceil(contentHeightMm / usablePageMm);
-  const lastPageH = contentHeightMm - (rawPages - 1) * usablePageMm;
+  const rawPages = Math.ceil(contentHeightMm / pageHeightMm);
+  const lastPageH = contentHeightMm - (rawPages - 1) * pageHeightMm;
 
-  // Excedente pequeno: encolhe levemente e cabe em N-1 páginas
+  // Excedente pequeno ou última fatia quase vazia → comprime e elimina a página extra
   if (rawPages > 1 && lastPageH < ORPHAN_LAST_PAGE_MM) {
-    const fitScale = ((rawPages - 1) * usablePageMm) / contentHeightMm;
+    const fitScale = ((rawPages - 1) * pageHeightMm) / contentHeightMm;
     if (fitScale >= MAX_SQUEEZE) {
       return {
-        pageStarts: Array.from({ length: rawPages - 1 }, (_, i) => i * usablePageMm),
-        scale: fitScale,
-        drawHeightMm: contentHeightMm * fitScale
+        pageStarts: Array.from({ length: rawPages - 1 }, (_, i) => i * pageHeightMm),
+        scale: fitScale
       };
     }
   }
 
-  const scale = 1;
-  const drawHeightMm = contentHeightMm;
-  const scaledKeeps = keepRanges;
-
   const pageStarts: number[] = [0];
   let y = 0;
 
-  while (y + usablePageMm < drawHeightMm - 1) {
-    let breakAt = avoidKeepSplit(y, y + usablePageMm, usablePageMm, scaledKeeps);
+  while (y + pageHeightMm < contentHeightMm - 0.75) {
+    let breakAt = avoidKeepSplit(y, y + pageHeightMm, pageHeightMm, keepRanges);
 
-    const remaining = drawHeightMm - breakAt;
-    // Antecipa a quebra se a próxima página ficaria órfã
+    const remaining = contentHeightMm - breakAt;
     if (remaining > 0 && remaining < ORPHAN_LAST_PAGE_MM) {
-      const desiredRemaining = Math.min(ORPHAN_LAST_PAGE_MM, drawHeightMm - y - usablePageMm * MIN_PAGE_FILL);
-      let earlier = drawHeightMm - desiredRemaining;
-      earlier = avoidKeepSplit(y, earlier, usablePageMm, scaledKeeps);
-      if (earlier > y + usablePageMm * MIN_PAGE_FILL && earlier < breakAt) {
+      const desiredRemaining = Math.min(
+        ORPHAN_LAST_PAGE_MM,
+        contentHeightMm - y - pageHeightMm * MIN_PAGE_FILL
+      );
+      let earlier = contentHeightMm - desiredRemaining;
+      earlier = avoidKeepSplit(y, earlier, pageHeightMm, keepRanges);
+      if (earlier > y + pageHeightMm * MIN_PAGE_FILL && earlier < breakAt) {
         breakAt = earlier;
       }
     }
 
     if (breakAt <= y + 2) {
-      breakAt = y + usablePageMm;
+      breakAt = y + pageHeightMm;
+    }
+
+    // Não abrir página se o restante for só “folga” de min-height / padding
+    if (contentHeightMm - breakAt < EMPTY_TRAILING_MM) {
+      const pagesWithoutExtra = pageStarts.length;
+      const squeeze = (pagesWithoutExtra * pageHeightMm) / contentHeightMm;
+      if (squeeze >= MAX_SQUEEZE) {
+        return {
+          pageStarts: Array.from({ length: pagesWithoutExtra }, (_, i) => i * pageHeightMm),
+          scale: squeeze
+        };
+      }
+      break;
     }
 
     pageStarts.push(breakAt);
     y = breakAt;
 
-    // Segurança: não criar páginas infinitas
     if (pageStarts.length > 40) break;
   }
 
-  return { pageStarts, scale, drawHeightMm };
+  // Segurança final: se a última página ficou sem conteúdo útil, comprime
+  if (pageStarts.length > 1) {
+    const lastStart = pageStarts[pageStarts.length - 1];
+    const trailing = contentHeightMm - lastStart;
+    if (trailing < EMPTY_TRAILING_MM) {
+      const n = pageStarts.length - 1;
+      const squeeze = (n * pageHeightMm) / contentHeightMm;
+      if (squeeze >= MAX_SQUEEZE) {
+        return {
+          pageStarts: Array.from({ length: n }, (_, i) => i * pageHeightMm),
+          scale: squeeze
+        };
+      }
+      pageStarts.pop();
+    }
+  }
+
+  return { pageStarts, scale: 1 };
 }
 
 function paintPageSlice(
@@ -266,20 +295,16 @@ export async function exportElementToPdf(
     const imageWidth = pageWidth;
     const contentHeightMm = (canvas.height * imageWidth) / canvas.width;
 
-    // Reserva espaço do rodapé viral para não sobrepor assinaturas
-    const footerReserve = branded ? PRINT_FOOTER_MARGIN_MM + 6 : 8;
-    const usablePageMm = Math.max(pageHeight - footerReserve, pageHeight * 0.85);
-
-    // Mede blocos keep com o mesmo layout do canvas (marca oculta)
+    // Usa a altura cheia da A4. Reservar rodapé aqui gerava página 2 em branco
+    // (docs têm min-h 297mm e o rodapé é carimbado por cima).
     const keepRanges = measureKeepRanges(element, contentHeightMm);
-    const plan = planPageStarts(contentHeightMm, usablePageMm, keepRanges);
+    const plan = planPageStarts(contentHeightMm, pageHeight, keepRanges);
 
     let pageImage = imageData;
     let finalWidth = imageWidth;
     let finalHeight = contentHeightMm;
     let pageStarts = plan.pageStarts;
 
-    // Squeeze leve: redimensiona o canvas para caber sem página órfã
     if (plan.scale < 1) {
       const scaledCanvas = document.createElement('canvas');
       scaledCanvas.width = Math.max(1, Math.round(canvas.width * plan.scale));
@@ -292,11 +317,22 @@ export async function exportElementToPdf(
         pageImage = scaledCanvas.toDataURL('image/png');
         finalWidth = pageWidth;
         finalHeight = (scaledCanvas.height * finalWidth) / scaledCanvas.width;
-        pageStarts = Array.from(
-          { length: Math.max(1, Math.ceil(finalHeight / usablePageMm)) },
-          (_, i) => i * usablePageMm
-        );
+        const fittedPages = Math.max(1, Math.ceil(finalHeight / pageHeight - 1e-6));
+        pageStarts = Array.from({ length: fittedPages }, (_, i) => i * pageHeight);
+        // Se ainda sobrar fatia minúscula por arredondamento, descarta
+        while (pageStarts.length > 1) {
+          const last = pageStarts[pageStarts.length - 1];
+          if (finalHeight - last >= EMPTY_TRAILING_MM) break;
+          pageStarts.pop();
+        }
       }
+    }
+
+    // Remove fatias finais sem conteúdo útil antes de gerar páginas
+    while (pageStarts.length > 1) {
+      const last = pageStarts[pageStarts.length - 1];
+      if (finalHeight - last >= EMPTY_TRAILING_MM) break;
+      pageStarts.pop();
     }
 
     for (let i = 0; i < pageStarts.length; i++) {

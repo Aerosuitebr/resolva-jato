@@ -16,6 +16,13 @@ interface WhatsAppSendModalProps {
   message: string;
   destinationHint?: string;
   onSent?: () => void;
+  /**
+   * Plano grátis: esconde wa.me (texto editável) para a marca ir só pelo servidor.
+   * Premium: permite abrir no WhatsApp Web/app.
+   */
+  allowWaMeFallback?: boolean;
+  /** Exibe aviso de que a referência Resolva Jato não pode ser removida. */
+  brandLocked?: boolean;
 }
 
 function digitsOnly(value: string) {
@@ -36,7 +43,9 @@ export function WhatsAppSendModal({
   toPhone = '',
   message,
   destinationHint = 'Número do destinatário',
-  onSent
+  onSent,
+  allowWaMeFallback = true,
+  brandLocked = false
 }: WhatsAppSendModalProps) {
   const { toast } = useToast();
   const [phone, setPhone] = useState(toPhone);
@@ -153,6 +162,7 @@ export function WhatsAppSendModal({
   }
 
   async function handleCopyAndOpenWaMe() {
+    if (!allowWaMeFallback) return;
     try {
       await navigator.clipboard.writeText(message);
       toast('Mensagem copiada. Abrindo WhatsApp…');
@@ -207,6 +217,12 @@ export function WhatsAppSendModal({
             <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-xs leading-5 text-slate-700">
               {message}
             </pre>
+            {brandLocked ? (
+              <p className="mt-3 text-[11px] leading-4 text-slate-500">
+                A referência Resolva Jato vai no envio pelo servidor e não pode ser removida neste
+                plano. No Premium as mensagens saem sem essa marca.
+              </p>
+            ) : null}
           </div>
 
           <ol className="space-y-2 text-sm leading-6 text-slate-700">
@@ -243,7 +259,11 @@ export function WhatsAppSendModal({
               </p>
             </div>
           ) : (
-            <p className="text-sm text-amber-800">QR ainda não disponível. Aguarde ou use o atalho abaixo.</p>
+            <p className="text-sm text-amber-800">
+              {allowWaMeFallback
+                ? 'QR ainda não disponível. Aguarde ou use o atalho abaixo.'
+                : 'QR ainda não disponível. Aguarde a conexão para enviar pelo servidor.'}
+            </p>
           )}
 
           {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
@@ -257,10 +277,12 @@ export function WhatsAppSendModal({
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
               Enviar e desconectar
             </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={handleCopyAndOpenWaMe}>
-              <ExternalLink className="h-4 w-4" />
-              Abrir no WhatsApp (wa.me)
-            </Button>
+            {allowWaMeFallback ? (
+              <Button type="button" variant="outline" className="w-full" onClick={handleCopyAndOpenWaMe}>
+                <ExternalLink className="h-4 w-4" />
+                Abrir no WhatsApp (wa.me)
+              </Button>
+            ) : null}
             <Button type="button" variant="ghost" className="w-full" onClick={handleCancelDisconnect}>
               <Unplug className="h-4 w-4" />
               Cancelar

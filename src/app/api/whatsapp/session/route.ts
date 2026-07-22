@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { shouldBrandOutboundMessagesByEmail } from '@/lib/billing-server';
 import { isValidEmail } from '@/lib/orcamentos/types';
+import { withViralMessageBrand } from '@/lib/viral-loop';
 import {
   disconnectOwnerSession,
   getOwnerSessionStatus,
@@ -71,7 +73,10 @@ export async function POST(request: Request) {
   }
 }
 
-/** Envia mensagem com a sessão do profissional e desconecta. */
+/**
+ * Envia mensagem com a sessão do profissional e desconecta.
+ * No plano grátis a referência Resolva Jato é forçada no servidor (não editável no Zap).
+ */
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
@@ -87,10 +92,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Informe destino e texto.' }, { status: 400 });
     }
 
+    const branded = await shouldBrandOutboundMessagesByEmail(ownerEmail);
+    const finalText = withViralMessageBrand(text, branded, 'whatsapp_api');
+
     const result = await sendWithOwnerSession({
       ownerEmail,
       toPhone: to,
-      text,
+      text: finalText,
       disconnectAfter
     });
 
@@ -108,6 +116,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       ok: true,
       sent: true,
+      branded,
       disconnected: result.disconnected,
       message: result.disconnected
         ? 'Mensagem enviada e WhatsApp desconectado deste aparelho no servidor.'

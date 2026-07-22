@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { shouldBrandOutboundMessagesByEmail } from '@/lib/billing-server';
 import { getPrisma, isDatabaseConfigured } from '@/lib/db';
 import { buildClienteOrcamentoWhatsAppText } from '@/lib/orcamentos/whatsapp-links';
 import { sendWithOwnerSession } from '@/lib/whatsapp/ephemeral-session';
@@ -21,6 +22,7 @@ function appBaseUrl(request: Request) {
 /**
  * Envia o link ao cliente usando a sessão efêmera do profissional.
  * Requer WhatsApp já conectado (QR). Desconecta após o envio.
+ * Marca Resolva Jato é aplicada no servidor conforme o plano.
  */
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -44,12 +46,14 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Sem permissão para enviar este orçamento.' }, { status: 403 });
     }
 
+    const branded = await shouldBrandOutboundMessagesByEmail(ownerEmail);
     const url = `${appBaseUrl(request)}/orcamento/${row.id}`;
     const text = buildClienteOrcamentoWhatsAppText({
       clienteNome: row.clienteNome,
       profissionalNome: row.profissionalNome,
       total: row.total,
-      url
+      url,
+      branded
     });
 
     const result = await sendWithOwnerSession({
@@ -74,6 +78,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({
       ok: true,
       url,
+      branded,
       disconnected: result.disconnected,
       mode: 'ephemeral',
       message: 'Enviado pelo seu WhatsApp e desconectado em seguida.'

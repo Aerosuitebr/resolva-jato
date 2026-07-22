@@ -218,6 +218,26 @@ export async function cancelPremiumServer(userId: string) {
   await prisma.subscription.deleteMany({ where: { userId } });
 }
 
+/**
+ * Plano grátis = mensagens WhatsApp/e-mail com referência Resolva Jato.
+ * Premium (subscription ativa) = sem marca.
+ */
+export async function shouldBrandOutboundMessagesByEmail(email: string): Promise<boolean> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return true;
+  try {
+    const prisma = getPrisma();
+    const user = await prisma.user.findUnique({
+      where: { email: normalized },
+      select: { id: true }
+    });
+    if (!user) return true;
+    return (await getServerPlanId(user.id)) !== 'premium';
+  } catch {
+    return true;
+  }
+}
+
 export function getPlanForId(planId: PlanId) {
   return getPlan(planId);
 }

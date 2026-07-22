@@ -56,7 +56,7 @@ export function RemoveBrandingUpsell({
         )}
       >
         <p className="text-xs leading-5 text-amber-950">
-          <span className="font-bold">PDF com marca Resolva Jato.</span> Retire as referências por{' '}
+          <span className="font-bold">Marca Resolva Jato no PDF e no WhatsApp.</span> Remova por{' '}
           {premium.priceLabel}
           {premium.period}.
         </p>
@@ -86,12 +86,12 @@ export function RemoveBrandingUpsell({
         {premium.period}.
       </h2>
       <p className="mt-2 text-sm leading-6 text-slate-200">
-        No plano gratuito, o PDF leva o logo discreto e o rodapé do Resolva Jato — assim você
-        avalia a qualidade. Com o Premium, gera documentos profissionais <strong>sem referências</strong>{' '}
-        ao Resolva Jato, com uso ilimitado por 30 dias.
+        No plano gratuito, PDF e mensagens de WhatsApp/e-mail levam a referência do Resolva Jato.
+        No Premium, saem limpos — sem marca — com uso ilimitado por 30 dias.
       </p>
       <ul className="mt-4 space-y-1.5 text-sm text-slate-100">
         <li>· PDF sem rodapé e sem logo</li>
+        <li>· WhatsApp e e-mail sem referência Resolva Jato</li>
         <li>· Salvamentos e downloads ilimitados</li>
         <li>· Vigência clara na sua conta após o pagamento</li>
       </ul>

@@ -47,6 +47,36 @@ export function viralPdfFooterUrl() {
   return viralHomeUrl('pdf_footer');
 }
 
+/** Bloco de marca para WhatsApp / e-mail (plano grátis). */
+export function viralMessageBrandBlock(utmCampaign = 'whatsapp_message') {
+  return (
+    `\n\n—\n` +
+    `Enviado pelo Resolva Jato — cobranças e documentos profissionais gratuitos.\n` +
+    viralHomeUrl(utmCampaign)
+  );
+}
+
+const VIRAL_MESSAGE_BRAND_RE =
+  /\n\n—\nEnviado pelo Resolva Jato[^\n]*\nhttps?:\/\/[^\n]+$/i;
+
+export function stripViralMessageBrand(text: string) {
+  return text.replace(VIRAL_MESSAGE_BRAND_RE, '').trimEnd();
+}
+
+/**
+ * Garante (ou remove) a referência Resolva Jato no final da mensagem.
+ * No plano pago (`branded=false`) a marca é retirada; no grátis é forçada no servidor.
+ */
+export function withViralMessageBrand(
+  text: string,
+  branded: boolean,
+  utmCampaign = 'whatsapp_message'
+) {
+  const base = stripViralMessageBrand(text.trimEnd());
+  if (!branded) return base;
+  return `${base}${viralMessageBrandBlock(utmCampaign)}`;
+}
+
 /** Mensagem para o profissional indicar o Resolva Jato a um colega. */
 export function buildViralInviteWhatsAppText() {
   return (

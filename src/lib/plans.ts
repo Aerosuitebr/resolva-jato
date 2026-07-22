@@ -58,7 +58,7 @@ export const PLANS: Record<PlanId, Plan> = {
     highlight: true,
     toolUsesLimit: null,
     benefits: [
-      { icon: 'sparkles', title: 'Sem marca Resolva Jato', text: 'PDF limpo, sem rodapé nem logo' },
+      { icon: 'sparkles', title: 'Sem marca Resolva Jato', text: 'PDF, WhatsApp e e-mail sem referências' },
       { icon: 'infinity', title: 'Uso ilimitado', text: 'Salve e baixe sem interrupção' },
       { icon: 'zap', title: '30 dias completos', text: 'Vigência clara na sua conta' },
       { icon: 'calendar', title: 'Agenda', text: 'Calendário e alertas' },

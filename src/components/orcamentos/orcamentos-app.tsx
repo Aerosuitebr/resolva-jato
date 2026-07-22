@@ -507,17 +507,31 @@ export function OrcamentosApp() {
   }
 
   function openClienteWhatsAppFallback(link: {
+    id: string;
     clienteWhatsapp: string;
     clienteNome: string;
     url: string;
     total: number;
   }) {
+    // Plano grátis: só envio pelo servidor (marca não editável no Zap)
+    if (!usage.unlimited) {
+      openEphemeralSend({
+        id: link.id,
+        url: link.url,
+        clienteNome: link.clienteNome,
+        clienteWhatsapp: link.clienteWhatsapp,
+        total: link.total,
+        profissionalNome
+      });
+      return;
+    }
     const href = buildClienteWhatsAppSendUrl({
       clienteWhatsapp: link.clienteWhatsapp,
       clienteNome: link.clienteNome,
       profissionalNome,
       url: link.url,
-      total: link.total
+      total: link.total,
+      branded: false
     });
     window.open(href, '_blank', 'noopener,noreferrer');
   }
@@ -1204,10 +1218,12 @@ export function OrcamentosApp() {
                         ? 'Reenviar (conectar → enviar → desconectar)'
                         : 'Enviar com meu WhatsApp (QR)'}
                     </Button>
-                    <Button variant="outline" onClick={() => openClienteWhatsAppFallback(generated)}>
-                      <MessageCircle className="h-4 w-4" />
-                      Abrir WhatsApp manual (contingência)
-                    </Button>
+                    {usage.unlimited ? (
+                      <Button variant="outline" onClick={() => openClienteWhatsAppFallback(generated)}>
+                        <MessageCircle className="h-4 w-4" />
+                        Abrir WhatsApp manual (contingência)
+                      </Button>
+                    ) : null}
                     <Button variant="outline" onClick={() => copyText(generated.url, 'Link copiado.')}>
                       <Copy className="h-4 w-4" />
                       Copiar link
@@ -1470,8 +1486,11 @@ export function OrcamentosApp() {
             clienteNome: sendModal.clienteNome,
             profissionalNome: sendModal.profissionalNome,
             total: sendModal.total,
-            url: sendModal.url
+            url: sendModal.url,
+            branded: !usage.unlimited
           })}
+          allowWaMeFallback={usage.unlimited}
+          brandLocked={!usage.unlimited}
           onSent={() => {
             setGenerated((current) =>
               current && current.id === sendModal.id

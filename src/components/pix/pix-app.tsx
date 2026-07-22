@@ -69,7 +69,7 @@ function validatePixKey(key: string, keyType: PixKeyType): string {
 
 export function PixApp() {
   const { toast } = useToast();
-  const { session, refresh: refreshAuth } = useAuth();
+  const { session, usage, refresh: refreshAuth } = useAuth();
   const [keyType, setKeyType] = useState<PixKeyType>('cpf');
   const [key, setKey] = useState('');
   const [merchantName, setMerchantName] = useState('');
@@ -178,7 +178,8 @@ export function PixApp() {
         merchantName,
         amount: amount > 0 ? amount : undefined,
         brCode,
-        description
+        description,
+        branded: !usage.unlimited
       });
       try {
         await navigator.clipboard.writeText(message);
@@ -526,6 +527,8 @@ export function PixApp() {
             toPhone={clientWhatsapp}
             message={waModal.message}
             destinationHint="WhatsApp do cliente / pagador"
+            allowWaMeFallback={usage.unlimited}
+            brandLocked={!usage.unlimited}
           />
         ) : null}
       </div>

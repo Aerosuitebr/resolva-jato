@@ -1,3 +1,4 @@
+import { withViralMessageBrand } from '@/lib/viral-loop';
 import type { PixKeyType, PixPayloadInput } from './types';
 
 /** CRC16-CCITT (poly 0x1021, init 0xFFFF) usado no BR Code Pix. */
@@ -87,6 +88,7 @@ export function buildPixWhatsAppMessage(input: {
   amount?: number;
   brCode: string;
   description?: string;
+  branded?: boolean;
 }) {
   const lines = [
     `Olá! Segue a cobrança Pix de ${input.merchantName || 'Recebedor'}.`,
@@ -99,5 +101,5 @@ export function buildPixWhatsAppMessage(input: {
     input.brCode
   ].filter((line) => line !== null) as string[];
 
-  return lines.join('\n');
+  return withViralMessageBrand(lines.join('\n'), input.branded !== false, 'pix_whatsapp');
 }
