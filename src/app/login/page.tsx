@@ -70,7 +70,7 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <AuthReturnBanner nextHref={searchParams.get('next')} />
-      <p className="text-center text-sm text-slate-600">Acesse suas ferramentas e acompanhe seu plano.</p>
+      <p className="text-center text-sm text-slate-600">Acesse suas ferramentas e gere documentos profissionais.</p>
       <label className="relative block">
         <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <Input

@@ -13,6 +13,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
+import { DocumentExportShell } from '@/components/brand/document-export-shell';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { ContratoPreview } from '@/components/contratos/contrato-preview';
 import { DocumentFontPicker } from '@/components/shared/document-font-picker';
@@ -53,7 +55,8 @@ const TAB_ORDER = TABS.map((item) => item.id);
 
 export function ContratosApp() {
   const previewRef = useRef<HTMLDivElement>(null);
-  const { refresh: refreshAuth } = useAuth();
+  const { refresh: refreshAuth, usage } = useAuth();
+  const brandDocuments = !usage.unlimited;
   const { toast } = useToast();
   const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [items, setItems] = useState<ContractData[]>([]);
@@ -287,7 +290,8 @@ export function ContratosApp() {
       const safeName = (contrato.title || meta.name || 'contrato').replace(/[^\w\-]+/g, '_');
       const outcome = await performBillableAction(
         { toolId: 'contratos', artifactId: contrato.id, action: 'download' },
-        () => exportElementToPdf(previewRef.current!, `Contrato_${safeName}.pdf`)
+        () =>
+          exportElementToPdf(previewRef.current!, `Contrato_${safeName}.pdf`, { branded: brandDocuments })
       );
       if (!outcome.allowed) {
         setError(outcome.reason || 'Não foi possível exportar o PDF.');
@@ -309,6 +313,7 @@ export function ContratosApp() {
     >
       <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-6">
+        <RemoveBrandingUpsell />
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 px-5 py-6 text-white sm:px-6">
             <ToolsWatermark />
@@ -671,7 +676,12 @@ export function ContratosApp() {
                 ref={previewRef}
                 className="mx-auto w-full max-w-[210mm] overflow-hidden rounded-[2px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.18),0_2px_8px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"
               >
-                <ContratoPreview data={contrato} />
+                <DocumentExportShell
+                  branded={brandDocuments}
+                  disclaimer="Modelo orientativo. Não substitui assessoria jurídica especializada. Revise os termos antes de assinar."
+                >
+                  <ContratoPreview data={contrato} />
+                </DocumentExportShell>
               </div>
             </div>
             <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">

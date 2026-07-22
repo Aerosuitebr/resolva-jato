@@ -12,6 +12,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
+import { DocumentExportShell } from '@/components/brand/document-export-shell';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { ResumePreview } from '@/components/curriculo/resume-preview';
 import { DocumentFontPicker } from '@/components/shared/document-font-picker';
@@ -73,7 +75,8 @@ function isLikelyWebsite(value: string) {
 export function CurriculoApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const exportingLockRef = useRef(false);
-  const { refresh: refreshAuth } = useAuth();
+  const { refresh: refreshAuth, usage } = useAuth();
+  const brandDocuments = !usage.unlimited;
   const { toast } = useToast();
   const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [resumes, setResumes] = useState<ResumeData[]>([]);
@@ -240,7 +243,7 @@ export function CurriculoApp() {
       const safeName = (resume.personal.fullName || resume.title || 'curriculo').replace(/[^\w\-]+/g, '_');
       const outcome = await performBillableAction(
         { toolId: 'curriculo', artifactId: resume.id, action: 'download' },
-        () => exportElementToPdf(previewRef.current!, `${safeName}.pdf`)
+        () => exportElementToPdf(previewRef.current!, `${safeName}.pdf`, { branded: brandDocuments })
       );
       if (!outcome.allowed) {
         setError(outcome.reason || 'Não foi possível exportar o PDF.');
@@ -265,6 +268,7 @@ export function CurriculoApp() {
     >
       <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-5">
+        <RemoveBrandingUpsell />
         <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <ToolsWatermark />
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -992,7 +996,9 @@ export function CurriculoApp() {
             </div>
             <div className="overflow-auto rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
               <div ref={previewRef} className="mx-auto w-full max-w-[210mm]">
-                <ResumePreview data={resume} />
+                <DocumentExportShell branded={brandDocuments}>
+                  <ResumePreview data={resume} />
+                </DocumentExportShell>
               </div>
             </div>
           </div>

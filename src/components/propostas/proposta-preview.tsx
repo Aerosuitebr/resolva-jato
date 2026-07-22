@@ -191,9 +191,6 @@ function ProposalFooter({ data }: { data: ProposalData }) {
           <p>{[data.company.email, data.company.phone].filter(Boolean).join(' · ')}</p>
         </div>
       </div>
-      <p className="text-center text-[9px] font-semibold text-slate-400">
-        Criado no Resolva Jato · resolvajato.com.br
-      </p>
     </footer>
   );
 }

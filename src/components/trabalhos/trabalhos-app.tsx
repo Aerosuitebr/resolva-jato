@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Download, Eraser, FilePlus2, Loader2, Save, Sparkles, Trash2 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
+import { DocumentExportShell } from '@/components/brand/document-export-shell';
 import { TrabalhoPreview } from '@/components/trabalhos/trabalho-preview';
 import { DocumentFontPicker } from '@/components/shared/document-font-picker';
 import { DocumentStickyActions } from '@/components/shared/document-sticky-actions';
@@ -23,7 +25,8 @@ import { cn } from '@/lib/utils';
 
 export function TrabalhosApp() {
   const previewRef = useRef<HTMLDivElement>(null);
-  const { refresh: refreshAuth } = useAuth();
+  const { refresh: refreshAuth, usage } = useAuth();
+  const brandDocuments = !usage.unlimited;
   const [items, setItems] = useState<TrabalhoData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [trabalho, setTrabalho] = useState<TrabalhoData>(createEmptyTrabalho());
@@ -136,7 +139,7 @@ export function TrabalhosApp() {
       const safeName = (trabalho.workTitle || trabalho.title || 'capa-trabalho').replace(/[^\w\-]+/g, '_');
       const outcome = await performBillableAction(
         { toolId: 'trabalhos', artifactId: trabalho.id, action: 'download' },
-        () => exportElementToPdf(previewRef.current!, `Capa_${safeName}.pdf`)
+        () => exportElementToPdf(previewRef.current!, `Capa_${safeName}.pdf`, { branded: brandDocuments })
       );
       if (!outcome.allowed) {
         setError(outcome.reason || 'Não foi possível exportar o PDF.');
@@ -159,6 +162,7 @@ export function TrabalhosApp() {
       description="Crie sua conta gratuita para gerar capas escolares e universitárias em segundos."
     >
       <div className="space-y-5">
+        <RemoveBrandingUpsell />
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
@@ -375,7 +379,9 @@ export function TrabalhosApp() {
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pré-visualização</p>
             <div className="overflow-auto rounded-2xl bg-slate-200/70 p-3 sm:p-4">
               <div ref={previewRef} className="mx-auto w-full max-w-[210mm] origin-top scale-[0.72] sm:scale-90 lg:scale-100">
-                <TrabalhoPreview data={trabalho} />
+                <DocumentExportShell branded={brandDocuments}>
+                  <TrabalhoPreview data={trabalho} />
+                </DocumentExportShell>
               </div>
             </div>
           </div>

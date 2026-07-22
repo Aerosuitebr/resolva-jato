@@ -64,17 +64,17 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             </div>
 
             <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
-              Máximo de utilizações atingido
+              Remova a marca Resolva Jato
             </p>
             <h2 id="upgrade-modal-title" className="rj-display mt-3 max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
-              Desbloqueie o Resolva Jato por apenas{' '}
+              Documentos limpos por apenas{' '}
               <span className="bg-gradient-to-r from-amber-200 via-amber-100 to-sky-200 bg-clip-text text-transparent">
                 {premium.priceLabel}
               </span>
             </h2>
             <ul className="mt-4 max-w-lg space-y-1.5 text-sm text-slate-300">
-              <li>· Continue editando e baixando sem interrupção</li>
-              <li>· Menos que um cafezinho por 30 dias</li>
+              <li>· PDF sem rodapé e sem logo do Resolva Jato</li>
+              <li>· Uso ilimitado por 30 dias</li>
             </ul>
 
             <div className="mt-8 flex flex-wrap items-end gap-3">

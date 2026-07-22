@@ -7,8 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import {
   buildViralPdfShareWhatsAppUrl,
-  viralHomeUrl,
-  viralPdfFooterLabel
+  viralHomeUrl
 } from '@/lib/viral-loop';
 
 export function ViralPdfShareModal({
@@ -49,7 +48,7 @@ export function ViralPdfShareModal({
       <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
         <span>
-          O PDF já leva a marca <strong>{viralPdfFooterLabel()}</strong>. Quem receber pode criar o
+          O PDF leva a marca Resolva Jato no rodapé (e um logo discreto). Quem receber pode criar o
           dele em{' '}
           <a
             className="font-semibold text-sky-700 underline-offset-2 hover:underline"
@@ -59,7 +58,7 @@ export function ViralPdfShareModal({
           >
             resolvajato.com.br
           </a>
-          .
+          . Remova a marca por R$ 4,99/mês na sua conta.
         </span>
       </p>
     </Modal>

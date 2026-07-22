@@ -40,7 +40,7 @@ export function viralOrcamentoToolUrl() {
 }
 
 export function viralPdfFooterLabel() {
-  return `Criado no Resolva Jato · ${VIRAL_SITE_HOST}`;
+  return `Documento gerado pelo Resolva Jato - documentos profissionais totalmente gratuitos. ${VIRAL_SITE_HOST}`;
 }
 
 export function viralPdfFooterUrl() {

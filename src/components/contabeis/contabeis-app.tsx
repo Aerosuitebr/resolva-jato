@@ -13,6 +13,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
+import { DocumentExportShell } from '@/components/brand/document-export-shell';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { ContabilPreview } from '@/components/contabeis/contabil-preview';
 import { DocumentFontPicker } from '@/components/shared/document-font-picker';
@@ -59,7 +61,8 @@ const TAB_ORDER = TABS.map((item) => item.id);
 export function ContabeisApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const exportingLockRef = useRef(false);
-  const { refresh: refreshAuth } = useAuth();
+  const { refresh: refreshAuth, usage } = useAuth();
+  const brandDocuments = !usage.unlimited;
   const [items, setItems] = useState<ContabilDocumentData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [doc, setDoc] = useState<ContabilDocumentData>(createEmptyContabilDocument());
@@ -266,7 +269,8 @@ export function ContabeisApp() {
       const safeName = (doc.title || meta.name || 'documento').replace(/[^\w\-]+/g, '_');
       const outcome = await performBillableAction(
         { toolId: 'contabeis', artifactId: doc.id, action: 'download' },
-        () => exportElementToPdf(previewRef.current!, `Contabil_${safeName}.pdf`)
+        () =>
+          exportElementToPdf(previewRef.current!, `Contabil_${safeName}.pdf`, { branded: brandDocuments })
       );
       if (!outcome.allowed) {
         setError(outcome.reason || 'Não foi possível exportar o PDF.');
@@ -287,6 +291,7 @@ export function ContabeisApp() {
       description="Crie sua conta gratuita para montar contratos, procurações e termos para contadores e despachantes."
     >
       <div className="space-y-5">
+        <RemoveBrandingUpsell />
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-950 via-cyan-950 to-slate-900 px-5 py-6 text-white sm:px-6">
             <ToolsWatermark />
@@ -685,7 +690,12 @@ export function ContabeisApp() {
                 ref={previewRef}
                 className="mx-auto w-full max-w-[210mm] overflow-hidden rounded-[2px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.18),0_2px_8px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"
               >
-                <ContabilPreview data={doc} />
+                <DocumentExportShell
+                  branded={brandDocuments}
+                  disclaimer="Modelo orientativo. Não substitui assessoria contábil ou jurídica. Revise os termos antes de assinar."
+                >
+                  <ContabilPreview data={doc} />
+                </DocumentExportShell>
               </div>
             </div>
             <p className="mt-3 text-center text-xs leading-5 text-slate-500">

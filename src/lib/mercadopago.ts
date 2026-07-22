@@ -77,7 +77,7 @@ export async function createPremiumCheckoutPreference(input: {
       items: [
         {
           id: 'premium-30-dias',
-          title: 'Resolva Jato Premium — 30 dias',
+          title: 'Resolva Jato Premium — documentos sem marca · 30 dias',
           description: 'Utilizações ilimitadas das ferramentas por 30 dias',
           quantity: 1,
           currency_id: 'BRL',

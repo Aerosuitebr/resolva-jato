@@ -97,9 +97,9 @@ function ContaContent() {
           await refresh();
           setBillingMessage({
             type: 'success',
-            text: 'Pagamento aprovado! Premium liberado por 30 dias com uso ilimitado.'
+            text: 'Pagamento aprovado! Premium ativo por 30 dias: documentos sem marca Resolva Jato e uso ilimitado.'
           });
-          toast('Premium ativado — uso ilimitado liberado.');
+          toast('Premium ativado — documentos limpos e uso ilimitado.');
           router.replace('/conta');
         } else {
           setBillingMessage({
@@ -242,8 +242,9 @@ function ContaContent() {
               ) : !usage.unlimited ? (
                 <div className="mt-6">
                   <p className="text-sm leading-6 text-slate-600">
-                    Crie e baixe currículos, contratos, recibos e outros documentos com qualidade profissional —
-                    sem precisar contar utilizações no dia a dia.
+                    Crie e baixe currículos, contratos, recibos e outros documentos com qualidade profissional.
+                    No plano gratuito o PDF inclui a marca Resolva Jato — remova por {PLANS.premium.priceLabel}
+                    {PLANS.premium.period}.
                   </p>
                 </div>
               ) : (
@@ -252,9 +253,11 @@ function ContaContent() {
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
                       <div>
-                        <p className="text-sm font-bold text-emerald-950">Premium ativo — uso ilimitado</p>
+                        <p className="text-sm font-bold text-emerald-950">
+                          Premium ativo — documentos sem marca Resolva Jato
+                        </p>
                         <p className="mt-1 text-sm text-emerald-900">
-                          Sem contador de utilizações. Salve e baixe à vontade até{' '}
+                          PDFs limpos (sem rodapé e sem logo) e uso ilimitado até{' '}
                           {usage.premiumExpiresAt
                             ? formatDateTime(usage.premiumExpiresAt)
                             : 'o fim do período contratado'}
@@ -266,10 +269,10 @@ function ContaContent() {
                   <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                     <Crown className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
                     <div>
-                      <p className="text-sm font-bold text-amber-950">Vigência do plano</p>
+                      <p className="text-sm font-bold text-amber-950">Vigência sem referências</p>
                       <p className="mt-1 text-sm text-amber-900">
                         {usage.premiumExpiresAt
-                          ? `Válido até ${formatDate(usage.premiumExpiresAt)} (${formatDateTime(usage.premiumExpiresAt)})`
+                          ? `Documentos sem marca Resolva Jato até ${formatDate(usage.premiumExpiresAt)} (${formatDateTime(usage.premiumExpiresAt)})`
                           : 'Período de 30 dias a partir da ativação.'}
                       </p>
                     </div>
@@ -304,18 +307,20 @@ function ContaContent() {
               {plan.id === 'premium' ? 'Premium ativo' : 'Premium'}
             </span>
             <h2 className="mt-5 text-2xl font-black">
-              {plan.id === 'premium' ? 'Você está no uso ilimitado.' : 'Trabalhe sem contar utilizações.'}
+              {plan.id === 'premium'
+                ? 'Documentos sem marca Resolva Jato.'
+                : 'Remova as referências do PDF.'}
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-300">
               {plan.id === 'premium' && usage.premiumExpiresAt
-                ? `Plano Premium vigente até ${formatDate(usage.premiumExpiresAt)}. Contador do plano grátis oculto enquanto o Premium estiver ativo.`
-                : `Por ${PLANS.premium.priceLabel}${PLANS.premium.period}, salve e baixe documentos sem limites durante 30 dias. Pagamento via Mercado Pago (cartão, Pix e outros).`}
+                ? `Vigência até ${formatDate(usage.premiumExpiresAt)}: PDFs limpos e uso ilimitado.`
+                : `Por ${PLANS.premium.priceLabel}${PLANS.premium.period}, gere documentos profissionais sem rodapé nem logo do Resolva Jato, com uso ilimitado por 30 dias.`}
             </p>
             <ul className="mt-6 space-y-3">
               {[
+                'PDF sem rodapé e sem logo Resolva Jato',
                 'Salvamentos e downloads ilimitados',
-                'Todas as ferramentas liberadas',
-                '30 dias completos de acesso'
+                '30 dias de vigência claros na conta'
               ].map((benefit) => (
                 <li key={benefit} className="flex items-center gap-3 text-sm text-slate-100">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-sky-300" />
@@ -345,8 +350,8 @@ function ContaContent() {
                 {checkoutLoading
                   ? 'Abrindo Mercado Pago…'
                   : wantsUpgrade
-                    ? 'Pagar Premium no Mercado Pago'
-                    : 'Pagar Premium no Mercado Pago'}
+                    ? 'Remover marca no Mercado Pago'
+                    : 'Remover marca no Mercado Pago'}
               </Button>
             )}
             <p className="mt-4 text-xs leading-5 text-slate-400">

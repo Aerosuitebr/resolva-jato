@@ -51,17 +51,17 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    tagline: 'Uso ilimitado por menos de um cafezinho',
+    tagline: 'Documentos limpos e uso ilimitado',
     price: 4.99,
     priceLabel: 'R$ 4,99',
     period: '/mês',
     highlight: true,
     toolUsesLimit: null,
     benefits: [
+      { icon: 'sparkles', title: 'Sem marca Resolva Jato', text: 'PDF limpo, sem rodapé nem logo' },
       { icon: 'infinity', title: 'Uso ilimitado', text: 'Salve e baixe sem interrupção' },
-      { icon: 'zap', title: '30 dias completos', text: 'Um mês inteiro no seu ritmo' },
-      { icon: 'sparkles', title: 'Tudo liberado', text: 'Orçamentos, Pix e demais tools' },
-      { icon: 'calendar', title: 'Agenda Premium', text: 'Calendário e alertas' },
+      { icon: 'zap', title: '30 dias completos', text: 'Vigência clara na sua conta' },
+      { icon: 'calendar', title: 'Agenda', text: 'Calendário e alertas' },
       { icon: 'layout', title: 'Layouts profissionais', text: 'Documentos com cara de escritório' },
       { icon: 'gift', title: 'Novidades primeiro', text: 'Prioridade em novos recursos' }
     ]

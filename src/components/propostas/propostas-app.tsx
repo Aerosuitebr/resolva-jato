@@ -31,6 +31,8 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { performBillableAction } from '@/lib/billing';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
+import { DocumentExportShell } from '@/components/brand/document-export-shell';
 import { ViralPdfShareModal, useViralPdfShare } from '@/components/marketing/viral-pdf-share';
 import { exportElementToPdf } from '@/lib/curriculo/pdf';
 import {
@@ -88,7 +90,8 @@ async function optimizeLogo(file: File): Promise<string> {
 export function PropostasApp() {
   const previewRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const { refresh: refreshAuth } = useAuth();
+  const { refresh: refreshAuth, usage } = useAuth();
+  const brandDocuments = !usage.unlimited;
   const { afterPdfExport, viralShareOpen, viralShareLabel, closeViralShare } = useViralPdfShare();
   const [proposals, setProposals] = useState<ProposalData[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -269,7 +272,7 @@ export function PropostasApp() {
       const safeName = (proposal.client.name || proposal.number || 'proposta').replace(/[^\w\-]+/g, '_');
       const outcome = await performBillableAction(
         { toolId: 'propostas', artifactId: proposal.id, action: 'download' },
-        () => exportElementToPdf(previewRef.current!, `Proposta_${safeName}.pdf`)
+        () => exportElementToPdf(previewRef.current!, `Proposta_${safeName}.pdf`, { branded: brandDocuments })
       );
       if (!outcome.allowed) {
         setError(outcome.reason || 'Não foi possível exportar o PDF.');
@@ -295,6 +298,7 @@ export function PropostasApp() {
     >
       <ViralPdfShareModal open={viralShareOpen} onClose={closeViralShare} docLabel={viralShareLabel} />
       <div className="space-y-5">
+        <RemoveBrandingUpsell />
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
@@ -860,7 +864,9 @@ export function PropostasApp() {
             </div>
             <div className="overflow-auto rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
               <div ref={previewRef} className="mx-auto w-full max-w-[210mm]">
-                <PropostaPreview data={proposal} />
+                <DocumentExportShell branded={brandDocuments}>
+                  <PropostaPreview data={proposal} />
+                </DocumentExportShell>
               </div>
             </div>
           </div>
