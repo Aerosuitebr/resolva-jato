@@ -204,7 +204,7 @@ export function PromoVideoPlayer({
           <p className="max-w-sm text-sm font-semibold leading-6 text-white sm:text-base">
             Orçamento no celular → cliente aprova → Pix no WhatsApp.
           </p>
-          <p className="text-xs text-slate-300">O vídeo não carregou neste dispositivo — o fluxo acima é o produto.</p>
+          <p className="text-xs text-slate-300">O vídeo não carregou neste dispositivo. O fluxo acima é o produto.</p>
         </div>
       ) : !started ? (
         <button
@@ -312,7 +312,7 @@ export function PromoVideoSection() {
             O Resolva Jato em ação
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-300">
-            Orçamento, aprovação e Pix — veja o fluxo antes de criar sua conta.
+            Orçamento, aprovação e Pix. Veja o fluxo antes de criar sua conta.
           </p>
         </div>
 

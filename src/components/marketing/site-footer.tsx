@@ -52,10 +52,10 @@ export function SiteFooter() {
             <Logo variant="footer" />
           </Link>
           <p className="mt-3 text-[15px] leading-7 text-slate-300">
-            Ferramentas para autônomos, estudantes e pequenos negócios — sem burocracia.
+            Ferramentas para autônomos, estudantes e pequenos negócios, sem burocracia.
           </p>
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            Documentos profissionais e busca de recursos — totalmente grátis.
+            Documentos profissionais e busca de recursos, totalmente grátis.
           </p>
           {!isAuthenticated ? (
             <Link

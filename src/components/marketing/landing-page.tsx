@@ -107,7 +107,7 @@ export function LandingPage() {
             </h1>
             <p className="rj-animate-fade-up-delay-2 mt-4 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">
               Documentos profissionais gratuitos. O cliente abre o link no celular, aprova e você
-              cobra com QR Code pronto para o WhatsApp — sem app e sem cartão.
+              cobra com QR Code pronto para o WhatsApp, sem app e sem cartão.
             </p>
             <ul className="rj-animate-fade-up-delay-2 mt-5 space-y-2 text-sm text-slate-200">
               {[
@@ -138,7 +138,7 @@ export function LandingPage() {
               </Button>
             </div>
             <p className="mt-4 text-xs text-slate-400">
-              Também tem currículo, contrato, proposta, recibo e capa ABNT — tudo grátis.
+              Também tem currículo, contrato, proposta, recibo e capa ABNT, tudo grátis.
             </p>
           </div>
 
@@ -210,7 +210,7 @@ export function LandingPage() {
                 <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
                   1
                 </span>
-                Você manda o link para o cliente — ele já vê o valor profissional.
+                Você manda o link para o cliente. Ele já vê o valor profissional.
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
@@ -301,7 +301,7 @@ export function LandingPage() {
             Depois do Pix, o restante do escritório.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-            Currículo, proposta, contrato e capa ABNT com a mesma qualidade — documentos
+            Currículo, proposta, contrato e capa ABNT com a mesma qualidade. Documentos
             profissionais, totalmente grátis.
           </p>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -358,7 +358,7 @@ export function LandingPage() {
             </h3>
             <p className="mt-4 text-sm leading-7 text-slate-200">
               Crie a conta, preencha e baixe. Orçamento com Pix, recibo, proposta, contrato e capa
-              ABNT — com cara profissional, de graça.
+              ABNT, com cara profissional, de graça.
             </p>
             <ul className="mt-6 space-y-3 text-sm text-slate-100">
               {[
@@ -400,7 +400,7 @@ export function LandingPage() {
               Centenas de links úteis, sem cadastro.
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              A busca continua 100% grátis. E as ferramentas de documentos também — use quando
+              A busca continua 100% grátis. E as ferramentas de documentos também: use quando
               precisar gerar um PDF profissional.
             </p>
           </div>

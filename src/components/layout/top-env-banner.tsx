@@ -14,7 +14,7 @@ export function TopEnvBanner({ visible = true }: TopEnvBannerProps) {
   const usageExhausted = ready && isAuthenticated && !usage.unlimited && usage.remaining === 0;
 
   const message = usageExhausted
-    ? 'Máximo de utilizações atingido — fale conosco ou tente mais tarde'
+    ? 'Máximo de utilizações atingido. Fale conosco ou tente mais tarde'
     : 'Documentos profissionais grátis · busca gratuita';
 
   return (
