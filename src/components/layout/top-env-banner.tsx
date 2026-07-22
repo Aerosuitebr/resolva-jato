@@ -21,7 +21,7 @@ export function TopEnvBanner({ visible = true }: TopEnvBannerProps) {
         ? `Premium ativo · uso ilimitado até ${formatDate(usage.premiumExpiresAt)}`
         : 'Premium ativo · uso ilimitado de ferramentas'
       : usageExhausted
-        ? 'Suas 5 utilizações gratuitas acabaram · Premium libera uso ilimitado por 30 dias'
+        ? 'Máximo de utilizações atingido · Premium libera uso ilimitado por 30 dias'
         : 'Ferramentas profissionais grátis · busca ilimitada';
 
   return (

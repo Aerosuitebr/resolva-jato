@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createPremiumCheckoutPreference, isMercadoPagoConfigured } from '@/lib/mercadopago';
+import {
+  assertMercadoPagoCanReceivePayments,
+  createPremiumCheckoutPreference,
+  isMercadoPagoConfigured
+} from '@/lib/mercadopago';
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +13,8 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
+
+    await assertMercadoPagoCanReceivePayments();
 
     const body = (await request.json().catch(() => ({}))) as {
       email?: string;

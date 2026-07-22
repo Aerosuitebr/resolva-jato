@@ -42,4 +42,5 @@ Em desenvolvimento, sem Turnstile o captcha é ignorado; sem Resend o link de ve
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 - `POST /api/billing/consume`
-- `POST /api/billing/grant-premium`
+- `GET /api/billing/confirm` (libera Premium só após pagamento aprovado no Mercado Pago)
+- `POST /api/billing/grant-premium` (desativado — retorna 403)

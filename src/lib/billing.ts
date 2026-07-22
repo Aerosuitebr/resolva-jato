@@ -91,27 +91,11 @@ export function getSubscriptionState(): SubscriptionState | null {
   };
 }
 
-export async function grantPremiumMonth() {
-  const response = await fetch('/api/billing/grant-premium', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({})
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || 'Falha ao liberar Premium.');
-  }
-  cachedPlanId = 'premium';
-  cachedProgress = {
-    ...cachedProgress,
-    unlimited: true,
-    remaining: null,
-    limit: null,
-    ratio: 0,
-    premiumExpiresAt: data.expiresAt
-  };
-  return getSubscriptionState();
+/** @deprecated Liberação manual removida — use /api/billing/confirm após pagamento. */
+export async function grantPremiumMonth(): Promise<SubscriptionState | null> {
+  throw new Error(
+    'Liberação manual de Premium desativada. Conclua o pagamento no Mercado Pago.'
+  );
 }
 
 export function cancelPremium() {
@@ -135,10 +119,10 @@ export function getCurrentPlan() {
 
 export function setCurrentPlanId(planId: PlanId) {
   if (planId === 'premium') {
-    void grantPremiumMonth();
-  } else {
-    cancelPremium();
+    // Premium só no servidor, após confirmação de pagamento.
+    return;
   }
+  cancelPremium();
 }
 
 export function getUsageState(): UsageState {
@@ -176,8 +160,8 @@ export function canUseTool(): UsageDecision {
       allowed: false,
       upgradeRequired: true,
       reason: cachedProgress.nextReleaseAt
-        ? 'Suas 5 utilizações gratuitas terminaram. Assine o Premium ou aguarde o próximo pacote.'
-        : 'Suas 5 utilizações gratuitas terminaram. Assine o Premium para continuar sem limites.'
+        ? 'Máximo de utilizações atingido. Assine o Premium ou aguarde o próximo pacote.'
+        : 'Máximo de utilizações atingido. Assine o Premium para continuar sem limites.'
     };
   }
   return { allowed: true };
@@ -266,7 +250,8 @@ export function trackToolUse() {
 export function formatToolUsageLabel() {
   const progress = getToolUsageProgress();
   if (progress.unlimited) return 'Ilimitado';
-  return `${progress.remaining} de ${progress.limit} restantes`;
+  if (progress.remaining === 0) return 'Máximo de utilizações atingido';
+  return 'Ferramentas liberadas';
 }
 
 export function formatDateTime(value: string) {

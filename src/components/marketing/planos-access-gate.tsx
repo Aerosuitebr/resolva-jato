@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 /**
  * Planos só aparece quando o usuário precisa de upgrade:
- * utilizações grátis esgotadas ou Premium já encerrado (sem uso ilimitado).
+ * máximo de utilizações atingido ou Premium já encerrado (sem uso ilimitado).
  */
 export function PlanosAccessGate({ children }: { children: ReactNode }) {
   const router = useRouter();

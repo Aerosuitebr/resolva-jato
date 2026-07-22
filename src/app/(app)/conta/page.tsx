@@ -22,7 +22,7 @@ import { PageHero } from '@/components/shared/page-hero';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
-import { formatDate, formatDateTime, grantPremiumMonth, cancelPremium } from '@/lib/billing';
+import { formatDate, formatDateTime, cancelPremium } from '@/lib/billing';
 import { PLANS } from '@/lib/plans';
 
 function firstValidParam(searchParams: URLSearchParams, keys: string[]) {
@@ -75,24 +75,10 @@ function ContaContent() {
       return;
     }
 
-    async function activatePremium(label: string) {
-      await grantPremiumMonth();
-      await refresh();
-      setBillingMessage({ type: 'success', text: label });
-      toast('Premium ativado — uso ilimitado liberado.');
-      router.replace('/conta');
-    }
-
-    // Retorno aprovado sem id (comum no sandbox): libera localmente
-    if (billingStatus === 'success' && mpStatus === 'approved' && !paymentId && !merchantOrderId) {
-      void activatePremium('Pagamento aprovado no Mercado Pago. Premium liberado por 30 dias.');
-      return;
-    }
-
     if (!paymentId && !merchantOrderId) {
       setBillingMessage({
         type: 'pending',
-        text: 'Retorno do Mercado Pago recebido, mas sem id de pagamento. Se o pagamento foi aprovado, use o botão “Já paguei — liberar Premium” abaixo.'
+        text: 'Retorno do Mercado Pago recebido, mas sem id de pagamento. Atualize a página em alguns segundos ou entre em contato se o valor já tiver sido cobrado.'
       });
       router.replace('/conta');
       return;
@@ -102,12 +88,18 @@ function ContaContent() {
     if (paymentId) qs.set('payment_id', paymentId);
     if (merchantOrderId) qs.set('merchant_order_id', merchantOrderId);
 
-    fetch(`/api/billing/confirm?${qs.toString()}`)
+    fetch(`/api/billing/confirm?${qs.toString()}`, { credentials: 'include' })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
-        if (data.approved || mpStatus === 'approved') {
-          await activatePremium('Pagamento aprovado! Premium liberado por 30 dias com uso ilimitado.');
+        if (data.approved) {
+          await refresh();
+          setBillingMessage({
+            type: 'success',
+            text: 'Pagamento aprovado! Premium liberado por 30 dias com uso ilimitado.'
+          });
+          toast('Premium ativado — uso ilimitado liberado.');
+          router.replace('/conta');
         } else {
           setBillingMessage({
             type: 'pending',
@@ -116,14 +108,7 @@ function ContaContent() {
           router.replace('/conta');
         }
       })
-      .catch(async (error) => {
-        // Se o MP já marcou approved na URL, libera mesmo se a API falhar (ex.: rede/token)
-        if (mpStatus === 'approved' || billingStatus === 'success') {
-          await activatePremium(
-            'Pagamento indicado como aprovado. Premium liberado neste aparelho por 30 dias.'
-          );
-          return;
-        }
+      .catch((error) => {
         setBillingMessage({
           type: 'error',
           text: error instanceof Error ? error.message : 'Falha ao confirmar pagamento.'
@@ -156,20 +141,6 @@ function ContaContent() {
       const message = error instanceof Error ? error.message : 'Falha ao abrir o Mercado Pago.';
       setBillingMessage({ type: 'error', text: message });
       toast(message);
-    }
-  }
-
-  async function handleManualPremiumUnlock() {
-    try {
-      await grantPremiumMonth();
-      await refresh();
-      setBillingMessage({
-        type: 'success',
-        text: 'Premium liberado por 30 dias. Uso ilimitado ativo.'
-      });
-      toast('Premium ativado.');
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'Falha ao liberar Premium.');
     }
   }
 
@@ -249,7 +220,7 @@ function ContaContent() {
                   {usage.unlimited
                     ? 'Uso ilimitado'
                     : usage.remaining === 0
-                      ? '5 utilizações gratuitas esgotadas'
+                      ? 'Máximo de utilizações atingido'
                       : 'Ferramentas liberadas'}
                 </span>
               </div>
@@ -257,9 +228,9 @@ function ContaContent() {
               {!usage.unlimited && usage.remaining === 0 ? (
                 <div className="mt-6 space-y-4">
                   <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                    <p className="text-sm font-bold text-rose-950">Suas 5 utilizações gratuitas acabaram</p>
+                    <p className="text-sm font-bold text-rose-950">Máximo de utilizações atingido</p>
                     <p className="mt-1 text-sm leading-6 text-rose-900">
-                      Você usou o pacote gratuito. Assine o Premium para liberar uso ilimitado durante 30 dias
+                      Assine o Premium para liberar uso ilimitado durante 30 dias
                       {usage.nextReleaseAt
                         ? `, ou aguarde um novo pacote em ${formatDateTime(usage.nextReleaseAt)}`
                         : ''}
@@ -309,11 +280,6 @@ function ContaContent() {
                 <Button asChild variant="outline">
                   <Link href="/ferramentas">Ir para ferramentas</Link>
                 </Button>
-                {!usage.unlimited ? (
-                  <Button onClick={handleManualPremiumUnlock}>
-                    Já paguei — liberar Premium
-                  </Button>
-                ) : null}
                 <Button variant="ghost" onClick={logout}>
                   Sair da conta
                 </Button>
@@ -338,12 +304,12 @@ function ContaContent() {
                   }`}
                 >
                   <Crown className="h-3.5 w-3.5" />
-                  {plan.id === 'premium' ? 'Premium ativo' : 'Pacote gratuito esgotado'}
+                  {plan.id === 'premium' ? 'Premium ativo' : 'Máximo de utilizações atingido'}
                 </span>
                 <h2 className="mt-5 text-2xl font-black">
                   {plan.id === 'premium'
                     ? 'Você está no uso ilimitado.'
-                    : 'Suas 5 utilizações gratuitas acabaram.'}
+                    : 'Máximo de utilizações atingido.'}
                 </h2>
                 <p className={`mt-3 text-sm leading-7 ${plan.id === 'premium' || usage.remaining === 0 ? 'text-slate-300' : 'text-slate-600'}`}>
                   {plan.id === 'premium' && usage.premiumExpiresAt

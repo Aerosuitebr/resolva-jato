@@ -205,7 +205,7 @@ export default function FerramentasPage() {
                     ? `Ativo até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
                     : 'Salve e baixe à vontade'
                   : usage.remaining === 0
-                    ? 'Suas 5 utilizações gratuitas acabaram'
+                    ? 'Máximo de utilizações atingido'
                     : 'Crie e baixe documentos com qualidade profissional'}
               </p>
               {usage.unlimited ? (

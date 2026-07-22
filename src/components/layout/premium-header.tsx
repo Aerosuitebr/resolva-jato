@@ -32,13 +32,13 @@ export function PremiumHeader() {
       : 'Premium · uso ilimitado'
     : `Plano ${plan.name}`;
 
-  // Só falamos de limite/Premium quando as utilizações gratuitas acabaram.
+  // Só falamos de limite/Premium quando o máximo de utilizações foi atingido.
   const usageExhausted = !usage.unlimited && usage.remaining === 0;
 
   const usageSubtitle = usage.unlimited
     ? 'Uso ilimitado de ferramentas'
     : usageExhausted
-      ? '5 utilizações gratuitas esgotadas'
+      ? 'Máximo de utilizações atingido'
       : null;
 
   return (
@@ -115,7 +115,7 @@ export function PremiumHeader() {
                 aria-label={`Minha conta, plano ${plan.name}`}
               >
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-[10px] text-white">{initials}</span>
-                {usage.unlimited ? 'Premium' : usageExhausted ? 'Esgotado' : plan.name}
+                {usage.unlimited ? 'Premium' : usageExhausted ? 'Máximo' : plan.name}
               </Link>
             </>
           ) : (

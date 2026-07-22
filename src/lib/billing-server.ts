@@ -135,8 +135,8 @@ export async function canUseToolServer(userId: string, emailVerified: boolean) {
       allowed: false,
       upgradeRequired: true,
       reason: progress.nextReleaseAt
-        ? 'Suas 5 utilizações gratuitas terminaram. Aguarde o próximo pacote ou assine o Premium.'
-        : 'Suas 5 utilizações gratuitas terminaram. Assine o Premium para continuar sem limites.'
+        ? 'Máximo de utilizações atingido. Aguarde o próximo pacote ou assine o Premium.'
+        : 'Máximo de utilizações atingido. Assine o Premium para continuar sem limites.'
     };
   }
   return { allowed: true };

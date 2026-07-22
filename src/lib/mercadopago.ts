@@ -30,6 +30,29 @@ export function isMercadoPagoConfigured() {
   return Boolean(getMercadoPagoAccessToken());
 }
 
+/** Conta vendedora precisa poder receber (KYC / dados bancários no MP). */
+export async function assertMercadoPagoCanReceivePayments() {
+  const me = await mpFetch<{
+    id?: number;
+    status?: { site_status?: string; billing?: { allow?: boolean } };
+  }>('/users/me');
+
+  const siteStatus = me.status?.site_status;
+  const billingAllow = me.status?.billing?.allow;
+
+  if (siteStatus && siteStatus !== 'active') {
+    throw new Error(
+      `Conta Mercado Pago com status "${siteStatus}". Ative a conta no painel do Mercado Pago para receber pagamentos.`
+    );
+  }
+
+  if (billingAllow === false) {
+    throw new Error(
+      'Sua conta Mercado Pago ainda não está liberada para receber pagamentos (billing bloqueado). No painel do Mercado Pago, complete a verificação da conta e o cadastro para recebimentos; depois tente de novo.'
+    );
+  }
+}
+
 async function mpFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getMercadoPagoAccessToken();
   if (!token) {
@@ -89,9 +112,11 @@ export async function createPremiumCheckoutPreference(input: {
         name: input.payerName || undefined
       },
       external_reference: input.payerEmail.toLowerCase(),
-      statement_descriptor: 'RESOLVA JATO',
+      statement_descriptor: 'RESOLVAJATO',
+      binary_mode: true,
       payment_methods: {
-        installments: 1
+        installments: 1,
+        default_installments: 1
       },
       back_urls: {
         success: `${appUrl}/conta?billing=success`,

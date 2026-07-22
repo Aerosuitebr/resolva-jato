@@ -98,7 +98,7 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
             </div>
             {!usage.unlimited && usage.remaining === 0 ? (
               <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-900">
-                Suas 5 utilizações gratuitas acabaram. O Premium libera uso ilimitado por 30 dias.
+                Máximo de utilizações atingido. O Premium libera uso ilimitado por 30 dias.
               </div>
             ) : null}
           </aside>

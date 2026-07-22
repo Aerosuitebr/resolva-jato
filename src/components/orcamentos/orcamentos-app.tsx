@@ -1091,7 +1091,7 @@ export function OrcamentosApp() {
                   {usage.unlimited
                     ? 'Uso ilimitado de ferramentas'
                     : usage.remaining === 0
-                      ? 'Suas 5 utilizações gratuitas acabaram'
+                      ? 'Máximo de utilizações atingido'
                       : 'Ferramentas profissionais liberadas na sua conta'}
                 </div>
 

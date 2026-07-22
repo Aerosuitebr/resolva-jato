@@ -70,7 +70,7 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
             {plan.id === 'premium'
               ? 'Premium · uso ilimitado'
               : usageExhausted
-                ? 'Grátis · utilizações esgotadas'
+                ? 'Grátis · máximo atingido'
                 : plan.name}
           </p>
         </div>

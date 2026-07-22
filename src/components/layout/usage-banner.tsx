@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowRight, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDateTime } from '@/lib/billing';
 
-/** Só aparece quando as 5 utilizações gratuitas acabaram. */
+/** Só aparece quando o máximo de utilizações do plano gratuito foi atingido. */
 export function UsageBanner() {
   const { ready, isAuthenticated, usage } = useAuth();
   if (!ready || !isAuthenticated || usage.unlimited || usage.remaining !== 0) return null;
@@ -18,7 +18,7 @@ export function UsageBanner() {
             <AlertTriangle className="h-4 w-4" />
           </span>
           <div>
-            <p className="text-sm font-bold text-rose-950">Suas 5 utilizações gratuitas acabaram</p>
+            <p className="text-sm font-bold text-rose-950">Máximo de utilizações atingido</p>
             <p className="text-xs leading-5 text-rose-800">
               {usage.nextReleaseAt
                 ? `Um novo pacote gratuito libera em ${formatDateTime(usage.nextReleaseAt)}. Ou assine o Premium para uso ilimitado por 30 dias.`

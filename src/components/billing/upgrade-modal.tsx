@@ -64,7 +64,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             </div>
 
             <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
-              Suas 5 utilizações gratuitas acabaram
+              Máximo de utilizações atingido
             </p>
             <h2 id="upgrade-modal-title" className="rj-display mt-3 max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
               Desbloqueie o Resolva Jato por apenas{' '}
@@ -101,7 +101,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             {nextReleaseAtLabel ? (
               <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-slate-400">
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                Sem Premium, um novo pacote de 5 utilizações libera em {nextReleaseAtLabel}.
+                Sem Premium, um novo pacote gratuito libera em {nextReleaseAtLabel}.
               </p>
             ) : null}
 
@@ -131,7 +131,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             </div>
 
             <p className="mt-5 text-center text-[11px] leading-5 text-slate-500 sm:text-left">
-              Ativação demonstrativa neste ambiente. A busca de recursos continua gratuita para todos.
+              Pagamento seguro via Mercado Pago. A busca de recursos continua gratuita para todos.
             </p>
           </div>
         </div>
