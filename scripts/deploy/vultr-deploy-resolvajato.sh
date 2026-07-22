@@ -15,7 +15,17 @@ fi
 
 echo "==> Extrair codigo em ${INSTALL_DIR}"
 mkdir -p "${INSTALL_DIR}"
+
+# Evita arquivos orfaos de deploys anteriores (quebram o build Docker).
+if [[ -f "${INSTALL_DIR}/.env.production" ]]; then
+  cp -a "${INSTALL_DIR}/.env.production" /tmp/resolva-jato.env.production.bak
+fi
+find "${INSTALL_DIR}" -mindepth 1 -maxdepth 1 ! -name '.env.production' -exec rm -rf {} +
 tar -xzf "${TARBALL}" -C "${INSTALL_DIR}"
+if [[ ! -f "${INSTALL_DIR}/.env.production" && -f /tmp/resolva-jato.env.production.bak ]]; then
+  cp -a /tmp/resolva-jato.env.production.bak "${INSTALL_DIR}/.env.production"
+  chmod 600 "${INSTALL_DIR}/.env.production"
+fi
 
 cd "${INSTALL_DIR}"
 
