@@ -3,20 +3,7 @@ import rjEscuro from '@/assets/RJ_escuro.png';
 import { cn } from '@/lib/utils';
 import { viralPdfFooterLabel } from '@/lib/viral-loop';
 
-/** Logo discreto no canto — oculto no capture do PDF (carimbo por página). */
-export function DocumentBrandHeader({ className }: { className?: string }) {
-  return (
-    <div
-      data-rj-brand="header"
-      className={cn('pointer-events-none absolute right-4 top-4 z-10 opacity-[0.28]', className)}
-      aria-hidden
-    >
-      <Image src={rjEscuro} alt="" className="h-11 w-auto object-contain" />
-    </div>
-  );
-}
-
-/** Marca d’água central com o logo Resolva Jato. */
+/** Marca d’água central com o logo Resolva Jato — destaque moderado. */
 export function DocumentBrandWatermark({ className }: { className?: string }) {
   return (
     <div
@@ -24,7 +11,7 @@ export function DocumentBrandWatermark({ className }: { className?: string }) {
       className={cn('pointer-events-none absolute inset-0 z-[1] overflow-hidden', className)}
       aria-hidden
     >
-      <div className="absolute left-1/2 top-[48%] w-[72%] max-w-[460px] -translate-x-1/2 -translate-y-1/2 -rotate-[28deg] opacity-[0.12]">
+      <div className="absolute left-1/2 top-1/2 w-[50%] max-w-[320px] -translate-x-1/2 -translate-y-1/2 -rotate-[18deg] opacity-[0.16]">
         <Image src={rjEscuro} alt="" className="h-auto w-full object-contain" priority={false} />
       </div>
     </div>

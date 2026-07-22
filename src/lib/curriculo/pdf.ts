@@ -19,8 +19,7 @@ const MAX_SQUEEZE = 0.9;
 /** Progresso mínimo na página antes de antecipar quebra por bloco keep. */
 const MIN_PAGE_FILL = 0.3;
 
-let cachedCornerLogo: string | null | undefined;
-let cachedWatermark: string | null | undefined;
+let cachedWatermark: { dataUrl: string; aspect: number } | null | undefined;
 
 function logoSrc(): string {
   return typeof rjEscuro === 'string' ? rjEscuro : rjEscuro.src;
@@ -36,40 +35,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-async function getCornerLogoDataUrl(): Promise<string | null> {
-  if (cachedCornerLogo !== undefined) return cachedCornerLogo;
-  if (typeof window === 'undefined') {
-    cachedCornerLogo = null;
-    return null;
-  }
-
-  try {
-    const img = await loadImage(logoSrc());
-    const size = 160;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      cachedCornerLogo = null;
-      return null;
-    }
-    const scale = Math.min(size / img.width, size / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    ctx.clearRect(0, 0, size, size);
-    ctx.globalAlpha = 0.32;
-    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-    cachedCornerLogo = canvas.toDataURL('image/png');
-    return cachedCornerLogo;
-  } catch {
-    cachedCornerLogo = null;
-    return null;
-  }
-}
-
-/** Logo Resolva Jato rotacionado para marca d’água em cada página. */
-async function getWatermarkDataUrl(): Promise<string | null> {
+/** Logo Resolva Jato no centro da página (marca d’água). */
+async function getWatermarkDataUrl(): Promise<{ dataUrl: string; aspect: number } | null> {
   if (cachedWatermark !== undefined) return cachedWatermark;
   if (typeof window === 'undefined') {
     cachedWatermark = null;
@@ -78,8 +45,8 @@ async function getWatermarkDataUrl(): Promise<string | null> {
 
   try {
     const img = await loadImage(logoSrc());
-    const angle = (-28 * Math.PI) / 180;
-    const drawW = 520;
+    const angle = (-18 * Math.PI) / 180;
+    const drawW = 720;
     const drawH = (img.height / img.width) * drawW;
     const cos = Math.abs(Math.cos(angle));
     const sin = Math.abs(Math.sin(angle));
@@ -95,9 +62,12 @@ async function getWatermarkDataUrl(): Promise<string | null> {
     }
     ctx.translate(canvasW / 2, canvasH / 2);
     ctx.rotate(angle);
-    ctx.globalAlpha = 0.13;
+    ctx.globalAlpha = 0.17;
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-    cachedWatermark = canvas.toDataURL('image/png');
+    cachedWatermark = {
+      dataUrl: canvas.toDataURL('image/png'),
+      aspect: canvasH / canvasW
+    };
     return cachedWatermark;
   } catch {
     cachedWatermark = null;
@@ -123,26 +93,19 @@ function stampViralFooter(pdf: JsPdf, pageWidth: number, pageHeight: number) {
   pdf.link(x, footerY - blockH, widest, blockH + 2, { url });
 }
 
-async function stampBrandLogo(pdf: JsPdf, pageWidth: number) {
-  const logo = await getCornerLogoDataUrl();
-  if (!logo) return;
-  const size = 14;
-  pdf.addImage(logo, 'PNG', pageWidth - size - 10, 8, size, size);
-}
-
 async function stampWatermark(pdf: JsPdf, pageWidth: number, pageHeight: number) {
   const mark = await getWatermarkDataUrl();
   if (!mark) return;
-  const markW = pageWidth * 0.62;
-  const markH = markW * 0.55;
+  // ~48% da largura da página — destaque sem cobrir o texto
+  const markW = pageWidth * 0.48;
+  const markH = markW * mark.aspect;
   const x = (pageWidth - markW) / 2;
-  const y = (pageHeight - markH) / 2 - 4;
-  pdf.addImage(mark, 'PNG', x, y, markW, markH);
+  const y = (pageHeight - markH) / 2;
+  pdf.addImage(mark.dataUrl, 'PNG', x, y, markW, markH);
 }
 
 async function stampPageBrand(pdf: JsPdf, pageWidth: number, pageHeight: number) {
   await stampWatermark(pdf, pageWidth, pageHeight);
-  await stampBrandLogo(pdf, pageWidth);
   stampViralFooter(pdf, pageWidth, pageHeight);
 }
 
