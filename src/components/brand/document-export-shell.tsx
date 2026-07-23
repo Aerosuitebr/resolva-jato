@@ -13,7 +13,13 @@ export function DocumentExportShell({
   className?: string;
 }) {
   return (
-    <div className={cn('relative flex min-h-full flex-col', className)}>
+    <div
+      className={cn(
+        'relative flex min-h-full flex-col text-left [letter-spacing:normal] [word-spacing:normal]',
+        className
+      )}
+      style={{ fontFeatureSettings: 'normal' }}
+    >
       {branded ? <DocumentBrandWatermark /> : null}
       <div className="relative z-[2] flex-1">{children}</div>
       {branded ? <DocumentViralFooter /> : null}

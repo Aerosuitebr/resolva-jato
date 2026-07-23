@@ -40,7 +40,14 @@ export function ReciboPreview({ data }: ReciboPreviewProps) {
       <ProfessionalLayout {...ctx} />
     );
 
-  return <div style={{ fontFamily }}>{content}</div>;
+  return (
+    <div
+      className="text-left [letter-spacing:normal] [word-spacing:normal]"
+      style={{ fontFamily, fontFeatureSettings: 'normal' }}
+    >
+      {content}
+    </div>
+  );
 }
 
 function BodyStatement({
@@ -55,17 +62,18 @@ function BodyStatement({
   accentClass: string;
 }) {
   return (
-    <p>
+    <p className="text-left leading-relaxed [letter-spacing:normal] [word-spacing:normal]">
       Recebi de{' '}
-      <strong className={accentClass}>{data.payer.name || '________________________'}</strong>
+      <strong className={accentClass}>{data.payer.name || '______________'}</strong>
       {data.payer.document ? ` (${data.payer.document})` : ''} a importância de{' '}
       <strong className={accentClass}>{amountLabel}</strong>
       {words ? (
         <>
-          {' '}(<span className="italic">{words}</span>)
+          {' '}
+          (<span className="italic">{words}</span>)
         </>
       ) : null}
-      , referente a <strong>{data.reference || '________________________'}</strong>.
+      , referente a <strong>{data.reference || '______________'}</strong>.
     </p>
   );
 }
@@ -103,24 +111,24 @@ function ProfessionalLayout({ data, amountLabel, words, addressLine, dateLabel, 
         </div>
       </div>
 
-      <div className="mt-8 space-y-6 text-[0.95rem] leading-7">
+      <div className="mt-5 space-y-3 text-[0.95rem] leading-relaxed">
         <BodyStatement data={data} amountLabel={amountLabel} words={words} accentClass="text-slate-900" />
 
         {data.paymentMethod ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm leading-relaxed text-slate-600">
             Forma de pagamento: <strong className="text-slate-800">{data.paymentMethod}</strong>
           </p>
         ) : null}
 
-        <p className="text-sm text-slate-600">
+        <p className="text-sm leading-relaxed text-slate-600">
           Para maior clareza, firmo o presente recibo dando plena e total quitação do valor acima, nada mais tendo a
           reclamar.
         </p>
 
-        {data.notes ? <p className="text-sm text-slate-600">{data.notes}</p> : null}
+        {data.notes ? <p className="text-sm leading-relaxed text-slate-600">{data.notes}</p> : null}
       </div>
 
-      <div className="mt-10 grid grid-cols-2 gap-6 text-sm">
+      <div className="mt-6 grid grid-cols-2 gap-4 text-sm leading-relaxed">
         <div className={cn('rounded-xl border p-4', inkSaver ? 'border-slate-900 bg-white' : 'border-slate-200 bg-slate-50')}>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Recebedor</p>
           <p className="mt-1 font-semibold text-slate-900">{data.receiver.name || '-'}</p>
@@ -213,7 +221,7 @@ function ModernLayout({ data, amountLabel, words, addressLine, dateLabel, cityDa
           </div>
         </div>
 
-        <div className="mt-7 space-y-5 text-[0.95rem] leading-7">
+        <div className="mt-5 space-y-3 text-[0.95rem] leading-relaxed">
           <BodyStatement
             data={data}
             amountLabel={amountLabel}
@@ -236,15 +244,15 @@ function ModernLayout({ data, amountLabel, words, addressLine, dateLabel, cityDa
             ) : null}
           </div>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm leading-relaxed text-slate-600">
             Para maior clareza, firmo o presente recibo dando plena e total quitação do valor acima, nada mais tendo a
             reclamar.
           </p>
 
-          {data.notes ? <p className="text-sm text-slate-600">{data.notes}</p> : null}
+          {data.notes ? <p className="text-sm leading-relaxed text-slate-600">{data.notes}</p> : null}
         </div>
 
-        <div className="mt-8 grid grid-cols-2 divide-x divide-slate-200 text-sm">
+        <div className="mt-6 grid grid-cols-2 divide-x divide-slate-200 text-sm leading-relaxed">
           <div className="pr-6">
             <p
               className={cn(

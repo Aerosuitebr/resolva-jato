@@ -10,6 +10,36 @@ type JsPdf = InstanceType<typeof import('jspdf').jsPDF>;
 
 type KeepRangeMm = { start: number; end: number };
 
+/**
+ * html2canvas 1.4.x: text-align computado como "start" (padrão nos browsers modernos)
+ * dispara renderização letra a letra e gera espaçamento irregular no PDF.
+ * Também estabiliza letter-spacing / ligaduras / font-feature-settings herdados do app.
+ */
+function normalizeCloneTextForPdf(root: HTMLElement) {
+  root.style.textAlign = 'left';
+  root.style.letterSpacing = 'normal';
+  root.style.wordSpacing = 'normal';
+  root.style.fontFeatureSettings = 'normal';
+  root.style.setProperty('font-variant-ligatures', 'none');
+
+  root.querySelectorAll('*').forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    const cls = typeof el.className === 'string' ? el.className : '';
+
+    // Só sobrescreve alinhamento quando a classe pede — senão herda (ex.: assinatura centralizada).
+    if (/\btext-center\b/.test(cls)) el.style.textAlign = 'center';
+    else if (/\btext-right\b/.test(cls)) el.style.textAlign = 'right';
+    else if (/\btext-justify\b/.test(cls) || /\btext-left\b/.test(cls)) el.style.textAlign = 'left';
+
+    if (!/\btracking-/.test(cls) && !cls.includes('rj-signature-moderno')) {
+      el.style.letterSpacing = 'normal';
+    }
+    el.style.wordSpacing = 'normal';
+    el.style.fontFeatureSettings = 'normal';
+    el.style.setProperty('font-variant-ligatures', 'none');
+  });
+}
+
 /** Margem inferior do carimbo do rodapé (mm) — overlay, não reduz a área útil da página. */
 const PRINT_FOOTER_MARGIN_MM = 18;
 /** Última página com conteúdo real abaixo disso = órfão (assinaturas sozinhas). */
@@ -285,7 +315,15 @@ export async function exportElementToPdf(
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
-      logging: false
+      logging: false,
+      /**
+       * html2canvas 1.4.x trata text-align:start (padrão moderno) como renderização
+       * letra a letra e gera espaços irregulares / gaps antes de pontuação.
+       * Forçamos left/center/right explícitos e métricas de fonte estáveis.
+       */
+      onclone: (_doc, cloned) => {
+        normalizeCloneTextForPdf(cloned);
+      }
     });
 
     const imageData = canvas.toDataURL('image/png');
