@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ArrowRight, Crown, ShieldCheck, Sparkles, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate } from '@/lib/billing';
+import { BILLING_PRODUCTS } from '@/lib/billing-products';
 import { PLANS } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
@@ -65,8 +68,41 @@ export function RemoveBrandingUpsell({
   className?: string;
   compact?: boolean;
 }) {
-  const { usage, ready } = useAuth();
+  const router = useRouter();
+  const { session, usage, ready, isAuthenticated } = useAuth();
   const premium = PLANS.premium;
+  const especial = BILLING_PRODUCTS['acesso-especial'];
+  const [especialLoading, setEspecialLoading] = useState(false);
+  const [especialError, setEspecialError] = useState('');
+
+  async function handleAcessoEspecial() {
+    setEspecialError('');
+    if (!isAuthenticated || !session?.user.email) {
+      router.push('/login?next=' + encodeURIComponent('/ferramentas'));
+      return;
+    }
+
+    setEspecialLoading(true);
+    try {
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: session.user.email,
+          name: session.user.name,
+          product: 'acesso-especial'
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Não foi possível iniciar o checkout.');
+      }
+      window.location.href = data.checkoutUrl as string;
+    } catch (error) {
+      setEspecialError(error instanceof Error ? error.message : 'Falha ao abrir o pagamento.');
+      setEspecialLoading(false);
+    }
+  }
 
   if (!ready) return null;
 
@@ -115,13 +151,26 @@ export function RemoveBrandingUpsell({
               {premium.period}.
             </p>
           </div>
-          <Button asChild size="sm" className="shrink-0 bg-white font-bold text-slate-950 hover:bg-sky-50">
-            <Link href="/conta?upgrade=premium">
-              Assinar Premium
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+            <Button asChild size="sm" className="bg-white font-bold text-slate-950 hover:bg-sky-50">
+              <Link href="/conta?upgrade=premium">
+                Assinar Premium
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-amber-300/40 bg-amber-300/10 font-bold text-amber-100 hover:bg-amber-300/20 hover:text-white"
+              loading={especialLoading}
+              onClick={() => void handleAcessoEspecial()}
+            >
+              Acesso especial · {especial.priceLabel}
+            </Button>
+          </div>
         </div>
+        {especialError ? <p className="mt-2 text-xs font-medium text-rose-300">{especialError}</p> : null}
         <div className="mt-3">
           <BrandComparison />
         </div>
@@ -162,7 +211,7 @@ export function RemoveBrandingUpsell({
           </ul>
         </div>
 
-        <div className="w-full shrink-0 lg:max-w-xs">
+        <div className="w-full shrink-0 space-y-3 lg:max-w-xs">
           <Button
             asChild
             className="h-12 w-full bg-white text-base font-bold text-slate-950 hover:bg-sky-50"
@@ -172,10 +221,22 @@ export function RemoveBrandingUpsell({
               Assinar Premium por {premium.priceLabel}
             </Link>
           </Button>
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-400 lg:text-left">
-            Pagamento seguro (cartão, Pix, NuPay e outros). Assim que for aprovado — por qualquer meio — o
-            Premium libera automaticamente por 30 dias.
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full border-amber-300/50 bg-amber-300/10 text-base font-bold text-amber-50 hover:bg-amber-300/20 hover:text-white"
+            loading={especialLoading}
+            onClick={() => void handleAcessoEspecial()}
+          >
+            Acesso especial · {especial.priceLabel}
+          </Button>
+          <p className="text-center text-[11px] leading-5 text-slate-400 lg:text-left">
+            Acesso especial: 1 ano sem marca Resolva Jato. Pagamento seguro no Checkout Pro (cartão, Pix e
+            outros).
           </p>
+          {especialError ? (
+            <p className="text-center text-xs font-medium text-rose-300 lg:text-left">{especialError}</p>
+          ) : null}
         </div>
       </div>
     </aside>

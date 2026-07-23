@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createPremiumCheckoutPreference, isMercadoPagoConfigured } from '@/lib/mercadopago';
+import { isBillingProductId } from '@/lib/billing-products';
+import { createBillingCheckoutPreference, isMercadoPagoConfigured } from '@/lib/mercadopago';
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       email?: string;
       name?: string;
+      product?: string;
     };
 
     const email = (body.email || '').trim().toLowerCase();
@@ -20,9 +22,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Informe o e-mail da conta logada.' }, { status: 400 });
     }
 
-    const result = await createPremiumCheckoutPreference({
+    const product = body.product && isBillingProductId(body.product) ? body.product : 'premium';
+
+    const result = await createBillingCheckoutPreference({
       payerEmail: email,
-      payerName: body.name?.trim()
+      payerName: body.name?.trim(),
+      product
     });
 
     return NextResponse.json(result);

@@ -1,4 +1,9 @@
-import { PLANS } from '@/lib/plans';
+import {
+  BILLING_PRODUCTS,
+  getBillingProduct,
+  isBillingProductId,
+  type BillingProductId
+} from '@/lib/billing-products';
 
 const MP_API = 'https://api.mercadopago.com';
 
@@ -63,12 +68,13 @@ export interface CheckoutPreferenceResult {
   sandbox_init_point?: string;
 }
 
-export async function createPremiumCheckoutPreference(input: {
+export async function createBillingCheckoutPreference(input: {
   payerEmail: string;
   payerName?: string;
+  product?: BillingProductId | string | null;
 }) {
   const appUrl = getAppPublicUrl();
-  const amount = PLANS.premium.price;
+  const product = getBillingProduct(input.product);
   const sandbox = isMercadoPagoSandbox();
 
   const preference = await mpFetch<CheckoutPreferenceResult>('/checkout/preferences', {
@@ -76,12 +82,12 @@ export async function createPremiumCheckoutPreference(input: {
     body: JSON.stringify({
       items: [
         {
-          id: 'premium-30-dias',
-          title: 'Resolva Jato Premium — documentos sem marca · 30 dias',
-          description: 'PDF, WhatsApp e e-mail sem marca Resolva Jato por 30 dias',
+          id: product.itemId,
+          title: product.title,
+          description: product.description,
           quantity: 1,
           currency_id: 'BRL',
-          unit_price: amount
+          unit_price: product.price
         }
       ],
       payer: {
@@ -101,8 +107,8 @@ export async function createPremiumCheckoutPreference(input: {
       auto_return: 'approved',
       notification_url: `${appUrl}/api/webhooks/mercadopago`,
       metadata: {
-        product: 'premium',
-        days: 30,
+        product: product.id,
+        days: product.days,
         mode: sandbox ? 'sandbox' : 'production'
       }
     })
@@ -119,9 +125,23 @@ export async function createPremiumCheckoutPreference(input: {
   return {
     preferenceId: preference.id,
     checkoutUrl,
-    mode: sandbox ? ('sandbox' as const) : ('production' as const)
+    mode: sandbox ? ('sandbox' as const) : ('production' as const),
+    product: product.id,
+    days: product.days,
+    amount: product.price
   };
 }
+
+/** @deprecated Use createBillingCheckoutPreference({ product: 'premium' }) */
+export async function createPremiumCheckoutPreference(input: {
+  payerEmail: string;
+  payerName?: string;
+}) {
+  return createBillingCheckoutPreference({ ...input, product: BILLING_PRODUCTS.premium.id });
+}
+
+export { isBillingProductId };
+export type { BillingProductId };
 
 export interface MercadoPagoPayment {
   id: number;

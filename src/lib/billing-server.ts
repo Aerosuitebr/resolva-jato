@@ -1,9 +1,9 @@
 import { getPrisma } from '@/lib/db';
+import { premiumDaysFromAmount } from '@/lib/billing-products';
 import { getPlan, type PlanId } from '@/lib/plans';
 
-/** Dias de vigência do Premium após pagamento. */
+/** Dias de vigência do Premium mensal após pagamento. */
 export const ACCESS_DAYS = 30;
-const ACCESS_PERIOD_MS = ACCESS_DAYS * 24 * 60 * 60 * 1000;
 const MAX_AUDIT_ENTRIES = 100;
 const CHARGE_DEDUPE_MS = 2500;
 
@@ -171,13 +171,18 @@ export async function consumeServerUse(userId: string, context: BillableContext)
   return { charged: true, progress: await getServerUsageProgress(userId) };
 }
 
-export async function grantPremiumMonthServer(userId: string, providerRef?: string | null) {
+export async function grantPremiumDaysServer(
+  userId: string,
+  days: number,
+  providerRef?: string | null
+) {
   const prisma = getPrisma();
   const now = new Date();
+  const periodMs = Math.max(1, Math.round(days)) * 24 * 60 * 60 * 1000;
   const current = await getActiveSubscription(userId);
   const base =
     current && current.expiresAt.getTime() > now.getTime() ? current.expiresAt : now;
-  const expiresAt = new Date(base.getTime() + ACCESS_PERIOD_MS);
+  const expiresAt = new Date(base.getTime() + periodMs);
 
   return prisma.subscription.upsert({
     where: { userId },
@@ -195,9 +200,13 @@ export async function grantPremiumMonthServer(userId: string, providerRef?: stri
   });
 }
 
+export async function grantPremiumMonthServer(userId: string, providerRef?: string | null) {
+  return grantPremiumDaysServer(userId, ACCESS_DAYS, providerRef);
+}
+
 function premiumAmountMatches(amount: number | undefined) {
   if (typeof amount !== 'number') return true;
-  return Math.abs(amount - getPlan('premium').price) < 0.05;
+  return premiumDaysFromAmount(amount) !== null;
 }
 
 export type PremiumActivationResult =
@@ -265,7 +274,8 @@ export async function activatePremiumFromMercadoPagoPayment(input: {
     };
   }
 
-  const sub = await grantPremiumMonthServer(user.id, providerRef);
+  const days = premiumDaysFromAmount(input.transaction_amount) ?? ACCESS_DAYS;
+  const sub = await grantPremiumDaysServer(user.id, days, providerRef);
   return {
     activated: true,
     userId: user.id,
