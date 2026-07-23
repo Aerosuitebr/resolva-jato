@@ -26,6 +26,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { formatDate, formatDateTime, cancelPremium } from '@/lib/billing';
 import { PLANS } from '@/lib/plans';
 
+const PENDING_PAYMENT_KEY = 'rj_pending_mp_payment';
+const POLL_INTERVAL_MS = 4000;
+const POLL_MAX_MS = 12 * 60 * 1000;
+
 function firstValidParam(searchParams: URLSearchParams, keys: string[]) {
   for (const key of keys) {
     const value = searchParams.get(key);
@@ -34,89 +38,165 @@ function firstValidParam(searchParams: URLSearchParams, keys: string[]) {
   return '';
 }
 
+function readPendingPayment() {
+  if (typeof window === 'undefined') return { paymentId: '', merchantOrderId: '' };
+  try {
+    const raw = sessionStorage.getItem(PENDING_PAYMENT_KEY);
+    if (!raw) return { paymentId: '', merchantOrderId: '' };
+    const parsed = JSON.parse(raw) as { paymentId?: string; merchantOrderId?: string };
+    return {
+      paymentId: parsed.paymentId || '',
+      merchantOrderId: parsed.merchantOrderId || ''
+    };
+  } catch {
+    return { paymentId: '', merchantOrderId: '' };
+  }
+}
+
+function savePendingPayment(paymentId: string, merchantOrderId: string) {
+  if (typeof window === 'undefined') return;
+  if (!paymentId && !merchantOrderId) return;
+  sessionStorage.setItem(
+    PENDING_PAYMENT_KEY,
+    JSON.stringify({ paymentId, merchantOrderId, savedAt: Date.now() })
+  );
+}
+
+function clearPendingPayment() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+}
+
 function ContaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { session, plan, usage, refresh, logout } = useAuth();
-  const wantsUpgrade = searchParams.get('upgrade') === 'premium';
   const billingStatus = searchParams.get('billing');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [billingMessage, setBillingMessage] = useState<{
     type: 'success' | 'pending' | 'error';
     text: string;
   } | null>(null);
-  const confirmTried = useRef(false);
+  const pollStarted = useRef(false);
+
+  async function confirmPayment(opts?: {
+    paymentId?: string;
+    merchantOrderId?: string;
+    silent?: boolean;
+  }) {
+    if (!session?.user.email) return { approved: false as const };
+
+    const stored = readPendingPayment();
+    const paymentId = opts?.paymentId || stored.paymentId;
+    const merchantOrderId = opts?.merchantOrderId || stored.merchantOrderId;
+    const qs = new URLSearchParams({ email: session.user.email });
+    if (paymentId) qs.set('payment_id', paymentId);
+    if (merchantOrderId) qs.set('merchant_order_id', merchantOrderId);
+
+    const response = await fetch(`/api/billing/confirm?${qs.toString()}`, {
+      credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
+    }
+
+    if (data.approved) {
+      clearPendingPayment();
+      await refresh();
+      setBillingMessage({
+        type: 'success',
+        text: 'Pagamento aprovado! Premium ativo por 30 dias: documentos sem marca Resolva Jato.'
+      });
+      if (!opts?.silent) toast('Premium ativado — documentos limpos, sem marca.');
+      return { approved: true as const };
+    }
+
+    if (!opts?.silent) {
+      setBillingMessage({
+        type: 'pending',
+        text: 'Pagamento ainda em processamento (Pix, cartão ou outro meio). Continuamos verificando automaticamente; o Premium libera assim que for aprovado.'
+      });
+    }
+    return { approved: false as const, status: data.status as string | undefined };
+  }
 
   useEffect(() => {
-    if (!session?.user.email || confirmTried.current) return;
+    if (!session?.user.email || pollStarted.current) return;
     if (billingStatus !== 'success' && billingStatus !== 'pending' && billingStatus !== 'failure') {
       return;
     }
 
-    confirmTried.current = true;
+    pollStarted.current = true;
 
-    // MP frequentemente envia payment_id=null; o id real vem em collection_id / merchant_order_id
     const paymentId = firstValidParam(searchParams, ['payment_id', 'collection_id']);
     const merchantOrderId = firstValidParam(searchParams, ['merchant_order_id']);
-    const mpStatus = firstValidParam(searchParams, ['collection_status', 'status']).toLowerCase();
+    savePendingPayment(paymentId, merchantOrderId);
 
     if (billingStatus === 'failure') {
+      clearPendingPayment();
       setBillingMessage({ type: 'error', text: 'Pagamento não concluído. Você pode tentar de novo.' });
       router.replace('/conta');
       return;
     }
 
-    if (billingStatus === 'pending' || mpStatus === 'pending' || mpStatus === 'in_process') {
-      setBillingMessage({
-        type: 'pending',
-        text: 'Pagamento pendente (ex.: Pix aguardando). Assim que for aprovado, volte nesta página — o Premium libera automaticamente.'
-      });
-      router.replace('/conta');
-      return;
-    }
+    setBillingMessage({
+      type: 'pending',
+      text: 'Confirmando seu pagamento (Pix, cartão e outros meios). Isso pode levar alguns segundos…'
+    });
+    router.replace('/conta');
 
-    if (!paymentId && !merchantOrderId) {
-      setBillingMessage({
-        type: 'pending',
-        text: 'Retorno do Mercado Pago recebido, mas sem id de pagamento. Atualize a página em alguns segundos ou entre em contato se o valor já tiver sido cobrado.'
-      });
-      router.replace('/conta');
-      return;
-    }
+    let cancelled = false;
+    const startedAt = Date.now();
+    let timer: number | undefined;
 
-    const qs = new URLSearchParams({ email: session.user.email });
-    if (paymentId) qs.set('payment_id', paymentId);
-    if (merchantOrderId) qs.set('merchant_order_id', merchantOrderId);
-
-    fetch(`/api/billing/confirm?${qs.toString()}`, { credentials: 'include' })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
-        if (data.approved) {
-          await refresh();
-          setBillingMessage({
-            type: 'success',
-            text: 'Pagamento aprovado! Premium ativo por 30 dias: documentos sem marca Resolva Jato.'
-          });
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        const result = await confirmPayment({
+          paymentId,
+          merchantOrderId,
+          silent: true
+        });
+        if (cancelled) return;
+        if (result.approved) {
           toast('Premium ativado — documentos limpos, sem marca.');
-          router.replace('/conta');
-        } else {
-          setBillingMessage({
-            type: 'pending',
-            text: `Pagamento com status “${data.status || 'pendente'}”. Aguarde a confirmação e atualize a página.`
-          });
-          router.replace('/conta');
+          return;
         }
-      })
-      .catch((error) => {
+        setBillingMessage({
+          type: 'pending',
+          text: 'Aguardando aprovação do pagamento. Verificamos de novo em instantes…'
+        });
+      } catch (error) {
+        if (cancelled) return;
         setBillingMessage({
           type: 'error',
           text: error instanceof Error ? error.message : 'Falha ao confirmar pagamento.'
         });
-        router.replace('/conta');
-      });
-  }, [billingStatus, refresh, router, searchParams, session?.user.email, toast]);
+      }
+
+      if (Date.now() - startedAt >= POLL_MAX_MS) {
+        setBillingMessage({
+          type: 'pending',
+          text: 'Ainda não encontramos a aprovação. Use “Já paguei — verificar agora” abaixo.'
+        });
+        return;
+      }
+      timer = window.setTimeout(() => {
+        void tick();
+      }, POLL_INTERVAL_MS);
+    };
+
+    void tick();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez no retorno do checkout
+  }, [billingStatus, session?.user.email]);
 
   async function handleUpgrade() {
     if (!session?.user.email) {
@@ -139,9 +219,29 @@ function ContaContent() {
       window.location.href = data.checkoutUrl as string;
     } catch (error) {
       setCheckoutLoading(false);
-      const message = error instanceof Error ? error.message : 'Falha ao abrir o Mercado Pago.';
+      const message = error instanceof Error ? error.message : 'Falha ao abrir o pagamento.';
       setBillingMessage({ type: 'error', text: message });
       toast(message);
+    }
+  }
+
+  async function handleVerifyPayment() {
+    if (!session?.user.email) {
+      toast('Faça login para verificar o pagamento.');
+      return;
+    }
+    setVerifyLoading(true);
+    try {
+      const result = await confirmPayment();
+      if (!result.approved) {
+        toast('Pagamento ainda não aprovado. Tente de novo em alguns segundos.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha ao verificar pagamento.';
+      setBillingMessage({ type: 'error', text: message });
+      toast(message);
+    } finally {
+      setVerifyLoading(false);
     }
   }
 
@@ -238,7 +338,7 @@ function ContaContent() {
                           Premium ativo — documentos sem marca Resolva Jato
                         </p>
                         <p className="mt-1 text-sm text-emerald-900">
-                          PDFs limpos (sem rodapé e sem logo) até{' '}
+                          PDFs limpos (sem rodapé e sem logo) ate{' '}
                           {usage.premiumExpiresAt
                             ? formatDateTime(usage.premiumExpiresAt)
                             : 'o fim do período contratado'}
@@ -318,27 +418,36 @@ function ContaContent() {
                 Encerrar Premium neste aparelho
               </Button>
             ) : (
-              <Button
-                className="mt-7 w-full bg-white text-slate-950 hover:bg-sky-50"
-                onClick={handleUpgrade}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-                {checkoutLoading
-                  ? 'Abrindo Mercado Pago…'
-                  : wantsUpgrade
-                    ? 'Remover marca no Mercado Pago'
-                    : 'Remover marca no Mercado Pago'}
-              </Button>
+              <div className="mt-7 space-y-3">
+                <Button
+                  className="w-full bg-white text-slate-950 hover:bg-sky-50"
+                  onClick={handleUpgrade}
+                  disabled={checkoutLoading}
+                >
+                  {checkoutLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
+                  {checkoutLoading
+                    ? 'Abrindo pagamento…'
+                    : `Assinar Premium por ${PLANS.premium.priceLabel}`}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+                  onClick={handleVerifyPayment}
+                  disabled={verifyLoading}
+                >
+                  {verifyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {verifyLoading ? 'Verificando pagamento…' : 'Já paguei — verificar agora'}
+                </Button>
+              </div>
             )}
             <p className="mt-4 text-xs leading-5 text-slate-400">
               {plan.id === 'premium'
                 ? 'Após o vencimento, a conta volta ao plano grátis.'
-                : 'Você será redirecionado ao Checkout Pro do Mercado Pago (cartão, Pix e outros). Após o pagamento aprovado, o Premium libera automaticamente por 30 dias.'}
+                : 'Pagamento seguro (cartão, Pix e outros). Assim que for aprovado — por qualquer meio — o Premium libera automaticamente por 30 dias.'}
             </p>
           </aside>
         </section>

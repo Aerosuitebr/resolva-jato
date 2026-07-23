@@ -78,7 +78,7 @@ export async function createPremiumCheckoutPreference(input: {
         {
           id: 'premium-30-dias',
           title: 'Resolva Jato Premium — documentos sem marca · 30 dias',
-          description: 'Utilizações ilimitadas das ferramentas por 30 dias',
+          description: 'PDF, WhatsApp e e-mail sem marca Resolva Jato por 30 dias',
           quantity: 1,
           currency_id: 'BRL',
           unit_price: amount
@@ -141,4 +141,13 @@ export async function getMerchantOrder(orderId: string) {
   return mpFetch<{ id: number; payments?: Array<{ id: number; status: string }> }>(
     `/merchant_orders/${orderId}`
   );
+}
+
+/** Busca pagamentos recentes pelo e-mail gravado em external_reference (ex.: Pix atrasado). */
+export async function searchPaymentsByExternalReference(email: string, limit = 10) {
+  const ref = encodeURIComponent(email.trim().toLowerCase());
+  const data = await mpFetch<{ results?: MercadoPagoPayment[] }>(
+    `/v1/payments/search?external_reference=${ref}&sort=date_created&criteria=desc&limit=${limit}`
+  );
+  return Array.isArray(data.results) ? data.results : [];
 }

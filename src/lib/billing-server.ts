@@ -195,6 +195,87 @@ export async function grantPremiumMonthServer(userId: string, providerRef?: stri
   });
 }
 
+function premiumAmountMatches(amount: number | undefined) {
+  if (typeof amount !== 'number') return true;
+  return Math.abs(amount - getPlan('premium').price) < 0.05;
+}
+
+export type PremiumActivationResult =
+  | {
+      activated: true;
+      alreadyActive?: boolean;
+      userId: string;
+      email: string;
+      paymentId: number;
+      expiresAt: string;
+      status: string;
+    }
+  | {
+      activated: false;
+      reason: string;
+      status?: string;
+      email?: string;
+      paymentId?: number;
+    };
+
+/**
+ * Libera Premium a partir de um pagamento aprovado do Mercado Pago.
+ * Idempotente: o mesmo payment id não renova de novo.
+ */
+export async function activatePremiumFromMercadoPagoPayment(input: {
+  id: number;
+  status: string;
+  external_reference?: string | null;
+  transaction_amount?: number;
+}): Promise<PremiumActivationResult> {
+  const paymentId = input.id;
+  const status = input.status;
+  const email = (input.external_reference || '').trim().toLowerCase();
+
+  if (status !== 'approved') {
+    return { activated: false, reason: 'not_approved', status, email, paymentId };
+  }
+  if (!premiumAmountMatches(input.transaction_amount)) {
+    return { activated: false, reason: 'amount_mismatch', status, email, paymentId };
+  }
+  if (!email) {
+    return { activated: false, reason: 'missing_email', status, paymentId };
+  }
+
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true }
+  });
+  if (!user) {
+    return { activated: false, reason: 'user_not_found', status, email, paymentId };
+  }
+
+  const providerRef = `mp:${paymentId}`;
+  const existing = await prisma.subscription.findUnique({ where: { userId: user.id } });
+  if (existing?.providerRef === providerRef) {
+    return {
+      activated: true,
+      alreadyActive: true,
+      userId: user.id,
+      email: user.email,
+      paymentId,
+      expiresAt: existing.expiresAt.toISOString(),
+      status
+    };
+  }
+
+  const sub = await grantPremiumMonthServer(user.id, providerRef);
+  return {
+    activated: true,
+    userId: user.id,
+    email: user.email,
+    paymentId,
+    expiresAt: sub.expiresAt.toISOString(),
+    status
+  };
+}
+
 export async function cancelPremiumServer(userId: string) {
   const prisma = getPrisma();
   await prisma.subscription.deleteMany({ where: { userId } });

@@ -105,7 +105,7 @@ export function UpgradeModal({ open, onUnlock, onLeave }: UpgradeModalProps) {
                 onClick={onUnlock}
                 className="h-14 flex-1 bg-gradient-to-r from-amber-300 via-amber-200 to-sky-200 text-base font-black text-slate-950 shadow-[0_18px_40px_rgba(251,191,36,0.25)] hover:from-amber-200 hover:via-white hover:to-sky-100"
               >
-                Remover marca por {premium.priceLabel}
+                Assinar Premium por {premium.priceLabel}
                 <ArrowRight className="h-5 w-5" />
               </Button>
               {onLeave ? (

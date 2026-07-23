@@ -32,6 +32,7 @@ Em desenvolvimento, sem Turnstile o captcha é ignorado; sem Resend o link de ve
 3. Usuário abre link → `GET /api/auth/verify-email` → `emailVerifiedAt` + registro de `ToolUsage`
 4. Login define cookie httpOnly; `GET /api/auth/me` hidrata o client
 5. `POST /api/billing/consume` registra uso no Postgres (sem cota no plano grátis; Premium remove a marca)
+6. `GET /api/billing/confirm` e `POST /api/webhooks/mercadopago` liberam Premium quando o pagamento Mercado Pago (Pix, cartão, etc.) está `approved`
 
 ## APIs
 
