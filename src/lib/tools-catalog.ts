@@ -3,13 +3,16 @@ import {
   Briefcase,
   Calculator,
   CalendarDays,
+  CalendarRange,
   ClipboardList,
   FileText,
   Gavel,
   GraduationCap,
+  PenLine,
   Receipt,
   Scale,
   Sparkles,
+  Tag,
   Users,
   Wallet
 } from 'lucide-react';
@@ -217,6 +220,74 @@ export const toolsCatalog: ToolDefinition[] = [
     actionLabel: 'Abrir agenda',
     keywords: ['agenda', 'calendário', 'compromisso', 'lembrete', 'prazo'],
     premiumOnly: true,
+    status: 'beta'
+  },
+  {
+    id: 'rescisao',
+    name: 'Calculadora de Rescisão',
+    description: 'Saldo de salário, 13º, férias, aviso prévio e multa do FGTS em segundos.',
+    tip: 'Estimativa educativa: valores brutos, sem descontos de INSS/IRRF.',
+    href: '/ferramentas/rescisao',
+    icon: Scale,
+    categoryId: 'juridico',
+    actionLabel: 'Calcular rescisão',
+    keywords: ['rescisão', 'trabalhista', 'demissão', 'aviso prévio', 'fgts', '13º', 'férias', 'clt'],
+    status: 'beta'
+  },
+  {
+    id: 'mei-vs-clt',
+    name: 'MEI vs CLT',
+    description: 'Compare o líquido mensal como CLT com o lucro estimado como MEI.',
+    href: '/ferramentas/mei-vs-clt',
+    icon: Scale,
+    categoryId: 'contabeis',
+    actionLabel: 'Comparar cenários',
+    keywords: ['mei', 'clt', 'autônomo', 'simulador', 'inss', 'irrf', 'das', 'salário líquido'],
+    status: 'beta'
+  },
+  {
+    id: 'precificacao',
+    name: 'Calculadora de Precificação',
+    description: 'Descubra o preço ideal do seu produto ou serviço com margem real.',
+    href: '/ferramentas/precificacao',
+    icon: Tag,
+    categoryId: 'negocios',
+    actionLabel: 'Calcular preço',
+    keywords: ['precificação', 'preço', 'margem', 'markup', 'lucro', 'custo'],
+    status: 'beta'
+  },
+  {
+    id: 'redacao-enem',
+    name: 'Corretor de Redação ENEM',
+    description: 'Estimativa de nota por competência, com pontos fortes e alertas.',
+    tip: 'Estimativa automática por heurísticas — não substitui a correção humana.',
+    href: '/ferramentas/redacao-enem',
+    icon: PenLine,
+    categoryId: 'carreira',
+    actionLabel: 'Corrigir redação',
+    keywords: ['redação', 'enem', 'competência', 'nota', 'vestibular', 'texto dissertativo'],
+    status: 'beta'
+  },
+  {
+    id: 'cronograma-estudos',
+    name: 'Cronograma de Estudos',
+    description: 'Distribuição semanal automática por matéria, peso e tempo disponível.',
+    href: '/ferramentas/cronograma-estudos',
+    icon: CalendarRange,
+    categoryId: 'carreira',
+    actionLabel: 'Montar cronograma',
+    keywords: ['cronograma', 'estudos', 'enem', 'concurso', 'vestibular', 'plano de estudo'],
+    status: 'beta'
+  },
+  {
+    id: 'divisor-conta',
+    name: 'Divisor de Conta em Grupo',
+    description: 'Rateie churrasco, restaurante ou viagem entre amigos, com taxa de serviço.',
+    href: '/ferramentas/divisor-conta',
+    icon: Users,
+    categoryId: 'organizacao',
+    actionLabel: 'Dividir conta',
+    keywords: ['divisor', 'conta', 'rateio', 'churrasco', 'restaurante', 'viagem', 'amigos'],
     status: 'beta'
   }
 ];

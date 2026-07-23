@@ -11,3 +11,4 @@ tsconfig.tsbuildinfo
 .env.production
 .env*.local
 /generated/prisma
+.git-credentials-env
