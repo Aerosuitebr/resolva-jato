@@ -26,7 +26,7 @@ export function PremiumHeader() {
     .toUpperCase() || 'RJ';
 
   const planSubtitle = usage.unlimited
-    ? 'Documentos liberados'
+    ? 'Assinante Premium'
     : 'Documentos profissionais grátis';
 
   const usageSubtitle = null;
