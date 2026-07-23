@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       email?: string;
       name?: string;
       product?: string;
+      deviceSessionId?: string;
     };
 
     const email = (body.email || '').trim().toLowerCase();
@@ -23,11 +24,13 @@ export async function POST(request: Request) {
     }
 
     const product = body.product && isBillingProductId(body.product) ? body.product : 'premium';
+    const deviceSessionId = body.deviceSessionId?.trim() || undefined;
 
     const result = await createBillingCheckoutPreference({
       payerEmail: email,
       payerName: body.name?.trim(),
-      product
+      product,
+      deviceSessionId
     });
 
     return NextResponse.json(result);

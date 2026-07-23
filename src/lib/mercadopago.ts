@@ -68,23 +68,36 @@ export interface CheckoutPreferenceResult {
   sandbox_init_point?: string;
 }
 
+function splitPayerName(fullName?: string) {
+  const parts = (fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { name: undefined as string | undefined, surname: undefined as string | undefined };
+  if (parts.length === 1) return { name: parts[0], surname: undefined };
+  return { name: parts[0], surname: parts.slice(1).join(' ') };
+}
+
 export async function createBillingCheckoutPreference(input: {
   payerEmail: string;
   payerName?: string;
   product?: BillingProductId | string | null;
+  /** Device ID do security.js — header X-meli-session-id (antifraude MP). */
+  deviceSessionId?: string;
 }) {
   const appUrl = getAppPublicUrl();
   const product = getBillingProduct(input.product);
   const sandbox = isMercadoPagoSandbox();
+  const { name, surname } = splitPayerName(input.payerName);
+  const deviceSessionId = input.deviceSessionId?.trim() || '';
 
   const preference = await mpFetch<CheckoutPreferenceResult>('/checkout/preferences', {
     method: 'POST',
+    headers: deviceSessionId ? { 'X-meli-session-id': deviceSessionId } : undefined,
     body: JSON.stringify({
       items: [
         {
           id: product.itemId,
           title: product.title,
           description: product.description,
+          category_id: 'services',
           quantity: 1,
           currency_id: 'BRL',
           unit_price: product.price
@@ -92,10 +105,12 @@ export async function createBillingCheckoutPreference(input: {
       ],
       payer: {
         email: input.payerEmail,
-        name: input.payerName || undefined
+        name: name || undefined,
+        surname: surname || undefined
       },
       external_reference: input.payerEmail.toLowerCase(),
       statement_descriptor: 'RESOLVA JATO',
+      additional_info: `digital_service;product=${product.id};days=${product.days}`,
       payment_methods: {
         installments: 1
       },
@@ -109,7 +124,8 @@ export async function createBillingCheckoutPreference(input: {
       metadata: {
         product: product.id,
         days: product.days,
-        mode: sandbox ? 'sandbox' : 'production'
+        mode: sandbox ? 'sandbox' : 'production',
+        has_device_id: Boolean(deviceSessionId)
       }
     })
   });

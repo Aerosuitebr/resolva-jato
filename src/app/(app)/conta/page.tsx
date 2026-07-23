@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate, formatDateTime, cancelPremium } from '@/lib/billing';
 import { formatCpf, isValidCpf } from '@/lib/cpf';
+import { getMpDeviceSessionId } from '@/lib/mp-device-session';
 import { PLANS } from '@/lib/plans';
 import { Input } from '@/components/ui/input';
 
@@ -341,12 +342,14 @@ function ContaContent() {
     setCheckoutLoading(true);
     setBillingMessage(null);
     try {
+      const deviceSessionId = await getMpDeviceSessionId();
       const response = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: session.user.email,
-          name: session.user.name
+          name: session.user.name,
+          deviceSessionId
         })
       });
       const data = await response.json();

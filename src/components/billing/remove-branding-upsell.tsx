@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate } from '@/lib/billing';
 import { BILLING_PRODUCTS } from '@/lib/billing-products';
+import { getMpDeviceSessionId } from '@/lib/mp-device-session';
 import { PLANS } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
@@ -84,13 +85,15 @@ export function RemoveBrandingUpsell({
 
     setEspecialLoading(true);
     try {
+      const deviceSessionId = await getMpDeviceSessionId();
       const response = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: session.user.email,
           name: session.user.name,
-          product: 'acesso-especial'
+          product: 'acesso-especial',
+          deviceSessionId
         })
       });
       const data = await response.json().catch(() => ({}));
