@@ -74,7 +74,6 @@ function ContaContent() {
   const { session, plan, usage, refresh, logout } = useAuth();
   const billingStatus = searchParams.get('billing');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [verifyLoading, setVerifyLoading] = useState(false);
   const [billingMessage, setBillingMessage] = useState<{
     type: 'success' | 'pending' | 'error';
     text: string;
@@ -180,7 +179,7 @@ function ContaContent() {
       if (Date.now() - startedAt >= POLL_MAX_MS) {
         setBillingMessage({
           type: 'pending',
-          text: 'Ainda não encontramos a aprovação. Use “Já paguei — verificar agora” abaixo.'
+          text: 'Ainda não encontramos a aprovação. Atualize esta página em alguns minutos — o Premium libera automaticamente quando o pagamento for confirmado.'
         });
         return;
       }
@@ -222,26 +221,6 @@ function ContaContent() {
       const message = error instanceof Error ? error.message : 'Falha ao abrir o pagamento.';
       setBillingMessage({ type: 'error', text: message });
       toast(message);
-    }
-  }
-
-  async function handleVerifyPayment() {
-    if (!session?.user.email) {
-      toast('Faça login para verificar o pagamento.');
-      return;
-    }
-    setVerifyLoading(true);
-    try {
-      const result = await confirmPayment();
-      if (!result.approved) {
-        toast('Pagamento ainda não aprovado. Tente de novo em alguns segundos.');
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Falha ao verificar pagamento.';
-      setBillingMessage({ type: 'error', text: message });
-      toast(message);
-    } finally {
-      setVerifyLoading(false);
     }
   }
 
@@ -418,31 +397,20 @@ function ContaContent() {
                 Encerrar Premium neste aparelho
               </Button>
             ) : (
-              <div className="mt-7 space-y-3">
-                <Button
-                  className="w-full bg-white text-slate-950 hover:bg-sky-50"
-                  onClick={handleUpgrade}
-                  disabled={checkoutLoading}
-                >
-                  {checkoutLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                  {checkoutLoading
-                    ? 'Abrindo pagamento…'
-                    : `Assinar Premium por ${PLANS.premium.priceLabel}`}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
-                  onClick={handleVerifyPayment}
-                  disabled={verifyLoading}
-                >
-                  {verifyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {verifyLoading ? 'Verificando pagamento…' : 'Já paguei — verificar agora'}
-                </Button>
-              </div>
+              <Button
+                className="mt-7 w-full bg-white text-slate-950 hover:bg-sky-50"
+                onClick={handleUpgrade}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
+                {checkoutLoading
+                  ? 'Abrindo pagamento…'
+                  : `Assinar Premium por ${PLANS.premium.priceLabel}`}
+              </Button>
             )}
             <p className="mt-4 text-xs leading-5 text-slate-400">
               {plan.id === 'premium'
