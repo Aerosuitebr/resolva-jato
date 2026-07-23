@@ -24,9 +24,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate, formatDateTime, cancelPremium } from '@/lib/billing';
+import { formatCpf, isValidCpf } from '@/lib/cpf';
 import { PLANS } from '@/lib/plans';
+import { Input } from '@/components/ui/input';
 
 const PENDING_PAYMENT_KEY = 'rj_pending_mp_payment';
+const PENDING_NUPAY_KEY = 'rj_pending_nupay';
 const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_MS = 12 * 60 * 1000;
 
@@ -67,6 +70,31 @@ function clearPendingPayment() {
   sessionStorage.removeItem(PENDING_PAYMENT_KEY);
 }
 
+function savePendingNuPay(sessionId: string, reference: string) {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(
+    PENDING_NUPAY_KEY,
+    JSON.stringify({ sessionId, reference, savedAt: Date.now() })
+  );
+}
+
+function readPendingNuPay() {
+  if (typeof window === 'undefined') return { sessionId: '', reference: '' };
+  try {
+    const raw = sessionStorage.getItem(PENDING_NUPAY_KEY);
+    if (!raw) return { sessionId: '', reference: '' };
+    const parsed = JSON.parse(raw) as { sessionId?: string; reference?: string };
+    return { sessionId: parsed.sessionId || '', reference: parsed.reference || '' };
+  } catch {
+    return { sessionId: '', reference: '' };
+  }
+}
+
+function clearPendingNuPay() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(PENDING_NUPAY_KEY);
+}
+
 function ContaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,6 +102,8 @@ function ContaContent() {
   const { session, plan, usage, refresh, logout } = useAuth();
   const billingStatus = searchParams.get('billing');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [nupayLoading, setNupayLoading] = useState(false);
+  const [cpf, setCpf] = useState('');
   const [billingMessage, setBillingMessage] = useState<{
     type: 'success' | 'pending' | 'error';
     text: string;
@@ -122,13 +152,119 @@ function ContaContent() {
     return { approved: false as const, status: data.status as string | undefined };
   }
 
+  async function confirmNuPay(opts?: { sessionId?: string; reference?: string; silent?: boolean }) {
+    const stored = readPendingNuPay();
+    const sessionId = opts?.sessionId || stored.sessionId;
+    const reference = opts?.reference || stored.reference;
+    const qs = new URLSearchParams();
+    if (sessionId) qs.set('sessionId', sessionId);
+    if (reference) qs.set('reference', reference);
+
+    const response = await fetch(`/api/billing/confirm-nupay?${qs.toString()}`, {
+      credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Não foi possível confirmar o NuPay.');
+    }
+
+    if (data.approved) {
+      clearPendingNuPay();
+      await refresh();
+      setBillingMessage({
+        type: 'success',
+        text: 'Pagamento NuPay aprovado! Premium ativo por 30 dias: documentos sem marca Resolva Jato.'
+      });
+      if (!opts?.silent) toast('Premium ativado via NuPay.');
+      return { approved: true as const };
+    }
+
+    if (!opts?.silent) {
+      setBillingMessage({
+        type: 'pending',
+        text: 'Aguardando confirmação do NuPay no app do Nubank…'
+      });
+    }
+    return { approved: false as const, status: data.status as string | undefined };
+  }
+
   useEffect(() => {
     if (!session?.user.email || pollStarted.current) return;
-    if (billingStatus !== 'success' && billingStatus !== 'pending' && billingStatus !== 'failure') {
+    if (billingStatus !== 'success' && billingStatus !== 'pending' && billingStatus !== 'failure' && billingStatus !== 'nupay' && billingStatus !== 'nupay-success' && billingStatus !== 'nupay-cancel') {
       return;
     }
 
     pollStarted.current = true;
+
+    if (billingStatus === 'nupay-cancel') {
+      clearPendingNuPay();
+      setBillingMessage({ type: 'error', text: 'Pagamento NuPay cancelado. Você pode tentar de novo.' });
+      router.replace('/conta');
+      return;
+    }
+
+    if (billingStatus === 'nupay' || billingStatus === 'nupay-success') {
+      const sessionId = firstValidParam(searchParams, ['sessionId', 'session_id']);
+      const reference = firstValidParam(searchParams, ['reference']);
+      const state = firstValidParam(searchParams, ['state']).toLowerCase();
+      if (sessionId || reference) savePendingNuPay(sessionId, reference);
+
+      if (state === 'canceled' || state === 'cancelled') {
+        clearPendingNuPay();
+        setBillingMessage({ type: 'error', text: 'Pagamento NuPay cancelado.' });
+        router.replace('/conta');
+        return;
+      }
+
+      setBillingMessage({
+        type: 'pending',
+        text: 'Confirmando pagamento NuPay…'
+      });
+      router.replace('/conta');
+
+      let cancelled = false;
+      const startedAt = Date.now();
+      let timer: number | undefined;
+
+      const tick = async () => {
+        if (cancelled) return;
+        try {
+          const result = await confirmNuPay({ sessionId, reference, silent: true });
+          if (cancelled) return;
+          if (result.approved) {
+            toast('Premium ativado via NuPay.');
+            return;
+          }
+          setBillingMessage({
+            type: 'pending',
+            text: 'Aguardando aprovação no app do Nubank…'
+          });
+        } catch (error) {
+          if (cancelled) return;
+          setBillingMessage({
+            type: 'error',
+            text: error instanceof Error ? error.message : 'Falha ao confirmar NuPay.'
+          });
+        }
+
+        if (Date.now() - startedAt >= POLL_MAX_MS) {
+          setBillingMessage({
+            type: 'pending',
+            text: 'Ainda não encontramos a aprovação NuPay. Atualize esta página em alguns minutos.'
+          });
+          return;
+        }
+        timer = window.setTimeout(() => {
+          void tick();
+        }, POLL_INTERVAL_MS);
+      };
+
+      void tick();
+      return () => {
+        cancelled = true;
+        if (timer) window.clearTimeout(timer);
+      };
+    }
 
     const paymentId = firstValidParam(searchParams, ['payment_id', 'collection_id']);
     const merchantOrderId = firstValidParam(searchParams, ['merchant_order_id']);
@@ -219,6 +355,37 @@ function ContaContent() {
     } catch (error) {
       setCheckoutLoading(false);
       const message = error instanceof Error ? error.message : 'Falha ao abrir o pagamento.';
+      setBillingMessage({ type: 'error', text: message });
+      toast(message);
+    }
+  }
+
+  async function handleNuPayUpgrade() {
+    if (!session?.user.email) {
+      toast('Faça login para assinar com NuPay.');
+      return;
+    }
+    if (!isValidCpf(cpf)) {
+      toast('Informe um CPF válido para pagar com NuPay.');
+      setBillingMessage({ type: 'error', text: 'CPF inválido. O NuPay exige CPF de conta Nubank elegível.' });
+      return;
+    }
+    setNupayLoading(true);
+    setBillingMessage(null);
+    try {
+      const response = await fetch('/api/billing/checkout-nupay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ cpf })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível iniciar o NuPay.');
+      if (data.sessionId) savePendingNuPay(data.sessionId, data.reference || '');
+      window.location.href = data.checkoutUrl as string;
+    } catch (error) {
+      setNupayLoading(false);
+      const message = error instanceof Error ? error.message : 'Falha ao abrir o NuPay.';
       setBillingMessage({ type: 'error', text: message });
       toast(message);
     }
@@ -397,25 +564,50 @@ function ContaContent() {
                 Encerrar Premium neste aparelho
               </Button>
             ) : (
-              <Button
-                className="mt-7 w-full bg-white text-slate-950 hover:bg-sky-50"
-                onClick={handleUpgrade}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-                {checkoutLoading
-                  ? 'Abrindo pagamento…'
-                  : `Assinar Premium por ${PLANS.premium.priceLabel}`}
-              </Button>
+              <div className="mt-7 space-y-3">
+                <Button
+                  className="w-full bg-white text-slate-950 hover:bg-sky-50"
+                  onClick={handleUpgrade}
+                  disabled={checkoutLoading || nupayLoading}
+                >
+                  {checkoutLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
+                  {checkoutLoading
+                    ? 'Abrindo pagamento…'
+                    : `Assinar Premium por ${PLANS.premium.priceLabel}`}
+                </Button>
+                <div className="rounded-2xl border border-white/15 bg-white/5 p-3">
+                  <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    CPF para NuPay (Nubank)
+                  </label>
+                  <Input
+                    value={cpf}
+                    onChange={(e) => setCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className="mt-2 border-white/20 bg-slate-950/40 text-white placeholder:text-slate-500"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-3 w-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                    onClick={handleNuPayUpgrade}
+                    disabled={checkoutLoading || nupayLoading}
+                  >
+                    {nupayLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {nupayLoading ? 'Abrindo NuPay…' : 'Pagar com NuPay'}
+                  </Button>
+                </div>
+              </div>
             )}
             <p className="mt-4 text-xs leading-5 text-slate-400">
               {plan.id === 'premium'
                 ? 'Após o vencimento, a conta volta ao plano grátis.'
-                : 'Pagamento seguro (cartão, Pix e outros). Assim que for aprovado — por qualquer meio — o Premium libera automaticamente por 30 dias.'}
+                : 'Pagamento seguro (cartão, Pix, NuPay e outros). Assim que for aprovado — por qualquer meio — o Premium libera automaticamente por 30 dias.'}
             </p>
           </aside>
         </section>

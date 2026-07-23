@@ -276,6 +276,58 @@ export async function activatePremiumFromMercadoPagoPayment(input: {
   };
 }
 
+/**
+ * Libera Premium a partir de pagamento NuPay (AUTHORIZED / COMPLETED).
+ * Idempotente pelo pspReferenceId.
+ */
+export async function activatePremiumFromNuPayPayment(input: {
+  userId: string;
+  pspReferenceId: string;
+  status: string;
+  amount?: number;
+}): Promise<PremiumActivationResult> {
+  const { userId, pspReferenceId, status } = input;
+  if (status !== 'COMPLETED' && status !== 'AUTHORIZED') {
+    return { activated: false, reason: 'not_approved', status };
+  }
+  if (!premiumAmountMatches(input.amount)) {
+    return { activated: false, reason: 'amount_mismatch', status };
+  }
+
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true }
+  });
+  if (!user) {
+    return { activated: false, reason: 'user_not_found', status };
+  }
+
+  const providerRef = `nupay:${pspReferenceId}`;
+  const existing = await prisma.subscription.findUnique({ where: { userId: user.id } });
+  if (existing?.providerRef === providerRef) {
+    return {
+      activated: true,
+      alreadyActive: true,
+      userId: user.id,
+      email: user.email,
+      paymentId: 0,
+      expiresAt: existing.expiresAt.toISOString(),
+      status
+    };
+  }
+
+  const sub = await grantPremiumMonthServer(user.id, providerRef);
+  return {
+    activated: true,
+    userId: user.id,
+    email: user.email,
+    paymentId: 0,
+    expiresAt: sub.expiresAt.toISOString(),
+    status
+  };
+}
+
 export async function cancelPremiumServer(userId: string) {
   const prisma = getPrisma();
   await prisma.subscription.deleteMany({ where: { userId } });

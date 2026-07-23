@@ -125,7 +125,7 @@ export function RemoveBrandingUpsell({
             </Link>
           </Button>
           <p className="mt-3 text-center text-[11px] leading-5 text-slate-400 lg:text-left">
-            Pagamento seguro (cartão, Pix e outros). Assim que for aprovado — por qualquer meio — o
+            Pagamento seguro (cartão, Pix, NuPay e outros). Assim que for aprovado — por qualquer meio — o
             Premium libera automaticamente por 30 dias.
           </p>
         </div>
