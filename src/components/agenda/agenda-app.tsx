@@ -237,7 +237,7 @@ export function AgendaApp() {
         () => saveAgendaEvent({ ...draft, title: draft.title.trim() })
       );
       if (!outcome.allowed) {
-        setError(outcome.reason || 'Seu saldo não permite salvar agora.');
+        setError(outcome.reason || 'Faça login e confirme seu e-mail para continuar.');
         return;
       }
       const stored = listAgendaEvents();

@@ -4,8 +4,6 @@ import type { BillableAction, BillableContext, BillableToolId } from './billing-
 
 export type { BillableAction, BillableContext, BillableToolId };
 
-const FREE_USES = 5;
-
 export interface UsageAuditEntry {
   id: string;
   toolId: BillableToolId;
@@ -50,9 +48,9 @@ export interface ToolUsageProgress {
 /** Cache em memória sincronizado por useAuth via /api/auth/me */
 let cachedProgress: ToolUsageProgress = {
   current: 0,
-  limit: FREE_USES,
+  limit: null,
   unlimited: false,
-  remaining: FREE_USES,
+  remaining: null,
   ratio: 0,
   exhaustedAt: null,
   nextReleaseAt: null,
@@ -71,9 +69,9 @@ export function hydrateBillingFromServer(input: {
   if (input.usage) {
     cachedProgress = {
       current: Number(input.usage.current) || 0,
-      limit: input.usage.limit ?? FREE_USES,
+      limit: input.usage.limit ?? null,
       unlimited: Boolean(input.usage.unlimited),
-      remaining: input.usage.remaining ?? FREE_USES,
+      remaining: input.usage.remaining ?? null,
       ratio: Number(input.usage.ratio) || 0,
       exhaustedAt: input.usage.exhaustedAt ?? null,
       nextReleaseAt: input.usage.nextReleaseAt ?? null,
@@ -103,8 +101,10 @@ export function cancelPremium() {
   cachedProgress = {
     ...cachedProgress,
     unlimited: false,
-    remaining: cachedProgress.remaining ?? 0,
-    limit: FREE_USES,
+    remaining: null,
+    limit: null,
+    exhaustedAt: null,
+    nextReleaseAt: null,
     premiumExpiresAt: null
   };
 }
@@ -127,7 +127,7 @@ export function setCurrentPlanId(planId: PlanId) {
 
 export function getUsageState(): UsageState {
   return {
-    availableUses: cachedProgress.remaining ?? 0,
+    availableUses: cachedProgress.remaining ?? Number.POSITIVE_INFINITY,
     totalConsumed: cachedProgress.current,
     exhaustedAt: cachedProgress.exhaustedAt,
     nextReleaseAt: cachedProgress.nextReleaseAt,
@@ -152,16 +152,6 @@ export function canUseTool(): UsageDecision {
       allowed: false,
       emailVerificationRequired: true,
       reason: 'Confirme seu e-mail para liberar as ferramentas.'
-    };
-  }
-  if (cachedProgress.unlimited) return { allowed: true };
-  if (cachedProgress.remaining === 0) {
-    return {
-      allowed: false,
-      upgradeRequired: true,
-      reason: cachedProgress.nextReleaseAt
-        ? 'Máximo de utilizações atingido. Assine o Premium ou aguarde o próximo pacote.'
-        : 'Máximo de utilizações atingido. Assine o Premium para continuar sem limites.'
     };
   }
   return { allowed: true };
@@ -249,8 +239,7 @@ export function trackToolUse() {
 
 export function formatToolUsageLabel() {
   const progress = getToolUsageProgress();
-  if (progress.unlimited) return 'Ilimitado';
-  if (progress.remaining === 0) return 'Máximo de utilizações atingido';
+  if (progress.unlimited) return 'Ilimitado · sem marca';
   return 'Ferramentas liberadas';
 }
 

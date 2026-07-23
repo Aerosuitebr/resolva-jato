@@ -56,7 +56,7 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
             </div>
             <h2 className="text-xl font-bold text-slate-900">Workspace em evolução</h2>
             <p className="mt-3 text-sm leading-7 text-slate-700">
-              Esta ferramenta já está posicionada no produto e pronta para receber o editor completo. Abrir o workspace não consome saldo; uma utilização será debitada somente ao salvar uma tarefa.
+              Esta ferramenta já está posicionada no produto e pronta para receber o editor completo. No plano gratuito, documentos e mensagens podem incluir a marca Resolva Jato.
             </p>
             <ul className="mt-5 space-y-3">
               {bullets.map((bullet) => (
@@ -69,7 +69,7 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
             <div className="mt-6 flex flex-wrap gap-3">
               {!started ? (
                 <Button onClick={handleStart}>
-                  Iniciar utilização
+                  Abrir workspace
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
@@ -96,21 +96,14 @@ export function ToolWorkspace({ toolId, bullets }: ToolWorkspaceProps) {
                 Status:{' '}
                 <strong className="text-slate-900">
                   {usage.unlimited
-                    ? 'Ilimitado'
-                    : usage.remaining === 0
-                      ? 'Máximo de utilizações atingido'
-                      : 'Ferramentas liberadas'}
+                    ? 'Ilimitado · sem marca'
+                    : 'Ferramentas liberadas'}
                 </strong>
               </p>
               <p>
                 Busca de recursos: <strong className="text-slate-900">sempre gratuita</strong>
               </p>
             </div>
-            {!usage.unlimited && usage.remaining === 0 ? (
-              <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-900">
-                Máximo de utilizações atingido. O Premium libera uso ilimitado por 30 dias.
-              </div>
-            ) : null}
           </aside>
         </section>
       </div>

@@ -267,7 +267,7 @@ export function ContratosApp() {
         () => saveContrato(contrato)
       );
       if (!outcome.allowed) {
-        setError(outcome.reason || 'Seu saldo não permite salvar agora.');
+        setError(outcome.reason || 'Faça login e confirme seu e-mail para continuar.');
         return;
       }
       setItems(listContratos());

@@ -65,7 +65,7 @@ export function SidebarUserCard({ collapsed }: SidebarUserCardProps) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-white">{session?.user.name}</p>
           <p className="truncate text-xs font-medium text-slate-400">
-            {plan.id === 'premium' ? 'Premium · uso ilimitado' : `${plan.name} · ${formatToolUsageLabel()}`}
+            {plan.id === 'premium' ? 'Premium · sem marca' : `${plan.name} · ${formatToolUsageLabel()}`}
           </p>
         </div>
         <Button

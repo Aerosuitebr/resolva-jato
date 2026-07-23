@@ -1,7 +1,7 @@
 import { getPrisma } from '@/lib/db';
 import { getPlan, type PlanId } from '@/lib/plans';
 
-export const FREE_USES = 5;
+/** Dias de vigência do Premium após pagamento. */
 export const ACCESS_DAYS = 30;
 const ACCESS_PERIOD_MS = ACCESS_DAYS * 24 * 60 * 60 * 1000;
 const MAX_AUDIT_ENTRIES = 100;
@@ -55,22 +55,18 @@ async function ensureUsage(userId: string) {
   let usage = await prisma.toolUsage.findUnique({ where: { userId } });
   if (!usage) {
     usage = await prisma.toolUsage.create({
-      data: { userId, availableUses: FREE_USES, totalConsumed: 0, periodDays: ACCESS_DAYS }
+      data: { userId, availableUses: 0, totalConsumed: 0, periodDays: ACCESS_DAYS }
     });
   }
 
-  if (
-    usage.availableUses === 0 &&
-    usage.nextReleaseAt &&
-    usage.nextReleaseAt.getTime() <= Date.now()
-  ) {
+  // Plano grátis não tem cota: limpa bloqueios antigos (pacote de 5 usos).
+  if (usage.exhaustedAt || usage.nextReleaseAt || usage.availableUses !== 0) {
     usage = await prisma.toolUsage.update({
       where: { userId },
       data: {
-        availableUses: FREE_USES,
+        availableUses: 0,
         exhaustedAt: null,
-        nextReleaseAt: null,
-        recentActions: []
+        nextReleaseAt: null
       }
     });
   }
@@ -96,22 +92,22 @@ export async function getServerUsageProgress(userId: string) {
       unlimited: true,
       remaining: null as number | null,
       ratio: 0,
-      exhaustedAt: usage.exhaustedAt?.toISOString() ?? null,
-      nextReleaseAt: usage.nextReleaseAt?.toISOString() ?? null,
+      exhaustedAt: null as string | null,
+      nextReleaseAt: null as string | null,
       premiumExpiresAt: subscription.expiresAt.toISOString(),
       recentActions
     };
   }
 
-  const current = FREE_USES - usage.availableUses;
+  // Grátis: uso ilimitado das ferramentas; Premium só remove a marca.
   return {
-    current,
-    limit: FREE_USES,
+    current: usage.totalConsumed,
+    limit: null as number | null,
     unlimited: false,
-    remaining: usage.availableUses,
-    ratio: Math.min(current / FREE_USES, 1),
-    exhaustedAt: usage.exhaustedAt?.toISOString() ?? null,
-    nextReleaseAt: usage.nextReleaseAt?.toISOString() ?? null,
+    remaining: null as number | null,
+    ratio: 0,
+    exhaustedAt: null as string | null,
+    nextReleaseAt: null as string | null,
     premiumExpiresAt: null as string | null,
     recentActions
   };
@@ -126,19 +122,8 @@ export async function canUseToolServer(userId: string, emailVerified: boolean) {
     };
   }
 
-  const planId = await getServerPlanId(userId);
-  if (planId === 'premium') return { allowed: true };
-
-  const progress = await getServerUsageProgress(userId);
-  if (progress.remaining === 0) {
-    return {
-      allowed: false,
-      upgradeRequired: true,
-      reason: progress.nextReleaseAt
-        ? 'Máximo de utilizações atingido. Aguarde o próximo pacote ou assine o Premium.'
-        : 'Máximo de utilizações atingido. Assine o Premium para continuar sem limites.'
-    };
-  }
+  // Sem cota de utilizações no plano gratuito.
+  void userId;
   return { allowed: true };
 }
 
@@ -161,12 +146,11 @@ export async function consumeServerUse(userId: string, context: BillableContext)
     return Number.isFinite(at) && at >= cutoff;
   });
 
-  if (recentlyCharged || usage.availableUses <= 0) {
+  if (recentlyCharged) {
     return { charged: false, progress: await getServerUsageProgress(userId) };
   }
 
   const now = new Date();
-  const nextAvailable = usage.availableUses - 1;
   const entry: UsageAuditEntry = {
     id: `${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`,
     ...context,
@@ -177,12 +161,10 @@ export async function consumeServerUse(userId: string, context: BillableContext)
   await prisma.toolUsage.update({
     where: { userId },
     data: {
-      availableUses: nextAvailable,
       totalConsumed: { increment: 1 },
       recentActions: nextRecent as unknown as object[],
-      exhaustedAt: nextAvailable === 0 ? now : usage.exhaustedAt,
-      nextReleaseAt:
-        nextAvailable === 0 ? new Date(now.getTime() + ACCESS_PERIOD_MS) : usage.nextReleaseAt
+      exhaustedAt: null,
+      nextReleaseAt: null
     }
   });
 

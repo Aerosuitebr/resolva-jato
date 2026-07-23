@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, Crown } from 'lucide-react';
+import { ArrowRight, Crown } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { PlanBenefitsList } from '@/components/marketing/plan-benefits-list';
 import { TrustSeals } from '@/components/marketing/trust-seals';
@@ -12,12 +12,13 @@ import { cn } from '@/lib/utils';
 
 interface UpgradeModalProps {
   open: boolean;
+  /** @deprecated Cota de usos removida — ignorado. */
   nextReleaseAtLabel?: string | null;
   onUnlock: () => void;
   onLeave?: () => void;
 }
 
-export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: UpgradeModalProps) {
+export function UpgradeModal({ open, onUnlock, onLeave }: UpgradeModalProps) {
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = 'hidden';
@@ -59,7 +60,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
               <Logo variant="hero" />
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-300/15 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-amber-200">
                 <Crown className="h-3.5 w-3.5" />
-                Acesso bloqueado
+                Remover marca
               </span>
             </div>
 
@@ -74,7 +75,7 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             </h2>
             <ul className="mt-4 max-w-lg space-y-1.5 text-sm text-slate-300">
               <li>· PDF sem rodapé e sem logo do Resolva Jato</li>
-              <li>· Uso ilimitado por 30 dias</li>
+              <li>· WhatsApp e e-mail sem referências</li>
             </ul>
 
             <div className="mt-8 flex flex-wrap items-end gap-3">
@@ -98,20 +99,13 @@ export function UpgradeModal({ open, nextReleaseAtLabel, onUnlock, onLeave }: Up
             />
             <TrustSeals tone="dark" className="mt-6 lg:grid-cols-4" />
 
-            {nextReleaseAtLabel ? (
-              <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-slate-400">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                Sem Premium, um novo pacote gratuito libera em {nextReleaseAtLabel}.
-              </p>
-            ) : null}
-
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button
                 type="button"
                 onClick={onUnlock}
                 className="h-14 flex-1 bg-gradient-to-r from-amber-300 via-amber-200 to-sky-200 text-base font-black text-slate-950 shadow-[0_18px_40px_rgba(251,191,36,0.25)] hover:from-amber-200 hover:via-white hover:to-sky-100"
               >
-                Desbloquear agora por {premium.priceLabel}
+                Remover marca por {premium.priceLabel}
                 <ArrowRight className="h-5 w-5" />
               </Button>
               {onLeave ? (

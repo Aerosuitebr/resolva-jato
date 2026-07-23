@@ -200,11 +200,9 @@ export default function FerramentasPage() {
               <p className="text-xs font-medium leading-5 text-slate-300">
                 {usage.unlimited
                   ? usage.premiumExpiresAt
-                    ? `Uso ilimitado até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
-                    : 'Uso ilimitado de ferramentas'
-                  : usage.remaining === 0
-                    ? 'Máximo de utilizações atingido'
-                    : 'Crie e baixe documentos com qualidade profissional'}
+                    ? `Documentos sem marca até ${new Date(usage.premiumExpiresAt).toLocaleDateString('pt-BR')}`
+                    : 'Documentos sem marca Resolva Jato'
+                  : 'Crie e baixe documentos com qualidade profissional'}
               </p>
               {usage.unlimited ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200">

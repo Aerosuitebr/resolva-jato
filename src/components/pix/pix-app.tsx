@@ -145,7 +145,7 @@ export function PixApp() {
         }
       );
       if (!outcome.allowed) {
-        setError(outcome.reason || 'Seu saldo não permite esta ação agora.');
+        setError(outcome.reason || 'Faça login e confirme seu e-mail para continuar.');
         return;
       }
       refreshAuth();
@@ -213,8 +213,8 @@ export function PixApp() {
                     Cobrança Pix com QR Code
                   </h1>
                   <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-300">
-                    Gere QR e Pix Copia e Cola no navegador — sem API bancária. Copiar ou enviar consome 1
-                    utilização.
+                    Gere QR e Pix Copia e Cola no navegador — sem API bancária. No plano gratuito, o envio
+                    pode incluir referência ao Resolva Jato.
                   </p>
                 </div>
               </div>

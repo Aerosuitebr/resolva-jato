@@ -39,11 +39,11 @@ export const PLANS: Record<PlanId, Plan> = {
     priceLabel: 'R$ 0',
     period: 'para sempre',
     highlight: false,
-    toolUsesLimit: 5,
+    toolUsesLimit: null,
     benefits: [
       { icon: 'search', title: 'Busca ilimitada', text: 'Links úteis sempre grátis' },
       { icon: 'user', title: 'Conta gratuita', text: 'E-mail e senha em segundos' },
-      { icon: 'gift', title: 'Ferramentas grátis', text: 'Teste sem custo para começar' },
+      { icon: 'gift', title: 'Ferramentas sem cota', text: 'Salve e baixe à vontade' },
       { icon: 'tools', title: 'Todas as ferramentas', text: 'Currículos, contratos, Pix e mais' },
       { icon: 'test', title: 'Sem cartão', text: 'Ideal para experimentar primeiro' }
     ]
@@ -51,7 +51,7 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    tagline: 'Documentos limpos e uso ilimitado',
+    tagline: 'Documentos limpos, sem marca',
     price: 4.99,
     priceLabel: 'R$ 4,99',
     period: '/mês',
@@ -59,7 +59,7 @@ export const PLANS: Record<PlanId, Plan> = {
     toolUsesLimit: null,
     benefits: [
       { icon: 'sparkles', title: 'Sem marca Resolva Jato', text: 'PDF, WhatsApp e e-mail sem referências' },
-      { icon: 'infinity', title: 'Uso ilimitado', text: 'Salve e baixe sem interrupção' },
+      { icon: 'infinity', title: 'PDF profissional', text: 'Pronto para enviar a clientes' },
       { icon: 'zap', title: '30 dias completos', text: 'Vigência clara na sua conta' },
       { icon: 'calendar', title: 'Agenda', text: 'Calendário e alertas' },
       { icon: 'layout', title: 'Layouts profissionais', text: 'Documentos com cara de escritório' },

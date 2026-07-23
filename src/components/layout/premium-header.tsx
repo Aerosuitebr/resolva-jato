@@ -29,10 +29,7 @@ export function PremiumHeader() {
     ? 'Documentos liberados'
     : 'Documentos profissionais grátis';
 
-  // Só falamos de limite quando o máximo de utilizações foi atingido.
-  const usageExhausted = !usage.unlimited && usage.remaining === 0;
-
-  const usageSubtitle = usageExhausted ? 'Máximo de utilizações atingido' : null;
+  const usageSubtitle = null;
 
   return (
     <header className="sticky top-8 z-[100] border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
@@ -145,7 +142,7 @@ export function PremiumHeader() {
                 <span>
                   <span className="block text-sm font-bold">{session?.user.name}</span>
                   <span className="block text-xs text-slate-300">
-                    {usageExhausted ? 'Máximo de utilizações atingido' : planSubtitle}
+                    {planSubtitle}
                   </span>
                 </span>
               </Link>

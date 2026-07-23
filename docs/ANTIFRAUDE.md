@@ -4,7 +4,7 @@ Defense in depth contra múltiplas contas para burlar o plano gratuito.
 
 ## Camadas ativas
 
-1. **Confirmação de e-mail** — cadastro cria usuário sem usos; link Resend ativa e libera o pacote gratuito
+1. **Confirmação de e-mail** — cadastro cria usuário sem acesso às ferramentas; link Resend ativa a conta
 2. **E-mails descartáveis** — lista local de domínios bloqueados no register
 3. **Cloudflare Turnstile** — token validado no servidor
 4. **Rate limit por IP** — cadastro 3/24h, login 10/15min, reenvio 5/h (Postgres)
@@ -29,9 +29,9 @@ Em desenvolvimento, sem Turnstile o captcha é ignorado; sem Resend o link de ve
 
 1. Middleware garante cookie de dispositivo
 2. `POST /api/auth/register` → Turnstile → disposable → blacklist → rate → risk → user + e-mail
-3. Usuário abre link → `GET /api/auth/verify-email` → `emailVerifiedAt` + `ToolUsage` com pacote gratuito
+3. Usuário abre link → `GET /api/auth/verify-email` → `emailVerifiedAt` + registro de `ToolUsage`
 4. Login define cookie httpOnly; `GET /api/auth/me` hidrata o client
-5. `POST /api/billing/consume` debita usos no Postgres
+5. `POST /api/billing/consume` registra uso no Postgres (sem cota no plano grátis; Premium remove a marca)
 
 ## APIs
 

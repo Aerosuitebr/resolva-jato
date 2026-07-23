@@ -19,7 +19,7 @@ export function PricingPage() {
         </h1>
         <p className="mt-4 text-sm leading-7 text-slate-600">
           No gratuito, o PDF leva o logo discreto e o rodapé do Resolva Jato — assim você avalia a
-          qualidade. Com o Premium, documentos limpos e uso ilimitado por 30 dias.
+          qualidade. Com o Premium, documentos limpos — sem rodapé nem logo — por 30 dias.
         </p>
       </div>
 
@@ -31,6 +31,7 @@ export function PricingPage() {
           <ul className="mt-6 space-y-2.5 text-sm text-slate-700">
             {[
               'Documentos profissionais em PDF',
+              'Salve e baixe sem limite de usos',
               'Rodapé + logo Resolva Jato no arquivo',
               'Busca de recursos sempre aberta'
             ].map((item) => (
@@ -55,7 +56,7 @@ export function PricingPage() {
           <ul className="mt-6 space-y-2.5 text-sm text-slate-100">
             {[
               'PDF sem rodapé e sem logo',
-              'Uso ilimitado por 30 dias',
+              'WhatsApp e e-mail sem referências',
               'Vigência clara na sua conta após o pagamento'
             ].map((item) => (
               <li key={item} className="flex items-start gap-2.5">

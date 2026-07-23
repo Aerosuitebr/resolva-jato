@@ -45,9 +45,9 @@ export function useAuth() {
           planId: 'gratis',
           usage: {
             current: 0,
-            limit: 5,
+            limit: null,
             unlimited: false,
-            remaining: 5,
+            remaining: null,
             ratio: 0,
             exhaustedAt: null,
             nextReleaseAt: null,
@@ -86,9 +86,9 @@ export function useAuth() {
       planId: 'gratis',
       usage: {
         current: 0,
-        limit: 5,
+        limit: null,
         unlimited: false,
-        remaining: 5,
+        remaining: null,
         ratio: 0,
         exhaustedAt: null,
         nextReleaseAt: null,

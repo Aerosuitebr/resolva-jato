@@ -41,7 +41,7 @@ export const menuSections: MenuSection[] = [
     icon: CreditCard,
     accentColor: '#fbbf24',
     items: [
-      { id: 'minha-conta', label: 'Plano e utilizações', href: '/conta', icon: CreditCard },
+      { id: 'minha-conta', label: 'Meu plano', href: '/conta', icon: CreditCard },
       { id: 'planos', label: 'Ver planos', href: '/planos', icon: FileText },
       { id: 'busca-livre', label: 'Página inicial', href: '/', icon: Search }
     ]

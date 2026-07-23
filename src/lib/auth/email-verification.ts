@@ -102,11 +102,14 @@ export async function consumeVerificationToken(rawToken: string) {
       where: { userId: record.userId },
       create: {
         userId: record.userId,
-        availableUses: 5,
+        availableUses: 0,
         totalConsumed: 0,
         periodDays: 30
       },
-      update: {}
+      update: {
+        exhaustedAt: null,
+        nextReleaseAt: null
+      }
     })
   ]);
 

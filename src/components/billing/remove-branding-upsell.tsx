@@ -41,7 +41,7 @@ export function RemoveBrandingUpsell({
           <strong>
             {usage.premiumExpiresAt ? formatDate(usage.premiumExpiresAt) : 'o fim do período'}
           </strong>
-          . Uso ilimitado e PDFs limpos — sem rodapé nem logo do Resolva Jato.
+          . PDFs limpos — sem rodapé nem logo do Resolva Jato.
         </p>
       </div>
     );
@@ -87,12 +87,11 @@ export function RemoveBrandingUpsell({
       </h2>
       <p className="mt-2 text-sm leading-6 text-slate-200">
         No plano gratuito, PDF e mensagens de WhatsApp/e-mail levam a referência do Resolva Jato.
-        No Premium, saem limpos — sem marca — com uso ilimitado por 30 dias.
+        No Premium, saem limpos — sem marca — por 30 dias.
       </p>
       <ul className="mt-4 space-y-1.5 text-sm text-slate-100">
         <li>· PDF sem rodapé e sem logo</li>
         <li>· WhatsApp e e-mail sem referência Resolva Jato</li>
-        <li>· Salvamentos e downloads ilimitados</li>
         <li>· Vigência clara na sua conta após o pagamento</li>
       </ul>
       <Button asChild size="lg" className="mt-5 w-full bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">

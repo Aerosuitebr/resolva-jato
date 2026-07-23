@@ -569,13 +569,13 @@ export function BuscaClient() {
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-slate-300 sm:text-base">
                   A busca de links continua grátis e sem limite. No Premium, contratos, orçamentos, recibos e
-                  cobranças Pix ficam ilimitados e organizados em um só lugar.
+                  cobranças Pix saem sem a marca Resolva Jato.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300">
                   <Link href="/conta?upgrade=premium">
-                    Liberar uso ilimitado
+                    Remover marca Resolva Jato
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>

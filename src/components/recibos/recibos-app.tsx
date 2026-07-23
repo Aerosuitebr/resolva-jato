@@ -235,7 +235,7 @@ export function RecibosApp() {
         () => saveReceipt(receipt)
       );
       if (!outcome.allowed) {
-        setError(outcome.reason || 'Seu saldo não permite salvar agora.');
+        setError(outcome.reason || 'Faça login e confirme seu e-mail para continuar.');
         toast(outcome.reason || 'Não foi possível salvar');
         return;
       }
