@@ -1,5 +1,6 @@
 ﻿import { shouldBrandOutboundMessagesByEmail } from '@/lib/billing-server';
 import { formatCurrency } from '@/lib/formatters';
+import { isMailConfigured, sendEmail } from '@/lib/mail/send-email';
 import { sendSmsAlert } from '@/lib/orcamentos/sms';
 import { buildProfissionalWhatsAppNotifyUrl } from '@/lib/orcamentos/whatsapp-links';
 import { sendPushToOwner } from '@/lib/push/send';
@@ -53,8 +54,6 @@ export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<N
   const email = input.ownerEmail?.trim().toLowerCase();
   const branded = email ? await shouldBrandOutboundMessagesByEmail(email) : true;
   const whatsappUrl = buildProfissionalWhatsAppNotifyUrl({ ...input, branded });
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM?.trim() || 'Resolva Jato <onboarding@resend.dev>';
   const approved = input.status === 'approved';
   const text = alertText(input, branded);
 
@@ -63,8 +62,8 @@ export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<N
 
   if (!email) {
     emailError = 'E-mail do profissional não informado.';
-  } else if (!apiKey) {
-    emailError = 'RESEND_API_KEY não configurada.';
+  } else if (!isMailConfigured()) {
+    emailError = 'Nenhum provedor de e-mail configurado (RESEND_API_KEY ou SMTP_*).';
   } else {
     const subject = approved
       ? `Orçamento aprovado por ${input.clienteNome}`
@@ -90,30 +89,14 @@ export async function notifyProfissional(input: NotifyOrcamentoInput): Promise<N
       </div>
     `;
 
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from,
-          to: [email],
-          subject: branded ? `[Resolva Jato] ${subject}` : subject,
-          html
-        })
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        emailError = detail.slice(0, 200) || `Resend HTTP ${response.status}`;
-      } else {
-        emailSent = true;
-      }
-    } catch (error) {
-      emailError = error instanceof Error ? error.message : 'Falha ao enviar e-mail.';
-    }
+    const mail = await sendEmail({
+      to: email,
+      subject: branded ? `[Resolva Jato] ${subject}` : subject,
+      html,
+      text
+    });
+    emailSent = mail.sent;
+    emailError = mail.error;
   }
 
   const sms = await sendSmsAlert(input.profissionalWhatsapp, text);

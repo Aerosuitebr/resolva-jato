@@ -60,8 +60,20 @@ function LoginForm() {
     setError('');
     setInfo('');
     try {
-      await resendVerification(email, turnstileToken);
-      setInfo('Se a conta existir e ainda não estiver confirmada, enviamos um novo e-mail.');
+      const result = (await resendVerification(email, turnstileToken)) as {
+        emailSent?: boolean;
+        emailError?: string;
+        message?: string;
+      };
+      if (result.emailSent === false) {
+        setError(
+          result.emailError
+            ? `Não foi possível enviar o e-mail: ${result.emailError}`
+            : 'Não foi possível enviar o e-mail de confirmação. Tente de novo em instantes.'
+        );
+        return;
+      }
+      setInfo(result.message || 'Se a conta existir e ainda não estiver confirmada, enviamos um novo e-mail.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao reenviar.');
     }

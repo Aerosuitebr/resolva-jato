@@ -99,7 +99,7 @@ function ContaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { session, plan, usage, refresh, logout } = useAuth();
+  const { session, plan, usage, refresh } = useAuth();
   const billingStatus = searchParams.get('billing');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [nupayLoading, setNupayLoading] = useState(false);
@@ -510,9 +510,6 @@ function ContaContent() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild variant="outline">
                   <Link href="/ferramentas">Ir para ferramentas</Link>
-                </Button>
-                <Button variant="ghost" onClick={logout}>
-                  Sair da conta
                 </Button>
               </div>
             </div>

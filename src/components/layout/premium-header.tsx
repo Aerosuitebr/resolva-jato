@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronRight, Menu, Search, Sparkles, UserRound, X } from 'lucide-react';
+import { ChevronRight, LogOut, Menu, Search, Sparkles, UserRound, X } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -16,7 +16,8 @@ const links = [
 
 export function PremiumHeader() {
   const pathname = usePathname();
-  const { session, usage, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { session, usage, isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const initials = session?.user.name
     .split(' ')
@@ -30,6 +31,12 @@ export function PremiumHeader() {
     : 'Documentos profissionais grátis';
 
   const usageSubtitle = null;
+
+  async function handleLogout() {
+    setMobileOpen(false);
+    await logout();
+    router.push('/');
+  }
 
   return (
     <header className="sticky top-8 z-[100] border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
@@ -88,9 +95,21 @@ export function PremiumHeader() {
                 className="hidden h-9 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-xs font-bold text-slate-800 sm:flex xl:hidden"
                 aria-label="Minha conta"
               >
-                <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-[10px] text-white">{initials}</span>
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-[10px] text-white">
+                  {initials}
+                </span>
                 Conta
               </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="hidden border-slate-200 text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 sm:inline-flex"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sair
+              </Button>
             </>
           ) : (
             <>
@@ -133,19 +152,27 @@ export function PremiumHeader() {
               );
             })}
             {isAuthenticated ? (
-              <Link
-                href="/conta"
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 flex items-center gap-3 rounded-2xl bg-slate-900 p-4 text-white"
-              >
-                <UserRound className="h-5 w-5" />
-                <span>
-                  <span className="block text-sm font-bold">{session?.user.name}</span>
-                  <span className="block text-xs text-slate-300">
-                    {planSubtitle}
+              <>
+                <Link
+                  href="/conta"
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-2 flex items-center gap-3 rounded-2xl bg-slate-900 p-4 text-white"
+                >
+                  <UserRound className="h-5 w-5" />
+                  <span>
+                    <span className="block text-sm font-bold">{session?.user.name}</span>
+                    <span className="block text-xs text-slate-300">{planSubtitle}</span>
                   </span>
-                </span>
-              </Link>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair da conta
+                </button>
+              </>
             ) : (
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Button asChild variant="outline">
