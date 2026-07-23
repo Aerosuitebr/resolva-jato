@@ -25,6 +25,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/auth-gate';
+import { RemoveBrandingUpsell } from '@/components/billing/remove-branding-upsell';
 import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { OrcamentoItemsEditor } from '@/components/orcamentos/orcamento-items-editor';
 import { ViralInviteShareRow } from '@/components/marketing/viral-recruit-cta';
@@ -618,6 +619,8 @@ export function OrcamentosApp() {
             </div>
           </div>
         </section>
+
+        <RemoveBrandingUpsell />
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.85fr)]">
           <div className="space-y-5">

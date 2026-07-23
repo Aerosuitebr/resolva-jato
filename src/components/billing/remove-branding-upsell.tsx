@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Crown, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Crown, ShieldCheck, Sparkles, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate } from '@/lib/billing';
@@ -13,6 +13,46 @@ const BENEFITS = [
   'WhatsApp e e-mail sem referências',
   '30 dias de vigência claros na conta'
 ] as const;
+
+function BrandComparison() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-amber-200">
+          <Tag className="h-3.5 w-3.5" />
+          Plano grátis
+        </div>
+        <p className="mt-2 text-sm font-bold text-white">Com referência</p>
+        <p className="mt-1 text-xs leading-5 text-slate-300">
+          PDF, WhatsApp e e-mail saem com a marca Resolva Jato no rodapé.
+        </p>
+        <div className="mt-3 rounded-xl border border-dashed border-white/15 bg-slate-950/40 px-3 py-2.5">
+          <p className="truncate text-[10px] font-semibold text-slate-400">Seu documento · cliente</p>
+          <p className="mt-1.5 text-[10px] leading-4 text-slate-500">
+            Gerado com Resolva Jato · resolvajato.com.br
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3.5">
+        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-emerald-200">
+          <Sparkles className="h-3.5 w-3.5" />
+          Premium
+        </div>
+        <p className="mt-2 text-sm font-bold text-white">Sem referência</p>
+        <p className="mt-1 text-xs leading-5 text-emerald-50/90">
+          Documento limpo — só a sua marca profissional, sem menção ao Resolva Jato.
+        </p>
+        <div className="mt-3 rounded-xl border border-emerald-300/20 bg-slate-950/40 px-3 py-2.5">
+          <p className="truncate text-[10px] font-semibold text-slate-300">Seu documento · cliente</p>
+          <p className="mt-1.5 text-[10px] leading-4 text-emerald-200/80">
+            Sem rodapé · sem logo · só o seu nome
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Banner Premium nas ferramentas — mesmo padrão visual da conta.
@@ -60,26 +100,31 @@ export function RemoveBrandingUpsell({
     return (
       <aside
         className={cn(
-          'flex flex-col gap-3 rounded-[24px] border border-slate-800 bg-gradient-to-br from-slate-950 to-blue-950 px-4 py-3.5 text-white sm:flex-row sm:items-center sm:justify-between',
+          'overflow-hidden rounded-[24px] border border-slate-800 bg-gradient-to-br from-slate-950 to-blue-950 p-4 text-white',
           className
         )}
       >
-        <div className="min-w-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-950">
-            <Crown className="h-3 w-3" />
-            Premium
-          </span>
-          <p className="mt-2 text-sm font-bold leading-5">
-            Remova as referências do PDF por {premium.priceLabel}
-            {premium.period}.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-950">
+              <Crown className="h-3 w-3" />
+              Premium
+            </span>
+            <p className="mt-2 text-sm font-bold leading-5">
+              Remova as referências por {premium.priceLabel}
+              {premium.period}.
+            </p>
+          </div>
+          <Button asChild size="sm" className="shrink-0 bg-white font-bold text-slate-950 hover:bg-sky-50">
+            <Link href="/conta?upgrade=premium">
+              Assinar Premium
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </div>
-        <Button asChild size="sm" className="shrink-0 bg-white font-bold text-slate-950 hover:bg-sky-50">
-          <Link href="/conta?upgrade=premium">
-            Assinar Premium
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </Button>
+        <div className="mt-3">
+          <BrandComparison />
+        </div>
       </aside>
     );
   }
@@ -104,6 +149,9 @@ export function RemoveBrandingUpsell({
             Por {premium.priceLabel}
             {premium.period}, gere documentos profissionais sem rodapé nem logo do Resolva Jato.
           </p>
+          <div className="mt-5">
+            <BrandComparison />
+          </div>
           <ul className="mt-6 grid gap-3 sm:grid-cols-3">
             {BENEFITS.map((benefit) => (
               <li key={benefit} className="flex items-start gap-3 text-sm text-slate-100">

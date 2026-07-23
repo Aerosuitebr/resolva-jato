@@ -98,7 +98,9 @@ export function buildPixWhatsAppMessage(input: {
     input.description ? `Referência: ${input.description}` : null,
     '',
     'Código Pix Copia e Cola:',
-    input.brCode
+    '```',
+    input.brCode,
+    '```'
   ].filter((line) => line !== null) as string[];
 
   return withViralMessageBrand(lines.join('\n'), input.branded !== false, 'pix_whatsapp');
