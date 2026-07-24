@@ -73,7 +73,7 @@ function loadImageElement(url: string) {
 }
 
 /**
- * Amostra a cor de fundo sob cada texto do PDF (borda da caixa)
+ * Amostra a cor de fundo sob cada texto do PDF
  * para cobrir o glyph sem mancha branca em headers coloridos.
  */
 export async function sampleCoverFillsFromPreview(
@@ -108,17 +108,25 @@ function sampleOverlayBackground(
 ) {
   const cx = overlay.coverX ?? overlay.x;
   const cy = overlay.coverY ?? overlay.y;
-  const cw = overlay.coverW ?? overlay.w;
-  const ch = overlay.coverH ?? overlay.h;
-  const pts: Array<[number, number]> = [
-    [cx + cw * 0.08, cy + ch * 0.1],
-    [cx + cw * 0.5, cy + ch * 0.06],
-    [cx + cw * 0.92, cy + ch * 0.1],
-    [cx + cw * 0.04, cy + ch * 0.5],
-    [cx + cw * 0.96, cy + ch * 0.5]
-  ];
+  const cw = Math.max(0.5, overlay.coverW ?? overlay.w);
+  const ch = Math.max(0.3, overlay.coverH ?? overlay.h);
 
-  const samples: Array<{ r: number; g: number; b: number; lum: number }> = [];
+  // Prioriza faixa ACIMA da caixa (fundo limpo, sem glyph).
+  const pts: Array<[number, number]> = [];
+  const above = Math.max(0.05, cy - Math.max(0.25, ch * 0.55));
+  const justAbove = Math.max(0.02, cy - 0.12);
+  for (let i = 0; i <= 14; i += 1) {
+    const px = cx + (cw * i) / 14;
+    pts.push([px, above], [px, justAbove]);
+  }
+  // Laterais externas (evita miolo do texto).
+  for (let i = 0; i <= 4; i += 1) {
+    const py = cy + (ch * i) / 4;
+    pts.push([cx - 0.2, py], [cx + cw + 0.2, py]);
+  }
+
+  type Sample = { r: number; g: number; b: number; lum: number; sat: number };
+  const samples: Sample[] = [];
   for (const [px, py] of pts) {
     const x = Math.min(width - 1, Math.max(0, Math.round((px / 100) * width)));
     const y = Math.min(height - 1, Math.max(0, Math.round((py / 100) * height)));
@@ -126,22 +134,59 @@ function sampleOverlayBackground(
     const r = data[0];
     const g = data[1];
     const b = data[2];
-    samples.push({ r, g, b, lum: 0.299 * r + 0.587 * g + 0.114 * b });
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const sat = max === 0 ? 0 : (max - min) / max;
+    samples.push({ r, g, b, lum, sat });
   }
 
-  // Evita amostrar o próprio glyph (quase preto).
-  const bg = samples.filter((s) => s.lum > 35);
-  const pool = bg.length >= 2 ? bg : samples;
-  const sum = pool.reduce(
-    (acc, s) => ({ r: acc.r + s.r, g: acc.g + s.g, b: acc.b + s.b }),
-    { r: 0, g: 0, b: 0 }
-  );
-  const n = pool.length || 1;
+  // Descarta tinta do texto (escura) e mistura suja.
+  const clean = samples.filter((s) => s.lum >= 55 || s.sat >= 0.28);
+  const pool = clean.length >= 4 ? clean : samples.filter((s) => s.lum >= 40);
+  const use = pool.length ? pool : samples;
+
+  // Moda por cor quantizada (mais estável que média com anti-alias).
+  const buckets = new Map<string, { count: number; r: number; g: number; b: number }>();
+  for (const s of use) {
+    const qr = Math.round(s.r / 10) * 10;
+    const qg = Math.round(s.g / 10) * 10;
+    const qb = Math.round(s.b / 10) * 10;
+    const key = `${qr},${qg},${qb}`;
+    const prev = buckets.get(key);
+    if (prev) {
+      prev.count += 1;
+      prev.r += s.r;
+      prev.g += s.g;
+      prev.b += s.b;
+    } else {
+      buckets.set(key, { count: 1, r: s.r, g: s.g, b: s.b });
+    }
+  }
+
+  let best: { count: number; r: number; g: number; b: number } | null = null;
+  for (const bucket of buckets.values()) {
+    if (!best || bucket.count > best.count) best = bucket;
+  }
+  if (!best) return '#ffffff';
+
   const toHex = (v: number) =>
-    Math.round(v / n)
+    Math.round(v)
       .toString(16)
       .padStart(2, '0');
-  return `#${toHex(sum.r)}${toHex(sum.g)}${toHex(sum.b)}`;
+  return `#${toHex(best.r / best.count)}${toHex(best.g / best.count)}${toHex(best.b / best.count)}`;
+}
+
+function measureTextWidthPx(text: string, fontSizePx: number, bold: boolean, fontFamily?: string) {
+  if (typeof document === 'undefined') {
+    return Math.max(text.length, 1) * fontSizePx * 0.52;
+  }
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return Math.max(text.length, 1) * fontSizePx * 0.52;
+  const family = fontFamily || 'Arial, Helvetica, sans-serif';
+  ctx.font = `${bold ? 700 : 400} ${Math.max(1, fontSizePx)}px ${family}`;
+  return ctx.measureText(text || ' ').width;
 }
 
 /** Lê um arquivo PDF, gera 1 SourceFile + miniaturas de todas as páginas. */
@@ -244,42 +289,41 @@ export async function extractPageTextOverlays(
     };
     const str = item.str;
     if (!str || !str.trim()) continue;
+    const visible = str.replace(/\s+$/g, '');
 
     const tx = pdfjs.Util.transform(viewport.transform, item.transform);
     const fontHeight = Math.hypot(tx[2], tx[3]) || Math.hypot(tx[0], tx[1]) || 12;
     // item.width já vem em unidades de usuário do PDF (não multiplicar pelo fontSize).
     const viewportScaleX = Math.hypot(viewport.transform[0], viewport.transform[1]) || 1;
     const reportedWidth = Math.max(0, (item.width || 0) * viewportScaleX);
-    const estimatedWidth = Math.max(str.trim().length, 1) * fontHeight * 0.56;
-    let width = reportedWidth > 0 ? reportedWidth : estimatedWidth;
-    if (reportedWidth > 0 && estimatedWidth > 0) {
-      // Se o width reportado destoar demais da estimativa, prefere a estimativa.
-      if (width > estimatedWidth * 1.8) width = estimatedWidth * 1.08;
-      if (width < estimatedWidth * 0.4) width = estimatedWidth;
+    const bold = isBoldPdfFont(item.fontName);
+    const measuredWidth = measureTextWidthPx(visible, fontHeight, bold);
+    let width = reportedWidth > 0 ? reportedWidth : measuredWidth;
+    if (reportedWidth > 0 && measuredWidth > 0) {
+      // Caixas largas demais: prefere a medição do conteúdo.
+      if (reportedWidth > measuredWidth * 1.12) width = measuredWidth * 1.03;
+      else if (reportedWidth < measuredWidth * 0.75) width = measuredWidth;
+      else width = Math.min(reportedWidth, measuredWidth * 1.06);
     }
     // Baseline → topo da caixa (viewport já tem Y para baixo).
-    // Caixa justa no glifo para não invadir a linha de baixo.
-    const height = fontHeight * 0.88;
+    const height = fontHeight * 0.86;
     const xPdf = tx[4];
-    const yPdf = tx[5] - fontHeight * 0.78;
+    const yPdf = tx[5] - fontHeight * 0.76;
 
-    const padX = Math.max(0.15, fontHeight * 0.03);
-    const padY = Math.max(0.06, fontHeight * 0.02);
+    const padX = Math.max(0.1, fontHeight * 0.02);
+    const padY = Math.max(0.04, fontHeight * 0.015);
     const x = ((xPdf - padX) / viewport.width) * 100;
     const y = ((yPdf - padY) / viewport.height) * 100;
     let w = ((width + padX * 2) / viewport.width) * 100;
     let h = ((height + padY * 2) / viewport.height) * 100;
-    // Mínimo clicável sem “comer” a linha seguinte.
-    h = Math.max(h, 0.72);
-    w = Math.max(w, 0.9);
+    h = Math.max(h, 0.65);
+    w = Math.max(w, 0.7);
 
     if (w <= 0.05 || h <= 0.05) continue;
-    // Descarta caixas patológicas.
-    if (w > 55 && str.trim().length <= 20) continue;
+    if (w > 55 && visible.trim().length <= 20) continue;
     if (w > 80) continue;
 
     const resolved = resolveFontFromPdfName(item.fontName);
-    const bold = isBoldPdfFont(item.fontName);
     const box = normalizeOverlayBox(x, y, w, h);
 
     overlays.push({
@@ -289,7 +333,7 @@ export async function extractPageTextOverlays(
       ...coverFromBox(box),
       text: str,
       originalText: str,
-      fontSize: Math.max(7, height * 0.9),
+      fontSize: Math.max(6, fontHeight),
       color: '#0f172a',
       bold,
       pdfFontName: item.fontName || '',
@@ -778,7 +822,7 @@ async function drawOverlays(
       const ch = Math.max(1, (overlay.coverH / 100) * height);
       const cyTop = (overlay.coverY / 100) * height;
       const cy = height - cyTop - ch;
-      const pad = 1.2;
+      const pad = 0.4;
       const cover = hexToRgb(overlay.coverFill || '#ffffff');
       page.drawRectangle({
         x: cx - pad,
@@ -836,7 +880,7 @@ async function drawOverlays(
         (overlay.coverBackground || overlay.fromPdf) &&
         (overlay.coverX == null || overlay.coverY == null)
       ) {
-        const pad = 1.2;
+        const pad = 0.4;
         const cover = hexToRgb(overlay.coverFill || '#ffffff');
         page.drawRectangle({
           x: x - pad,
@@ -849,6 +893,19 @@ async function drawOverlays(
       }
 
       if (!overlay.text.trim()) continue;
+
+      // Fundo na posição atual (além do cover original) para casar a tonalidade.
+      if (overlay.coverBackground || overlay.fromPdf) {
+        const fill = hexToRgb(overlay.coverFill || '#ffffff');
+        page.drawRectangle({
+          x,
+          y,
+          width: w,
+          height: h,
+          color: rgb(fill.r, fill.g, fill.b),
+          opacity: 1
+        });
+      }
 
       const option = getFontOptionById(overlay.fontId || 'inter');
       const weightKey = overlay.bold ? '700' : '400';
@@ -864,10 +921,10 @@ async function drawOverlays(
         }
       }
 
-      const fontSize = Math.max(6, overlay.fontSize || h * 0.75);
+      const fontSize = Math.max(5, overlay.fontSize || h * 0.9);
       const color = hexToRgb(overlay.color || '#0f172a');
       const lines = overlay.text.replace(/\r/g, '').split('\n');
-      const lineHeight = fontSize * 1.2;
+      const lineHeight = fontSize * 1.05;
       lines.forEach((line, idx) => {
         const textWidth = font!.widthOfTextAtSize(line || ' ', fontSize);
         let drawX = x;
@@ -875,7 +932,7 @@ async function drawOverlays(
         if (overlay.align === 'right') drawX = x + w - textWidth;
         page.drawText(line || ' ', {
           x: Math.max(0, drawX),
-          y: Math.max(0, y + h - fontSize - idx * lineHeight - 1),
+          y: Math.max(0, y + h - fontSize * 0.92 - idx * lineHeight),
           size: fontSize,
           font: font!,
           color: rgb(color.r, color.g, color.b),

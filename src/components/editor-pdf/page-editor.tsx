@@ -506,17 +506,45 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   }
 
   function fontPx(overlay: PageOverlay) {
-    if (overlay.fontSize && boardHeight > 0) {
-      return Math.max(9, (overlay.fontSize / size.height) * boardHeight);
+    if (overlay.fontSize && boardHeight > 0 && size.height > 0) {
+      return Math.max(5, (overlay.fontSize / size.height) * boardHeight);
     }
-    return Math.max(9, (overlay.h / 100) * boardHeight * 0.72);
+    return Math.max(5, (overlay.h / 100) * boardHeight * 0.88);
   }
 
   function cssFontFamily(overlay: PageOverlay) {
     const opt = getFontOptionById(overlay.fontId || 'inter');
     return `"${opt.family}", ${
-      opt.standard === 'TimesRoman' ? 'Georgia, serif' : opt.standard === 'Courier' ? 'monospace' : 'system-ui, sans-serif'
+      opt.standard === 'TimesRoman' ? 'Georgia, serif' : opt.standard === 'Courier' ? 'monospace' : 'Arial, Helvetica, sans-serif'
     }`;
+  }
+
+  function fitOverlayWidthToText(overlay: PageOverlay, text: string) {
+    const family = cssFontFamily(overlay);
+    const sizePx = fontPx(overlay);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let measured = Math.max((text || ' ').length, 1) * sizePx * 0.52;
+    if (ctx) {
+      ctx.font = `${overlay.bold ? 700 : 400} ${sizePx}px ${family}`;
+      measured = ctx.measureText(text || ' ').width;
+    }
+    const boardWidth = boardHeight * aspect;
+    if (boardWidth <= 0) return overlay.w;
+    const nextW = (measured / boardWidth) * 100 + 0.5;
+    return Math.max(0.8, Math.min(100 - overlay.x, nextW));
+  }
+
+  function updateTextContent(id: string, text: string) {
+    const ov = draft.overlays.find((o) => o.id === id);
+    if (!ov) {
+      updateOverlay(id, { text });
+      return;
+    }
+    updateOverlay(id, {
+      text,
+      w: fitOverlayWidthToText({ ...ov, text }, text)
+    });
   }
 
   function applyFontToSelected(fontId: string) {
@@ -764,7 +792,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                             editRef.current = node;
                           }}
                           value={overlay.text || ''}
-                          onChange={(e) => updateOverlay(overlay.id, { text: e.target.value })}
+                          onChange={(e) => updateTextContent(overlay.id, e.target.value)}
                           onBlur={() => setEditingId(null)}
                           onKeyDown={(e) => {
                             if (e.key === 'Escape') {
@@ -779,9 +807,11 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                             color: overlay.color || '#0f172a',
                             fontSize: `${fontPx(overlay)}px`,
                             fontFamily: cssFontFamily(overlay),
-                            fontWeight: overlay.bold ? 700 : 500,
+                            fontWeight: overlay.bold ? 700 : 400,
+                            fontSynthesis: 'none',
+                            letterSpacing: 'normal',
                             textAlign: overlay.align || 'left',
-                            lineHeight: 1.15
+                            lineHeight: 1
                           }}
                           aria-label="Editar texto"
                         />
@@ -792,9 +822,11 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                             color: overlay.color || '#0f172a',
                             fontSize: `${fontPx(overlay)}px`,
                             fontFamily: cssFontFamily(overlay),
-                            fontWeight: overlay.bold ? 700 : 500,
+                            fontWeight: overlay.bold ? 700 : 400,
+                            fontSynthesis: 'none',
+                            letterSpacing: 'normal',
                             textAlign: overlay.align || 'left',
-                            lineHeight: 1.15
+                            lineHeight: 1
                           }}
                         >
                           {overlay.text}
@@ -1007,7 +1039,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                       id="ov-text"
                       rows={4}
                       value={selected.text || ''}
-                      onChange={(e) => updateOverlay(selected.id, { text: e.target.value })}
+                      onChange={(e) => updateTextContent(selected.id, e.target.value)}
                     />
                   </FormField>
                   {selected.originalText != null && selected.text !== selected.originalText ? (
@@ -1053,7 +1085,13 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                     <input
                       type="checkbox"
                       checked={Boolean(selected.bold)}
-                      onChange={(e) => updateOverlay(selected.id, { bold: e.target.checked })}
+                      onChange={(e) => {
+                        const bold = e.target.checked;
+                        updateOverlay(selected.id, {
+                          bold,
+                          w: fitOverlayWidthToText({ ...selected, bold }, selected.text || '')
+                        });
+                      }}
                       className="h-4 w-4 rounded border-slate-300 text-sky-600"
                     />
                     Negrito
