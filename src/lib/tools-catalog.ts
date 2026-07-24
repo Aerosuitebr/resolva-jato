@@ -390,7 +390,7 @@ export const toolsCatalog: ToolDefinition[] = [
     id: "editor-pdf",
     name: "Editor de PDF",
     description:
-      "Junte, reordene, gire, extraia páginas e adicione marca d\u2019água em PDFs.",
+      "Edite texto e imagens, redimensione páginas, junte, gire e extraia PDFs.",
     tip: "Tudo roda no seu navegador — o arquivo nunca é enviado para um servidor.",
     href: "/ferramentas/editor-pdf",
     icon: FileStack,
@@ -399,6 +399,8 @@ export const toolsCatalog: ToolDefinition[] = [
     keywords: [
       "pdf",
       "editor",
+      "texto",
+      "redimensionar",
       "mesclar",
       "juntar",
       "unir",

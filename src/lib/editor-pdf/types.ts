@@ -1,0 +1,91 @@
+export type PageFitMode = 'contain' | 'cover' | 'stretch' | 'none';
+
+export type PageSizePreset = 'original' | 'a4' | 'letter' | 'a5' | 'square' | 'custom';
+
+export interface PageSizeConfig {
+  preset: PageSizePreset;
+  width: number;
+  height: number;
+  fit: PageFitMode;
+}
+
+export type OverlayKind = 'text' | 'image' | 'rect' | 'highlight' | 'erase';
+
+export interface PageOverlay {
+  id: string;
+  kind: OverlayKind;
+  /** Posição e tamanho em % da página (origem no topo-esquerdo). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text?: string;
+  fontSize?: number;
+  color?: string;
+  align?: 'left' | 'center' | 'right';
+  bold?: boolean;
+  imageDataUrl?: string;
+  fill?: string;
+  opacity?: number;
+}
+
+export interface SourceFile {
+  id: string;
+  name: string;
+  bytes: ArrayBuffer;
+  pageCount: number;
+}
+
+export interface PageItem {
+  id: string;
+  sourceId: string;
+  sourcePageIndex: number;
+  rotation: number;
+  thumbnail: string;
+  selected: boolean;
+  isBlank?: boolean;
+  originalWidth: number;
+  originalHeight: number;
+  pageSize: PageSizeConfig;
+  overlays: PageOverlay[];
+}
+
+export interface BuildOptions {
+  pageNumbers: boolean;
+  watermarkText: string;
+  watermarkOpacity: number;
+}
+
+export const PAGE_PRESETS: Record<
+  Exclude<PageSizePreset, 'original' | 'custom'>,
+  { label: string; width: number; height: number }
+> = {
+  a4: { label: 'A4 (210×297 mm)', width: 595.28, height: 841.89 },
+  letter: { label: 'Letter (8.5×11 in)', width: 612, height: 792 },
+  a5: { label: 'A5 (148×210 mm)', width: 419.53, height: 595.28 },
+  square: { label: 'Quadrado', width: 595.28, height: 595.28 }
+};
+
+export function defaultPageSize(width: number, height: number): PageSizeConfig {
+  return {
+    preset: 'original',
+    width,
+    height,
+    fit: 'contain'
+  };
+}
+
+export function resolvePageSize(
+  page: Pick<PageItem, 'originalWidth' | 'originalHeight' | 'pageSize' | 'rotation'>
+): { width: number; height: number } {
+  const rotated = page.rotation % 180 !== 0;
+  const ow = rotated ? page.originalHeight : page.originalWidth;
+  const oh = rotated ? page.originalWidth : page.originalHeight;
+  if (page.pageSize.preset === 'original') {
+    return { width: ow, height: oh };
+  }
+  return {
+    width: Math.max(72, page.pageSize.width),
+    height: Math.max(72, page.pageSize.height)
+  };
+}

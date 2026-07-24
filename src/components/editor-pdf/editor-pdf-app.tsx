@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -11,6 +11,8 @@ import {
   FileUp,
   Loader2,
   Lock,
+  Maximize2,
+  Pencil,
   RotateCcw,
   RotateCw,
   ScissorsSquare,
@@ -18,26 +20,32 @@ import {
   Square,
   StickyNote,
   Trash2,
-  Upload,
-  Wand2,
-} from "lucide-react";
-import { AuthGate } from "@/components/auth/auth-gate";
-import { PageHero } from "@/components/shared/page-hero";
-import { ToolsBackButton } from "@/components/shared/tools-back-button";
-import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
+  Type,
+  Upload
+} from 'lucide-react';
+import { AuthGate } from '@/components/auth/auth-gate';
+import { PageEditor } from '@/components/editor-pdf/page-editor';
+import { PageHero } from '@/components/shared/page-hero';
+import { ToolsBackButton } from '@/components/shared/tools-back-button';
+import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 import {
+  PAGE_PRESETS,
   blankPageThumbnail,
   buildFinalPdf,
+  defaultPageSize,
   downloadBytes,
   loadPdfIntoPages,
   nextId,
+  type PageFitMode,
   type PageItem,
-  type SourceFile,
-} from "@/lib/editor-pdf/pdf-engine";
+  type PageSizePreset,
+  type SourceFile
+} from '@/lib/editor-pdf/pdf-engine';
 
 const MAX_FILE_MB = 40;
 
@@ -49,25 +57,25 @@ export function EditorPdfApp() {
   const [building, setBuilding] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [pageNumbers, setPageNumbers] = useState(false);
-  const [watermarkText, setWatermarkText] = useState("");
+  const [watermarkText, setWatermarkText] = useState('');
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.18);
-  const [outputName, setOutputName] = useState("documento-editado");
+  const [outputName, setOutputName] = useState('documento-editado');
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [bulkPreset, setBulkPreset] = useState<PageSizePreset>('a4');
+  const [bulkFit, setBulkFit] = useState<PageFitMode>('contain');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const selectedCount = useMemo(
-    () => pages.filter((p) => p.selected).length,
-    [pages],
-  );
+  const selectedCount = useMemo(() => pages.filter((p) => p.selected).length, [pages]);
   const allSelected = pages.length > 0 && selectedCount === pages.length;
+  const editingPage = editingPageId ? pages.find((p) => p.id === editingPageId) : null;
 
   const handleFiles = useCallback(
     async (fileList: FileList | File[]) => {
       const files = Array.from(fileList).filter(
-        (f) =>
-          f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
+        (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
       );
       if (files.length === 0) {
-        toast("Selecione arquivos PDF válidos.");
+        toast('Selecione arquivos PDF válidos.');
         return;
       }
       const tooBig = files.find((f) => f.size > MAX_FILE_MB * 1024 * 1024);
@@ -82,25 +90,19 @@ export function EditorPdfApp() {
           setSources((prev) => new Map(prev).set(source.id, source));
           setPages((prev) => [...prev, ...newPages]);
         }
-        if (!outputName || outputName === "documento-editado") {
-          const base = files[0].name.replace(/\.pdf$/i, "");
+        if (!outputName || outputName === 'documento-editado') {
+          const base = files[0].name.replace(/\.pdf$/i, '');
           setOutputName(files.length > 1 ? `${base}-mesclado` : base);
         }
-        toast(
-          files.length > 1
-            ? `${files.length} PDFs carregados e mesclados.`
-            : "PDF carregado.",
-        );
+        toast(files.length > 1 ? `${files.length} PDFs carregados e mesclados.` : 'PDF carregado.');
       } catch (err) {
         console.error(err);
-        toast(
-          "Não foi possível ler um dos PDFs. Verifique se não está protegido por senha.",
-        );
+        toast('Não foi possível ler um dos PDFs. Verifique se não está protegido por senha.');
       } finally {
         setLoading(false);
       }
     },
-    [outputName, toast],
+    [outputName, toast]
   );
 
   function onDrop(e: React.DragEvent) {
@@ -114,24 +116,18 @@ export function EditorPdfApp() {
   }
 
   function toggleSelect(id: string) {
-    setPages((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)),
-    );
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)));
   }
 
   function rotate(id: string, delta: number) {
     setPages((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, rotation: (p.rotation + delta + 360) % 360 } : p,
-      ),
+      prev.map((p) => (p.id === id ? { ...p, rotation: (p.rotation + delta + 360) % 360 } : p))
     );
   }
 
   function rotateSelected(delta: number) {
     setPages((prev) =>
-      prev.map((p) =>
-        p.selected ? { ...p, rotation: (p.rotation + delta + 360) % 360 } : p,
-      ),
+      prev.map((p) => (p.selected ? { ...p, rotation: (p.rotation + delta + 360) % 360 } : p))
     );
   }
 
@@ -151,8 +147,10 @@ export function EditorPdfApp() {
       if (idx === -1) return prev;
       const clone: PageItem = {
         ...prev[idx],
-        id: nextId("page"),
+        id: nextId('page'),
         selected: false,
+        overlays: prev[idx].overlays.map((o) => ({ ...o, id: nextId('ov') })),
+        pageSize: { ...prev[idx].pageSize }
       };
       const copy = [...prev];
       copy.splice(idx + 1, 0, clone);
@@ -161,16 +159,20 @@ export function EditorPdfApp() {
   }
 
   function insertBlankPage() {
+    const width = 595.28;
+    const height = 841.89;
     const blank: PageItem = {
-      id: nextId("blank"),
-      sourceId: "blank",
+      id: nextId('blank'),
+      sourceId: 'blank',
       sourcePageIndex: 0,
       rotation: 0,
-      thumbnail: blankPageThumbnail(),
+      thumbnail: blankPageThumbnail(width, height),
       selected: false,
       isBlank: true,
-      originalWidth: 595.28,
-      originalHeight: 841.89,
+      originalWidth: width,
+      originalHeight: height,
+      pageSize: defaultPageSize(width, height),
+      overlays: []
     };
     setPages((prev) => [...prev, blank]);
   }
@@ -186,14 +188,48 @@ export function EditorPdfApp() {
     });
   }
 
+  function applySizeToSelected() {
+    const targets = pages.filter((p) => p.selected);
+    if (targets.length === 0) {
+      toast('Selecione ao menos uma página para redimensionar.');
+      return;
+    }
+    setPages((prev) =>
+      prev.map((p) => {
+        if (!p.selected) return p;
+        if (bulkPreset === 'original') {
+          return {
+            ...p,
+            pageSize: {
+              preset: 'original',
+              width: p.originalWidth,
+              height: p.originalHeight,
+              fit: bulkFit
+            },
+            thumbnail: p.isBlank ? blankPageThumbnail(p.originalWidth, p.originalHeight) : p.thumbnail
+          };
+        }
+        if (bulkPreset === 'custom') return { ...p, pageSize: { ...p.pageSize, fit: bulkFit } };
+        const meta = PAGE_PRESETS[bulkPreset];
+        return {
+          ...p,
+          pageSize: {
+            preset: bulkPreset,
+            width: meta.width,
+            height: meta.height,
+            fit: bulkFit
+          },
+          thumbnail: p.isBlank ? blankPageThumbnail(meta.width, meta.height) : p.thumbnail
+        };
+      })
+    );
+    toast(`Tamanho aplicado a ${targets.length} página(s).`);
+  }
+
   async function handleDownload(onlySelected: boolean) {
     const list = onlySelected ? pages.filter((p) => p.selected) : pages;
     if (list.length === 0) {
-      toast(
-        onlySelected
-          ? "Selecione ao menos uma página."
-          : "Adicione um PDF primeiro.",
-      );
+      toast(onlySelected ? 'Selecione ao menos uma página.' : 'Adicione um PDF primeiro.');
       return;
     }
     setBuilding(true);
@@ -201,14 +237,14 @@ export function EditorPdfApp() {
       const bytes = await buildFinalPdf(list, sources, {
         pageNumbers,
         watermarkText,
-        watermarkOpacity,
+        watermarkOpacity
       });
-      const name = `${(outputName || "documento").trim().replace(/\.pdf$/i, "")}${onlySelected ? "-extrato" : ""}.pdf`;
+      const name = `${(outputName || 'documento').trim().replace(/\.pdf$/i, '')}${onlySelected ? '-extrato' : ''}.pdf`;
       downloadBytes(bytes as Uint8Array, name);
-      toast("PDF gerado com sucesso!");
+      toast('PDF gerado com sucesso!');
     } catch (err) {
       console.error(err);
-      toast("Erro ao gerar o PDF. Tente novamente.");
+      toast('Erro ao gerar o PDF. Tente novamente.');
     } finally {
       setBuilding(false);
     }
@@ -217,16 +253,35 @@ export function EditorPdfApp() {
   function resetAll() {
     setSources(new Map());
     setPages([]);
-    setWatermarkText("");
+    setWatermarkText('');
     setPageNumbers(false);
-    setOutputName("documento-editado");
+    setOutputName('documento-editado');
+    setEditingPageId(null);
+  }
+
+  function saveEditedPage(next: PageItem) {
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === next.id
+          ? {
+              ...next,
+              thumbnail: next.isBlank
+                ? blankPageThumbnail(next.pageSize.width, next.pageSize.height)
+                : next.thumbnail
+            }
+          : p
+      )
+    );
+    setEditingPageId(null);
+    toast(
+      next.overlays.length
+        ? 'Página atualizada com o conteúdo editado.'
+        : 'Tamanho/ajustes da página salvos.'
+    );
   }
 
   return (
-    <AuthGate
-      title="Editor de PDF"
-      description="Cadastre-se gratuitamente para editar seus PDFs."
-    >
+    <AuthGate title="Editor de PDF" description="Cadastre-se gratuitamente para editar seus PDFs.">
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <ToolsBackButton />
@@ -234,23 +289,14 @@ export function EditorPdfApp() {
 
         <PageHero
           title="Editor de PDF"
-          subtitle="Junte, reordene, gire, remova, extraia páginas, adicione numeração e marca d'água — tudo no seu navegador, sem enviar o arquivo para nenhum servidor."
+          subtitle="Edite texto e imagens na página, redimensione o formato, junte arquivos, gire, extraia e finalize — tudo no navegador, sem enviar o PDF para servidor."
           icon={FileStack}
         />
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <Insight
-            icon={Lock}
-            text="100% local: seus arquivos nunca saem do navegador."
-          />
-          <Insight
-            icon={Wand2}
-            text="Reordene, gire, duplique e exclua página por página."
-          />
-          <Insight
-            icon={ScissorsSquare}
-            text="Extraia só as páginas selecionadas em um novo PDF."
-          />
+          <Insight icon={Type} text="Abra a página e adicione/altere texto, imagens e formas." />
+          <Insight icon={Maximize2} text="Redimensione para A4, Letter, A5 ou tamanho personalizado." />
+          <Insight icon={Lock} text="100% local: seus arquivos nunca saem do navegador." />
         </div>
 
         {pages.length === 0 ? (
@@ -263,10 +309,10 @@ export function EditorPdfApp() {
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors",
+              'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors',
               dragOver
-                ? "border-sky-500 bg-sky-50"
-                : "border-slate-300 bg-white hover:border-sky-300 hover:bg-sky-50/50",
+                ? 'border-sky-500 bg-sky-50'
+                : 'border-slate-300 bg-white hover:border-sky-300 hover:bg-sky-50/50'
             )}
           >
             <input
@@ -275,34 +321,21 @@ export function EditorPdfApp() {
               accept="application/pdf"
               multiple
               className="hidden"
-              onChange={(e) =>
-                e.target.files && void handleFiles(e.target.files)
-              }
+              onChange={(e) => e.target.files && void handleFiles(e.target.files)}
             />
             {loading ? (
-              <Loader2
-                className="h-10 w-10 animate-spin text-sky-600"
-                aria-hidden
-              />
+              <Loader2 className="h-10 w-10 animate-spin text-sky-600" aria-hidden />
             ) : (
               <Upload className="h-10 w-10 text-sky-600" aria-hidden />
             )}
             <p className="text-base font-bold text-slate-900">
-              {loading
-                ? "Carregando páginas…"
-                : "Arraste seus PDFs aqui ou clique para selecionar"}
+              {loading ? 'Carregando páginas…' : 'Arraste seus PDFs aqui ou clique para selecionar'}
             </p>
             <p className="max-w-md text-sm leading-6 text-slate-500">
-              Envie um ou vários arquivos de uma vez — eles são mesclados
-              automaticamente na ordem escolhida. Máx. {MAX_FILE_MB}MB por
-              arquivo.
+              Envie um ou vários arquivos — depois clique em <strong>Editar</strong> em cada página para
+              alterar o conteúdo. Máx. {MAX_FILE_MB}MB por arquivo.
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={FileUp}
-              disabled={loading}
-            >
+            <Button variant="outline" size="sm" icon={FileUp} disabled={loading}>
               Selecionar arquivos
             </Button>
           </div>
@@ -324,16 +357,9 @@ export function EditorPdfApp() {
                 accept="application/pdf"
                 multiple
                 className="hidden"
-                onChange={(e) =>
-                  e.target.files && void handleFiles(e.target.files)
-                }
+                onChange={(e) => e.target.files && void handleFiles(e.target.files)}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                icon={StickyNote}
-                onClick={insertBlankPage}
-              >
+              <Button variant="outline" size="sm" icon={StickyNote} onClick={insertBlankPage}>
                 Página em branco
               </Button>
               <Button
@@ -342,7 +368,7 @@ export function EditorPdfApp() {
                 icon={allSelected ? Square : CheckSquare}
                 onClick={toggleSelectAll}
               >
-                {allSelected ? "Limpar seleção" : "Selecionar tudo"}
+                {allSelected ? 'Limpar seleção' : 'Selecionar tudo'}
               </Button>
               <div className="mx-1 h-6 w-px bg-slate-200" />
               <Button
@@ -352,7 +378,7 @@ export function EditorPdfApp() {
                 disabled={!selectedCount}
                 onClick={() => rotateSelected(-90)}
               >
-                Girar selecionadas
+                Girar
               </Button>
               <Button
                 variant="outline"
@@ -361,7 +387,7 @@ export function EditorPdfApp() {
                 disabled={!selectedCount}
                 onClick={() => rotateSelected(90)}
               >
-                Girar selecionadas
+                Girar
               </Button>
               <Button
                 variant="outline"
@@ -370,7 +396,7 @@ export function EditorPdfApp() {
                 disabled={!selectedCount}
                 onClick={() => handleDownload(true)}
               >
-                Extrair selecionadas
+                Extrair
               </Button>
               <Button
                 variant="danger"
@@ -379,14 +405,9 @@ export function EditorPdfApp() {
                 disabled={!selectedCount}
                 onClick={removeSelected}
               >
-                Excluir selecionadas ({selectedCount})
+                Excluir ({selectedCount})
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetAll}
-                className="ml-auto"
-              >
+              <Button variant="ghost" size="sm" onClick={resetAll} className="ml-auto">
                 Recomeçar
               </Button>
             </div>
@@ -397,10 +418,10 @@ export function EditorPdfApp() {
                   <div
                     key={p.id}
                     className={cn(
-                      "group relative rounded-xl border bg-white p-2 shadow-sm transition-all",
+                      'group relative rounded-xl border bg-white p-2 shadow-sm transition-all',
                       p.selected
-                        ? "border-sky-500 ring-2 ring-sky-200"
-                        : "border-slate-200 hover:border-slate-300",
+                        ? 'border-sky-500 ring-2 ring-sky-200'
+                        : 'border-slate-200 hover:border-slate-300'
                     )}
                   >
                     <button
@@ -418,6 +439,11 @@ export function EditorPdfApp() {
                     <span className="absolute right-3 top-3 z-10 rounded-md bg-slate-900/80 px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
                       {idx + 1}
                     </span>
+                    {p.overlays.length > 0 || p.pageSize.preset !== 'original' ? (
+                      <span className="absolute bottom-14 left-3 z-10 rounded-md bg-emerald-600 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
+                        Editada
+                      </span>
+                    ) : null}
                     <div className="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -430,17 +456,18 @@ export function EditorPdfApp() {
                     <div className="mt-2 flex items-center justify-between gap-1">
                       <button
                         type="button"
-                        onClick={() => rotate(p.id, -90)}
-                        className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
-                        aria-label="Girar à esquerda"
+                        onClick={() => setEditingPageId(p.id)}
+                        className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-sky-600 px-2 text-[0.7rem] font-bold text-white hover:bg-sky-700"
+                        aria-label="Editar conteúdo da página"
                       >
-                        <RotateCcw className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
                       </button>
                       <button
                         type="button"
                         onClick={() => rotate(p.id, 90)}
                         className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
-                        aria-label="Girar à direita"
+                        aria-label="Girar"
                       >
                         <RotateCw className="h-4 w-4" />
                       </button>
@@ -448,7 +475,7 @@ export function EditorPdfApp() {
                         type="button"
                         onClick={() => duplicatePage(p.id)}
                         className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
-                        aria-label="Duplicar página"
+                        aria-label="Duplicar"
                       >
                         <Copy className="h-4 w-4" />
                       </button>
@@ -474,7 +501,7 @@ export function EditorPdfApp() {
                         type="button"
                         onClick={() => removePage(p.id)}
                         className="grid h-8 w-8 place-items-center rounded-lg text-rose-500 hover:bg-rose-50"
-                        aria-label="Remover página"
+                        aria-label="Remover"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -484,9 +511,48 @@ export function EditorPdfApp() {
               </div>
 
               <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-24">
-                <h2 className="rj-display text-base font-bold text-slate-900">
-                  Finalizar documento
-                </h2>
+                <h2 className="rj-display text-base font-bold text-slate-900">Finalizar documento</h2>
+
+                <div className="space-y-2 rounded-xl border border-sky-100 bg-sky-50/80 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-sky-800">
+                    Redimensionar selecionadas
+                  </p>
+                  <FormField label="Formato" htmlFor="bulk-preset">
+                    <Select
+                      id="bulk-preset"
+                      value={bulkPreset}
+                      onChange={(e) => setBulkPreset(e.target.value as PageSizePreset)}
+                    >
+                      <option value="original">Original</option>
+                      <option value="a4">A4</option>
+                      <option value="letter">Letter</option>
+                      <option value="a5">A5</option>
+                      <option value="square">Quadrado</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Encaixe" htmlFor="bulk-fit">
+                    <Select
+                      id="bulk-fit"
+                      value={bulkFit}
+                      onChange={(e) => setBulkFit(e.target.value as PageFitMode)}
+                    >
+                      <option value="contain">Conter</option>
+                      <option value="cover">Cobrir</option>
+                      <option value="stretch">Esticar</option>
+                      <option value="none">Original</option>
+                    </Select>
+                  </FormField>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    icon={Maximize2}
+                    onClick={applySizeToSelected}
+                  >
+                    Aplicar às selecionadas
+                  </Button>
+                </div>
+
                 <FormField label="Nome do arquivo" htmlFor="output-name">
                   <Input
                     id="output-name"
@@ -531,23 +597,16 @@ export function EditorPdfApp() {
                       max={0.5}
                       step={0.01}
                       value={watermarkOpacity}
-                      onChange={(e) =>
-                        setWatermarkOpacity(Number(e.target.value))
-                      }
+                      onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
                       className="w-full accent-sky-600"
                     />
                   </FormField>
                 ) : null}
 
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                  <span className="font-bold text-slate-700">
-                    {pages.length}
-                  </span>{" "}
-                  página(s) no documento final
-                  {sources.size > 1
-                    ? ` · ${sources.size} arquivos mesclados`
-                    : ""}
-                  .
+                  <span className="font-bold text-slate-700">{pages.length}</span> página(s) no documento
+                  final
+                  {sources.size > 1 ? ` · ${sources.size} arquivos mesclados` : ''}.
                 </div>
 
                 <Button
@@ -564,6 +623,15 @@ export function EditorPdfApp() {
           </div>
         )}
       </div>
+
+      {editingPage ? (
+        <PageEditor
+          page={editingPage}
+          source={sources.get(editingPage.sourceId)}
+          onClose={() => setEditingPageId(null)}
+          onSave={saveEditedPage}
+        />
+      ) : null}
     </AuthGate>
   );
 }
@@ -575,10 +643,7 @@ function Insight({ icon: Icon, text }: { icon: typeof Lock; text: string }) {
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <span>{text}</span>
-      <Sparkles
-        className="ml-auto hidden h-4 w-4 shrink-0 text-sky-500 sm:block"
-        aria-hidden
-      />
+      <Sparkles className="ml-auto hidden h-4 w-4 shrink-0 text-sky-500 sm:block" aria-hidden />
     </div>
   );
 }
