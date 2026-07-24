@@ -124,7 +124,7 @@ export function CronogramaEstudosApp() {
 
         <PageHero
           title="Cronograma de Estudos personalizado"
-          subtitle="Informe suas matérias, dias disponíveis e carga horária — a gente monta a distribuição semanal priorizando o que é mais difícil ou mais importante."
+          subtitle="Informe suas matérias, dias disponíveis e carga horária. A gente monta a distribuição semanal priorizando o que é mais difícil ou mais importante."
           icon={CalendarDays}
         />
 

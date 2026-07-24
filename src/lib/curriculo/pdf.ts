@@ -1,4 +1,5 @@
 import rjEscuro from '@/assets/RJ_escuro.png';
+import { buildResolvaJatoDownloadName } from '@/lib/download-filename';
 import { viralPdfFooterLabel, viralPdfFooterUrl } from '@/lib/viral-loop';
 
 export type ExportPdfOptions = {
@@ -298,7 +299,7 @@ function paintPageSlice(
 
 export async function exportElementToPdf(
   element: HTMLElement,
-  filename: string,
+  _filename: string,
   options: ExportPdfOptions = {}
 ) {
   const branded = options.branded !== false;
@@ -381,7 +382,7 @@ export async function exportElementToPdf(
       if (branded) await stampPageBrand(pdf, pageWidth, pageHeight);
     }
 
-    pdf.save(filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
+    pdf.save(buildResolvaJatoDownloadName('pdf'));
   } finally {
     if (branded) setBrandNodesVisibility(element, true);
   }

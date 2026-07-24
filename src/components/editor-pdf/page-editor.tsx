@@ -8,7 +8,9 @@ import {
   ImagePlus,
   Loader2,
   Maximize2,
+  Minus,
   MousePointer2,
+  Plus,
   Square,
   Trash2,
   Type,
@@ -19,6 +21,12 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  EDITOR_FONTS,
+  ensureFontCssLoaded,
+  getFontOptionById,
+  resolveFontFromPdfName
+} from '@/lib/editor-pdf/fonts';
 import {
   PAGE_PRESETS,
   extractPageTextOverlays,
@@ -32,6 +40,10 @@ import {
   type SourceFile
 } from '@/lib/editor-pdf/pdf-engine';
 import { cn } from '@/lib/utils';
+
+const ZOOM_MIN = 50;
+const ZOOM_MAX = 200;
+const ZOOM_STEP = 10;
 
 type Tool = 'select' | 'text' | 'image' | 'rect' | 'highlight' | 'erase';
 
@@ -61,6 +73,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingText, setLoadingText] = useState(false);
   const [boardHeight, setBoardHeight] = useState(800);
+  const [zoom, setZoom] = useState(100);
+  const [fontStatus, setFontStatus] = useState('');
   const [drag, setDrag] = useState<{
     mode: 'move' | 'resize' | 'create';
     id?: string;
@@ -113,6 +127,10 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             draft.rotation
           );
           if (cancelled) return;
+          for (const t of texts) {
+            const opt = getFontOptionById(t.fontId || 'inter');
+            ensureFontCssLoaded(opt);
+          }
           setDraft((prev) => {
             const manual = prev.overlays.filter((o) => !o.fromPdf);
             return {
@@ -121,6 +139,14 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               textLayerReady: true
             };
           });
+          const names = Array.from(
+            new Set(texts.map((t) => t.fontLabel || t.pdfFontName).filter(Boolean))
+          ).slice(0, 3);
+          setFontStatus(
+            names.length
+              ? `Fontes detectadas: ${names.join(', ')}${texts.length > 3 ? '…' : ''}`
+              : ''
+          );
         } catch (err) {
           console.error(err);
         } finally {
@@ -223,6 +249,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     setTool('select');
     setSelectedId(id);
     setEditingId(id);
+    const ov = draft.overlays.find((o) => o.id === id);
+    if (ov?.fontId) ensureFontCssLoaded(getFontOptionById(ov.fontId));
   }
 
   function onBoardPointerDown(e: React.PointerEvent) {
@@ -352,10 +380,31 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
 
   function fontPx(overlay: PageOverlay) {
     if (overlay.fontSize && boardHeight > 0) {
-      // fontSize está em pontos PDF ≈ % da altura da página
       return Math.max(9, (overlay.fontSize / size.height) * boardHeight);
     }
     return Math.max(9, (overlay.h / 100) * boardHeight * 0.72);
+  }
+
+  function cssFontFamily(overlay: PageOverlay) {
+    const opt = getFontOptionById(overlay.fontId || 'inter');
+    return `"${opt.family}", ${
+      opt.standard === 'TimesRoman' ? 'Georgia, serif' : opt.standard === 'Courier' ? 'monospace' : 'system-ui, sans-serif'
+    }`;
+  }
+
+  function applyFontToSelected(fontId: string) {
+    if (!selectedId) return;
+    const opt = getFontOptionById(fontId);
+    ensureFontCssLoaded(opt);
+    updateOverlay(selectedId, {
+      fontId: opt.id,
+      fontLabel: opt.family
+    });
+    setFontStatus(`Fonte do bloco: ${opt.family} (carregada para edição)`);
+  }
+
+  function bumpZoom(delta: number) {
+    setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + delta)));
   }
 
   const ui = (
@@ -372,6 +421,35 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             <h2 className="rj-display truncate text-base font-bold text-slate-900">
               Clique em qualquer texto para editar
             </h2>
+            {fontStatus ? (
+              <p className="mt-0.5 truncate text-[0.7rem] font-medium text-slate-500">{fontStatus}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-lg text-slate-700 hover:bg-white"
+              onClick={() => bumpZoom(-ZOOM_STEP)}
+              aria-label="Diminuir zoom"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="min-w-[3.25rem] text-center text-xs font-bold text-slate-800">{zoom}%</span>
+            <button
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-lg text-slate-700 hover:bg-white"
+              onClick={() => bumpZoom(ZOOM_STEP)}
+              aria-label="Aumentar zoom"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-[0.65rem] font-bold text-sky-700 hover:bg-white"
+              onClick={() => setZoom(100)}
+            >
+              100%
+            </button>
           </div>
           <Button variant="outline" size="sm" onClick={onClose} icon={X}>
             Cancelar
@@ -389,8 +467,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           </Button>
         </header>
 
-        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 lg:grid-cols-[7.5rem_minmax(0,1fr)_18rem]">
-          <aside className="flex shrink-0 flex-row gap-1.5 overflow-x-auto border-b border-slate-200 bg-white p-2.5 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[7.5rem_minmax(0,1fr)_19rem]">
+          <aside className="flex shrink-0 flex-row gap-1.5 overflow-x-auto border-b border-slate-200 bg-white p-3 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:border-b-0 lg:border-r">
             {TOOLS.map((item) => {
               const Icon = item.icon;
               return (
@@ -401,7 +479,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                   onClick={() => setTool(item.id)}
                   className={cn(
                     'flex w-full min-w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[0.68rem] font-bold transition lg:min-w-0',
-                    tool === item.id ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    tool === item.id ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -413,16 +491,22 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
 
           <div className="min-h-0 min-w-0 overflow-auto bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-4 sm:p-5">
             <div
+              className="mx-auto origin-top"
+              style={{
+                width: `min(100%, ${680 * (zoom / 100)}px)`,
+                maxWidth: '100%'
+              }}
+            >
+            <div
               ref={boardRef}
               onPointerDown={onBoardPointerDown}
               onPointerMove={onBoardPointerMove}
               onPointerUp={onBoardPointerUp}
               className={cn(
-                'relative mx-auto max-w-full touch-none overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-slate-300',
+                'relative w-full touch-none overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-slate-300',
                 tool === 'select' ? 'cursor-default' : 'cursor-crosshair'
               )}
               style={{
-                width: 'min(100%, 680px)',
                 aspectRatio: `${aspect}`
               }}
               role="application"
@@ -511,6 +595,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                           style={{
                             color: overlay.color || '#0f172a',
                             fontSize: `${fontPx(overlay)}px`,
+                            fontFamily: cssFontFamily(overlay),
                             fontWeight: overlay.bold ? 700 : 500,
                             textAlign: overlay.align || 'left',
                             lineHeight: 1.15
@@ -523,6 +608,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                           style={{
                             color: overlay.color || '#0f172a',
                             fontSize: `${fontPx(overlay)}px`,
+                            fontFamily: cssFontFamily(overlay),
                             fontWeight: overlay.bold ? 700 : 500,
                             textAlign: overlay.align || 'left',
                             lineHeight: 1.15
@@ -549,6 +635,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                   </div>
                 );
               })}
+            </div>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-5 text-slate-600">
               {textCount > 0
@@ -642,10 +729,43 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               <h3 className="mb-2 text-sm font-bold text-slate-900">Texto selecionado</h3>
               {!selected || selected.kind !== 'text' ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em um número ou palavra na página. O texto original fica editável na hora.
+                  Clique em um número ou palavra na página. Fonte, cor e tamanho valem só para esse bloco.
                 </p>
               ) : (
                 <div className="space-y-2">
+                  <div className="rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-2 text-xs leading-5 text-slate-700">
+                    <p className="font-bold text-sky-900">Fonte atual</p>
+                    <p className="mt-0.5 font-semibold text-slate-900">
+                      {getFontOptionById(selected.fontId || 'inter').family}
+                    </p>
+                    {selected.pdfFontName ? (
+                      <p className="mt-1 break-all text-[0.65rem] text-slate-500">
+                        PDF: {selected.fontLabel || resolveFontFromPdfName(selected.pdfFontName).displayName}
+                        {selected.pdfFontName !== selected.fontLabel
+                          ? ` (${selected.pdfFontName})`
+                          : ''}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <FormField
+                    label="Fonte do bloco"
+                    htmlFor="ov-font"
+                    hint="Buscamos a fonte do documento e carregamos a mais próxima."
+                  >
+                    <Select
+                      id="ov-font"
+                      value={selected.fontId || 'inter'}
+                      onChange={(e) => applyFontToSelected(e.target.value)}
+                    >
+                      {EDITOR_FONTS.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.family}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormField>
+
                   <FormField label="Conteúdo" htmlFor="ov-text">
                     <Textarea
                       id="ov-text"
@@ -673,13 +793,25 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                       }
                     />
                   </FormField>
-                  <FormField label="Cor" htmlFor="ov-color">
-                    <Input
-                      id="ov-color"
-                      type="color"
-                      value={selected.color || '#0f172a'}
-                      onChange={(e) => updateOverlay(selected.id, { color: e.target.value })}
-                    />
+                  <FormField
+                    label="Cor deste texto"
+                    htmlFor="ov-color"
+                    hint="Altera só o bloco selecionado."
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="ov-color"
+                        type="color"
+                        value={selected.color || '#0f172a'}
+                        onChange={(e) => updateOverlay(selected.id, { color: e.target.value })}
+                        className="h-11 w-14 cursor-pointer p-1"
+                      />
+                      <Input
+                        value={selected.color || '#0f172a'}
+                        onChange={(e) => updateOverlay(selected.id, { color: e.target.value })}
+                        placeholder="#0f172a"
+                      />
+                    </div>
                   </FormField>
                   <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <input

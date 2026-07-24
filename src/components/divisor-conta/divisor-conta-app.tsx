@@ -117,7 +117,7 @@ export function DivisorContaApp() {
 
         <PageHero
           title="Divisor de Conta em Grupo"
-          subtitle="Rateie o churrasco, o restaurante, a viagem ou o aluguel entre amigos — com ou sem consumo individual e taxa de serviço."
+          subtitle="Rateie o churrasco, o restaurante, a viagem ou o aluguel entre amigos, com ou sem consumo individual e taxa de serviço."
           icon={Users}
         />
 

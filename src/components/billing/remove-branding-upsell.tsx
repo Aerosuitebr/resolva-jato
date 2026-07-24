@@ -45,7 +45,7 @@ function BrandComparison() {
         </div>
         <p className="mt-2 text-sm font-bold text-white">Sem referência</p>
         <p className="mt-1 text-xs leading-5 text-emerald-50/90">
-          Documento limpo — só a sua marca profissional, sem menção ao Resolva Jato.
+          Documento limpo: só a sua marca profissional, sem menção ao Resolva Jato.
         </p>
         <div className="mt-3 rounded-xl border border-emerald-300/20 bg-slate-950/40 px-3 py-2.5">
           <p className="truncate text-[10px] font-semibold text-slate-300">Seu documento · cliente</p>
@@ -129,7 +129,7 @@ export function RemoveBrandingUpsell({
           <strong className="text-white">
             {usage.premiumExpiresAt ? formatDate(usage.premiumExpiresAt) : 'o fim do período'}
           </strong>
-          . PDFs limpos — sem rodapé nem logo.
+          . PDFs limpos, sem rodapé nem logo.
         </p>
       </aside>
     );

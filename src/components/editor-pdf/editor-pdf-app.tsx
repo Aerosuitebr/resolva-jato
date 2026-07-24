@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { buildResolvaJatoDownloadName } from '@/lib/download-filename';
 import {
   PAGE_PRESETS,
   blankPageThumbnail,
@@ -59,7 +60,6 @@ export function EditorPdfApp() {
   const [pageNumbers, setPageNumbers] = useState(false);
   const [watermarkText, setWatermarkText] = useState('');
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.18);
-  const [outputName, setOutputName] = useState('documento-editado');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [bulkPreset, setBulkPreset] = useState<PageSizePreset>('a4');
   const [bulkFit, setBulkFit] = useState<PageFitMode>('contain');
@@ -90,10 +90,6 @@ export function EditorPdfApp() {
           setSources((prev) => new Map(prev).set(source.id, source));
           setPages((prev) => [...prev, ...newPages]);
         }
-        if (!outputName || outputName === 'documento-editado') {
-          const base = files[0].name.replace(/\.pdf$/i, '');
-          setOutputName(files.length > 1 ? `${base}-mesclado` : base);
-        }
         toast(files.length > 1 ? `${files.length} PDFs carregados e mesclados.` : 'PDF carregado.');
       } catch (err) {
         console.error(err);
@@ -102,7 +98,7 @@ export function EditorPdfApp() {
         setLoading(false);
       }
     },
-    [outputName, toast]
+    [toast]
   );
 
   function onDrop(e: React.DragEvent) {
@@ -239,8 +235,7 @@ export function EditorPdfApp() {
         watermarkText,
         watermarkOpacity
       });
-      const name = `${(outputName || 'documento').trim().replace(/\.pdf$/i, '')}${onlySelected ? '-extrato' : ''}.pdf`;
-      downloadBytes(bytes as Uint8Array, name);
+      downloadBytes(bytes as Uint8Array, buildResolvaJatoDownloadName('pdf'));
       toast('PDF gerado com sucesso!');
     } catch (err) {
       console.error(err);
@@ -255,7 +250,6 @@ export function EditorPdfApp() {
     setPages([]);
     setWatermarkText('');
     setPageNumbers(false);
-    setOutputName('documento-editado');
     setEditingPageId(null);
   }
 
@@ -293,7 +287,7 @@ export function EditorPdfApp() {
 
         <PageHero
           title="Editor de PDF"
-          subtitle="Clique no texto da página para editar, redimensione o formato, junte arquivos e finalize — tudo no navegador, sem enviar o PDF para servidor."
+          subtitle="Clique no texto da página para editar, redimensione o formato, junte arquivos e finalize. Tudo no navegador, sem enviar o PDF para servidor."
           icon={FileStack}
         />
 
@@ -556,15 +550,6 @@ export function EditorPdfApp() {
                     Aplicar às selecionadas
                   </Button>
                 </div>
-
-                <FormField label="Nome do arquivo" htmlFor="output-name">
-                  <Input
-                    id="output-name"
-                    value={outputName}
-                    onChange={(e) => setOutputName(e.target.value)}
-                    placeholder="documento-editado"
-                  />
-                </FormField>
 
                 <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700">
                   <input

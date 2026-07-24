@@ -97,7 +97,7 @@ export default function DesignSystemPage() {
     <div className="space-y-5 pb-10">
       <PageHero
         title="Guia de componentes"
-        subtitle="Padrões interativos do Resolva Jato — botões, formulários, modais, tooltips e feedback."
+        subtitle="Padrões interativos do Resolva Jato: botões, formulários, modais, tooltips e feedback."
         icon={FileText}
       />
 

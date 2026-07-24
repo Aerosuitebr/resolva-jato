@@ -26,6 +26,12 @@ export interface PageOverlay {
   color?: string;
   align?: 'left' | 'center' | 'right';
   bold?: boolean;
+  /** Nome da fonte no PDF (cru). */
+  pdfFontName?: string;
+  /** Nome amigável detectado / escolhido. */
+  fontLabel?: string;
+  /** ID no catálogo EDITOR_FONTS. */
+  fontId?: string;
   imageDataUrl?: string;
   fill?: string;
   opacity?: number;

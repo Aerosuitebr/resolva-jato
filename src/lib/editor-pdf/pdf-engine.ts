@@ -1,5 +1,11 @@
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import {
+  fetchFontTtf,
+  getFontOptionById,
+  isBoldPdfFont,
+  resolveFontFromPdfName
+} from '@/lib/editor-pdf/fonts';
+import {
   defaultPageSize,
   resolvePageSize,
   type BuildOptions,
@@ -175,6 +181,9 @@ export async function extractPageTextOverlays(
 
     if (w <= 0.05 || h <= 0.05) continue;
 
+    const resolved = resolveFontFromPdfName(item.fontName);
+    const bold = isBoldPdfFont(item.fontName);
+
     overlays.push({
       id: nextId('txt'),
       kind: 'text',
@@ -186,7 +195,10 @@ export async function extractPageTextOverlays(
       originalText: str,
       fontSize: Math.max(7, height * 0.9),
       color: '#0f172a',
-      bold: /bold|black|heavy/i.test(item.fontName || ''),
+      bold,
+      pdfFontName: item.fontName || '',
+      fontLabel: resolved.displayName,
+      fontId: resolved.option.id,
       fromPdf: true,
       coverBackground: true,
       align: 'left'
@@ -252,7 +264,15 @@ function fitRect(
 async function drawOverlays(
   page: PDFPage,
   overlays: PageOverlay[],
-  fonts: { regular: PDFFont; bold: PDFFont }
+  fonts: {
+    regular: PDFFont;
+    bold: PDFFont;
+    times: PDFFont;
+    timesBold: PDFFont;
+    courier: PDFFont;
+    courierBold: PDFFont;
+    custom: Map<string, PDFFont>;
+  }
 ) {
   const { width, height } = page.getSize();
 
@@ -307,13 +327,26 @@ async function drawOverlays(
 
       if (!overlay.text.trim()) continue;
 
-      const font = overlay.bold ? fonts.bold : fonts.regular;
+      const option = getFontOptionById(overlay.fontId || 'inter');
+      const weightKey = overlay.bold ? '700' : '400';
+      const customKey = `${option.id}-${weightKey}`;
+      let font = fonts.custom.get(customKey);
+      if (!font) {
+        if (option.standard === 'TimesRoman') {
+          font = overlay.bold ? fonts.timesBold : fonts.times;
+        } else if (option.standard === 'Courier') {
+          font = overlay.bold ? fonts.courierBold : fonts.courier;
+        } else {
+          font = overlay.bold ? fonts.bold : fonts.regular;
+        }
+      }
+
       const fontSize = Math.max(6, overlay.fontSize || h * 0.75);
       const color = hexToRgb(overlay.color || '#0f172a');
       const lines = overlay.text.replace(/\r/g, '').split('\n');
       const lineHeight = fontSize * 1.2;
       lines.forEach((line, idx) => {
-        const textWidth = font.widthOfTextAtSize(line || ' ', fontSize);
+        const textWidth = font!.widthOfTextAtSize(line || ' ', fontSize);
         let drawX = x;
         if (overlay.align === 'center') drawX = x + (w - textWidth) / 2;
         if (overlay.align === 'right') drawX = x + w - textWidth;
@@ -321,15 +354,48 @@ async function drawOverlays(
           x: Math.max(0, drawX),
           y: Math.max(0, y + h - fontSize - idx * lineHeight - 1),
           size: fontSize,
-          font,
+          font: font!,
           color: rgb(color.r, color.g, color.b),
           opacity,
           maxWidth: Math.max(fontSize, w)
         });
       });
-      continue;
     }
   }
+}
+
+async function buildFontKit(outDoc: PDFDocument, overlays: PageOverlay[]) {
+  const fonts = {
+    regular: await outDoc.embedFont(StandardFonts.Helvetica),
+    bold: await outDoc.embedFont(StandardFonts.HelveticaBold),
+    times: await outDoc.embedFont(StandardFonts.TimesRoman),
+    timesBold: await outDoc.embedFont(StandardFonts.TimesRomanBold),
+    courier: await outDoc.embedFont(StandardFonts.Courier),
+    courierBold: await outDoc.embedFont(StandardFonts.CourierBold),
+    custom: new Map<string, PDFFont>()
+  };
+
+  const needed = new Map<string, { optionId: string; bold: boolean }>();
+  for (const o of overlays) {
+    if (o.kind !== 'text') continue;
+    const option = getFontOptionById(o.fontId || 'inter');
+    const bold = Boolean(o.bold);
+    needed.set(`${option.id}-${bold ? '700' : '400'}`, { optionId: option.id, bold });
+  }
+
+  for (const [key, meta] of needed) {
+    const option = getFontOptionById(meta.optionId);
+    const buf = await fetchFontTtf(option, meta.bold ? 700 : 400);
+    if (!buf) continue;
+    try {
+      const embedded = await outDoc.embedFont(buf, { subset: true });
+      fonts.custom.set(key, embedded);
+    } catch {
+      // fallback StandardFonts
+    }
+  }
+
+  return fonts;
 }
 
 /** Monta o PDF final com ordem, rotação, tamanho, overlays, numeração e marca d'água. */
@@ -340,10 +406,8 @@ export async function buildFinalPdf(
 ): Promise<Uint8Array> {
   const outDoc = await PDFDocument.create();
   const srcDocCache = new Map<string, PDFDocument>();
-  const fonts = {
-    regular: await outDoc.embedFont(StandardFonts.Helvetica),
-    bold: await outDoc.embedFont(StandardFonts.HelveticaBold)
-  };
+  const allOverlays = pages.flatMap((p) => p.overlays);
+  const fonts = await buildFontKit(outDoc, allOverlays);
 
   for (const p of pages) {
     const target = resolvePageSize(p);

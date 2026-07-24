@@ -129,7 +129,7 @@ export function RescisaoApp() {
 
         <PageHero
           title="Calculadora de Rescisão Trabalhista"
-          subtitle="Estime saldo de salário, 13º, férias, aviso prévio e multa do FGTS em segundos. Valores aproximados — sempre confirme com um profissional."
+          subtitle="Estime saldo de salário, 13º, férias, aviso prévio e multa do FGTS em segundos. Valores aproximados: sempre confirme com um profissional."
           icon={Scale}
         />
 

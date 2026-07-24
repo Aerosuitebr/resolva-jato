@@ -17,6 +17,7 @@ import { PageHero } from "@/components/shared/page-hero";
 import { ToolsBackButton } from "@/components/shared/tools-back-button";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { buildResolvaJatoDownloadName } from "@/lib/download-filename";
 import { cn } from "@/lib/utils";
 import {
   downloadBlob,
@@ -41,7 +42,6 @@ export function RemoverFundoApp() {
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState("imagem");
   const [processing, setProcessing] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
   const [progressPct, setProgressPct] = useState(0);
@@ -58,7 +58,6 @@ export function RemoverFundoApp() {
         toast(`A imagem excede ${MAX_FILE_MB}MB.`);
         return;
       }
-      setFileName(file.name.replace(/\.[^.]+$/, ""));
       setOriginalUrl(URL.createObjectURL(file));
       setResultBlob(null);
       setResultUrl(null);
@@ -133,14 +132,15 @@ export function RemoverFundoApp() {
   }
 
   async function handleDownload() {
+    const name = buildResolvaJatoDownloadName("picture");
     if (compositeUrl) {
       const res = await fetch(compositeUrl);
       const blob = await res.blob();
-      downloadBlob(blob, `${fileName}-sem-fundo.png`);
+      downloadBlob(blob, name);
       return;
     }
     if (resultBlob) {
-      downloadBlob(resultBlob, `${fileName}-sem-fundo.png`);
+      downloadBlob(resultBlob, name);
     }
   }
 
@@ -164,7 +164,7 @@ export function RemoverFundoApp() {
 
         <PageHero
           title="Removedor de Fundo de Imagem"
-          subtitle="Recorte pessoas, produtos e objetos automaticamente e baixe em PNG transparente — o processamento roda no seu navegador, a imagem não é enviada a nenhum servidor."
+          subtitle="Recorte pessoas, produtos e objetos automaticamente e baixe em PNG transparente. O processamento roda no seu navegador, a imagem não é enviada a nenhum servidor."
           icon={ImageOff}
         />
 
