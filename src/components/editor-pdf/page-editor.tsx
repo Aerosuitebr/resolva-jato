@@ -139,10 +139,12 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           }
           setDraft((prev) => {
             const manual = prev.overlays.filter((o) => !o.fromPdf);
+            const lines = graphics.filter((o) => o.kind === 'line');
+            const otherGraphics = graphics.filter((o) => o.kind !== 'line');
             return {
               ...prev,
-              // Gráficos por cima do texto para o logo não ficar sob caixas de título.
-              overlays: [...texts, ...graphics, ...manual],
+              // Texto por cima de imagens para não perder clique; linhas no topo.
+              overlays: [...otherGraphics, ...texts, ...lines, ...manual],
               textLayerReady: true
             };
           });
@@ -672,7 +674,13 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                           ? 'z-20'
                           : 'z-10',
                       overlay.kind === 'text' && !isEditing && 'cursor-text hover:ring-1 hover:ring-sky-400/70',
-                      overlay.kind !== 'text' && tool === 'select' && 'cursor-move hover:ring-1 hover:ring-sky-400/70',
+                      overlay.kind === 'line' &&
+                        tool === 'select' &&
+                        'cursor-ns-resize hover:bg-sky-400/25 hover:ring-1 hover:ring-sky-500/80',
+                      overlay.kind !== 'text' &&
+                        overlay.kind !== 'line' &&
+                        tool === 'select' &&
+                        'cursor-move hover:ring-1 hover:ring-sky-400/70',
                       (isSelected || isEditing) && 'ring-2 ring-sky-500',
                       changed && 'ring-emerald-400',
                       !pristine && overlay.kind === 'erase' && 'bg-white',
@@ -744,6 +752,13 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                           {overlay.text}
                         </div>
                       )
+                    ) : null}
+
+                    {overlay.kind === 'line' && isSelected ? (
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-1 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-sky-500 shadow-sm"
+                      />
                     ) : null}
 
                     {overlay.kind === 'image' && showPaintedContent && overlay.imageDataUrl ? (

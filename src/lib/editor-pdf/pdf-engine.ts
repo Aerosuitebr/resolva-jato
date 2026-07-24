@@ -166,29 +166,35 @@ export async function extractPageTextOverlays(
 
     const tx = pdfjs.Util.transform(viewport.transform, item.transform);
     const fontHeight = Math.hypot(tx[2], tx[3]) || Math.hypot(tx[0], tx[1]) || 12;
-    const scaleX = Math.hypot(tx[0], tx[1]) || 1;
-    const reportedWidth = Math.max(0, (item.width || 0) * scaleX);
-    // Estimativa por caracteres evita caixas que atravessam a página (bug comum do width do pdf.js).
+    // item.width já vem em unidades de usuário do PDF (não multiplicar pelo fontSize).
+    const viewportScaleX = Math.hypot(viewport.transform[0], viewport.transform[1]) || 1;
+    const reportedWidth = Math.max(0, (item.width || 0) * viewportScaleX);
     const estimatedWidth = Math.max(str.trim().length, 1) * fontHeight * 0.56;
     let width = reportedWidth > 0 ? reportedWidth : estimatedWidth;
-    if (width > estimatedWidth * 1.65) width = estimatedWidth * 1.12;
-    if (width < estimatedWidth * 0.45) width = estimatedWidth;
+    if (reportedWidth > 0 && estimatedWidth > 0) {
+      // Se o width reportado destoar demais da estimativa, prefere a estimativa.
+      if (width > estimatedWidth * 1.8) width = estimatedWidth * 1.08;
+      if (width < estimatedWidth * 0.4) width = estimatedWidth;
+    }
     // Baseline → topo da caixa (viewport já tem Y para baixo).
     const height = Math.max(fontHeight * 0.95, fontHeight);
     const xPdf = tx[4];
     const yPdf = tx[5] - height * 0.82;
 
     const padX = Math.max(0.25, fontHeight * 0.04);
-    const padY = Math.max(0.2, fontHeight * 0.06);
+    const padY = Math.max(0.35, fontHeight * 0.1);
     const x = ((xPdf - padX) / viewport.width) * 100;
     const y = ((yPdf - padY) / viewport.height) * 100;
-    const w = ((width + padX * 2) / viewport.width) * 100;
-    const h = ((height + padY * 2) / viewport.height) * 100;
+    let w = ((width + padX * 2) / viewport.width) * 100;
+    let h = ((height + padY * 2) / viewport.height) * 100;
+    // Área mínima clicável (comprovantes têm fonte ~6–8pt).
+    h = Math.max(h, 1.15);
+    w = Math.max(w, 1.1);
 
     if (w <= 0.05 || h <= 0.05) continue;
-    // Descarta caixas patológicas (>45% da página para um trecho curto).
-    if (w > 45 && str.trim().length <= 24) continue;
-    if (w > 70) continue;
+    // Descarta caixas patológicas.
+    if (w > 55 && str.trim().length <= 20) continue;
+    if (w > 80) continue;
 
     const resolved = resolveFontFromPdfName(item.fontName);
     const bold = isBoldPdfFont(item.fontName);
@@ -326,8 +332,11 @@ export async function extractPageGraphicOverlays(
   const pushImageSlot = () => {
     // Imagem PDF: quadrado unitário transformado pelo CTM.
     const box = boxFromUserQuad(viewport, pdfjs, ctm, 0, 0, 1, 1);
-    const area = box.w * box.h;
-    if (area < 0.15 || box.w < 0.5 || box.h < 0.5) return;
+    const areaPct = (box.w * box.h) / 100; // % da área da página (0–100)
+    // Fundos rasterizados (ex.: DANFE/comprovante em página inteira) não podem
+    // virar overlay — cobrem 100% e roubam o clique do texto.
+    if (areaPct > 35 || (box.w > 85 && box.h > 85)) return;
+    if (areaPct < 0.2 || box.w < 0.5 || box.h < 0.5) return;
     if (overlays.some((o) => o.kind === 'image' && Math.abs(o.x - box.x) < 0.35 && Math.abs(o.y - box.y) < 0.35)) {
       return;
     }
@@ -342,18 +351,44 @@ export async function extractPageGraphicOverlays(
     });
   };
 
-  const pushThinShape = (ux: number, uy: number, uw: number, uh: number, color: string, asStroke: boolean) => {
-    if (!asStroke) return; // evita pontos/blobs de fills do PDF por cima do preview
-    const box = boxFromUserQuad(viewport, pdfjs, ctm, ux, uy, ux + uw, uy + uh);
+  const pushThinShape = (ux: number, uy: number, uw: number, uh: number, color: string) => {
+    // Linhas de tabela no PDF costumam ser rect finos com fill (não só stroke).
+    const absW = Math.abs(uw) < 0.05 ? Math.max(lineWidth, 0.4) : uw;
+    const absH = Math.abs(uh) < 0.05 ? Math.max(lineWidth, 0.4) : uh;
+    const box = boxFromUserQuad(viewport, pdfjs, ctm, ux, uy, ux + absW, uy + absH);
     const minSide = Math.min(box.w, box.h);
     const maxSide = Math.max(box.w, box.h);
-    if (maxSide < 6) return; // só linhas longas (separadores de tabela etc.)
-    const isLine = minSide <= 1.35 && maxSide >= 6 && minSide / maxSide < 0.1;
+    if (maxSide < 8) return;
+    const isLine = minSide <= 2.2 && maxSide >= 8 && minSide / maxSide < 0.085;
     if (!isLine) return;
+    // Evita duplicar o mesmo separador.
+    if (
+      overlays.some(
+        (o) =>
+          o.kind === 'line' &&
+          Math.abs((o.coverY ?? o.y) - box.y) < 0.5 &&
+          Math.abs((o.coverX ?? o.x) - box.x) < 1.2 &&
+          Math.abs((o.coverW ?? o.w) - box.w) < 3
+      )
+    ) {
+      return;
+    }
+    // Área de clique maior que o traço visual (difícil acertar 1px).
+    const hitPad = 1.25;
     const hitBox =
       box.w >= box.h
-        ? { ...box, h: Math.max(box.h, 0.55), y: box.y - Math.max(0, (0.55 - box.h) / 2) }
-        : { ...box, w: Math.max(box.w, 0.55), x: box.x - Math.max(0, (0.55 - box.w) / 2) };
+        ? {
+            x: box.x,
+            y: box.y - (hitPad - box.h) / 2,
+            w: box.w,
+            h: Math.max(box.h, hitPad)
+          }
+        : {
+            x: box.x - (hitPad - box.w) / 2,
+            y: box.y,
+            w: Math.max(box.w, hitPad),
+            h: box.h
+          };
     const normalized = normalizeOverlayBox(hitBox.x, hitBox.y, hitBox.w, hitBox.h);
     overlays.push({
       id: nextId('ln'),
@@ -362,7 +397,7 @@ export async function extractPageGraphicOverlays(
       ...coverFromBox(box),
       stroke: color,
       fill: color,
-      strokeWidth: Math.max(0.15, minSide),
+      strokeWidth: Math.max(0.12, minSide),
       fromPdf: true,
       coverBackground: true,
       opacity: 1
@@ -447,7 +482,7 @@ export async function extractPageGraphicOverlays(
         // Se a altura/largura do rect for ~0, usar lineWidth.
         const rw = Math.abs(w) < 0.01 ? lineWidth : w;
         const rh = Math.abs(h) < 0.01 ? lineWidth : h;
-        pushThinShape(x, y, rw, rh, color, true);
+        pushThinShape(x, y, rw, rh, color);
         pendingRect = null;
       } else if (pathPoints.length >= 2) {
         for (let p = 1; p < pathPoints.length; p += 1) {
@@ -459,9 +494,9 @@ export async function extractPageGraphicOverlays(
           const dy = Math.abs(a.y - b.y);
           if (dx < 0.01 && dy < 0.01) continue;
           if (dy <= dx * 0.08) {
-            pushThinShape(minX, minY - lineWidth / 2, Math.max(dx, 0.5), lineWidth, color, true);
+            pushThinShape(minX, minY - lineWidth / 2, Math.max(dx, 0.5), lineWidth, color);
           } else if (dx <= dy * 0.08) {
-            pushThinShape(minX - lineWidth / 2, minY, lineWidth, Math.max(dy, 0.5), color, true);
+            pushThinShape(minX - lineWidth / 2, minY, lineWidth, Math.max(dy, 0.5), color);
           }
         }
       }
@@ -472,8 +507,24 @@ export async function extractPageGraphicOverlays(
     if (fn === OPS.fill || fn === OPS.eoFill) {
       const color = rgbToHex(fillRgb.r, fillRgb.g, fillRgb.b);
       if (pendingRect) {
-        pushThinShape(pendingRect.x, pendingRect.y, pendingRect.w, pendingRect.h, color, false);
+        pushThinShape(pendingRect.x, pendingRect.y, pendingRect.w, pendingRect.h, color);
         pendingRect = null;
+      } else if (pathPoints.length >= 2) {
+        // Path fechado fino (às vezes usado como linha).
+        for (let p = 1; p < pathPoints.length; p += 1) {
+          const a = pathPoints[p - 1];
+          const b = pathPoints[p];
+          const minX = Math.min(a.x, b.x);
+          const minY = Math.min(a.y, b.y);
+          const dx = Math.abs(a.x - b.x);
+          const dy = Math.abs(a.y - b.y);
+          if (dx < 0.01 && dy < 0.01) continue;
+          if (dy <= dx * 0.08) {
+            pushThinShape(minX, minY - lineWidth / 2, Math.max(dx, 0.5), lineWidth, color);
+          } else if (dx <= dy * 0.08) {
+            pushThinShape(minX - lineWidth / 2, minY, lineWidth, Math.max(dy, 0.5), color);
+          }
+        }
       }
       pathPoints = [];
       pathStart = null;
@@ -510,9 +561,10 @@ export async function extractPageGraphicOverlays(
           localPoints.push({ x: coords[ci++], y: coords[ci++] });
         } else if (op === OPS.closePath && localStart) {
           localPoints.push(localStart);
-        } else {
-          // op desconhecido: avançar com cuidado
-          break;
+        } else if (op === OPS.curveTo) {
+          ci += 6;
+        } else if (op === OPS.curveTo2 || op === OPS.curveTo3) {
+          ci += 4;
         }
       }
       if (localRect) pendingRect = localRect;
