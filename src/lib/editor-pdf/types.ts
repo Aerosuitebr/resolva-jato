@@ -46,13 +46,15 @@ export interface PageOverlay {
   /** Desenha fundo branco atrás (cobre o pixel original no export). */
   coverBackground?: boolean;
   /**
-   * Região original a cobrir com branco no preview/export (fixa ao mover).
+   * Região original a cobrir no preview/export (fixa ao mover).
    * Em % da página, igual a x/y/w/h na extração.
    */
   coverX?: number;
   coverY?: number;
   coverW?: number;
   coverH?: number;
+  /** Cor amostrada do fundo do PDF para cobrir o glyph (evita mancha branca). */
+  coverFill?: string;
 }
 
 export interface SourceFile {

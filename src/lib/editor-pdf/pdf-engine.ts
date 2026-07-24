@@ -63,6 +63,87 @@ function hexToRgb(hex: string) {
   };
 }
 
+function loadImageElement(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Falha ao carregar preview'));
+    img.src = url;
+  });
+}
+
+/**
+ * Amostra a cor de fundo sob cada texto do PDF (borda da caixa)
+ * para cobrir o glyph sem mancha branca em headers coloridos.
+ */
+export async function sampleCoverFillsFromPreview(
+  previewUrl: string,
+  overlays: PageOverlay[]
+): Promise<PageOverlay[]> {
+  if (!previewUrl || overlays.length === 0) return overlays;
+  try {
+    const img = await loadImageElement(previewUrl);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx || !canvas.width || !canvas.height) return overlays;
+    ctx.drawImage(img, 0, 0);
+
+    return overlays.map((overlay) => {
+      if (overlay.kind !== 'text' || !overlay.fromPdf) return overlay;
+      const fill = sampleOverlayBackground(ctx, canvas.width, canvas.height, overlay);
+      return fill ? { ...overlay, coverFill: fill } : overlay;
+    });
+  } catch {
+    return overlays;
+  }
+}
+
+function sampleOverlayBackground(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  overlay: PageOverlay
+) {
+  const cx = overlay.coverX ?? overlay.x;
+  const cy = overlay.coverY ?? overlay.y;
+  const cw = overlay.coverW ?? overlay.w;
+  const ch = overlay.coverH ?? overlay.h;
+  const pts: Array<[number, number]> = [
+    [cx + cw * 0.08, cy + ch * 0.1],
+    [cx + cw * 0.5, cy + ch * 0.06],
+    [cx + cw * 0.92, cy + ch * 0.1],
+    [cx + cw * 0.04, cy + ch * 0.5],
+    [cx + cw * 0.96, cy + ch * 0.5]
+  ];
+
+  const samples: Array<{ r: number; g: number; b: number; lum: number }> = [];
+  for (const [px, py] of pts) {
+    const x = Math.min(width - 1, Math.max(0, Math.round((px / 100) * width)));
+    const y = Math.min(height - 1, Math.max(0, Math.round((py / 100) * height)));
+    const data = ctx.getImageData(x, y, 1, 1).data;
+    const r = data[0];
+    const g = data[1];
+    const b = data[2];
+    samples.push({ r, g, b, lum: 0.299 * r + 0.587 * g + 0.114 * b });
+  }
+
+  // Evita amostrar o próprio glyph (quase preto).
+  const bg = samples.filter((s) => s.lum > 35);
+  const pool = bg.length >= 2 ? bg : samples;
+  const sum = pool.reduce(
+    (acc, s) => ({ r: acc.r + s.r, g: acc.g + s.g, b: acc.b + s.b }),
+    { r: 0, g: 0, b: 0 }
+  );
+  const n = pool.length || 1;
+  const toHex = (v: number) =>
+    Math.round(v / n)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${toHex(sum.r)}${toHex(sum.g)}${toHex(sum.b)}`;
+}
+
 /** Lê um arquivo PDF, gera 1 SourceFile + miniaturas de todas as páginas. */
 export async function loadPdfIntoPages(file: File): Promise<{ source: SourceFile; pages: PageItem[] }> {
   const bytes = await file.arrayBuffer();
@@ -698,12 +779,13 @@ async function drawOverlays(
       const cyTop = (overlay.coverY / 100) * height;
       const cy = height - cyTop - ch;
       const pad = 1.2;
+      const cover = hexToRgb(overlay.coverFill || '#ffffff');
       page.drawRectangle({
         x: cx - pad,
         y: cy - pad,
         width: cw + pad * 2,
         height: ch + pad * 2,
-        color: rgb(1, 1, 1),
+        color: rgb(cover.r, cover.g, cover.b),
         opacity: 1
       });
     }
@@ -755,12 +837,13 @@ async function drawOverlays(
         (overlay.coverX == null || overlay.coverY == null)
       ) {
         const pad = 1.2;
+        const cover = hexToRgb(overlay.coverFill || '#ffffff');
         page.drawRectangle({
           x: x - pad,
           y: y - pad,
           width: w + pad * 2,
           height: h + pad * 2,
-          color: rgb(1, 1, 1),
+          color: rgb(cover.r, cover.g, cover.b),
           opacity: 1
         });
       }

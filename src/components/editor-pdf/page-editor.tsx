@@ -35,6 +35,7 @@ import {
   nextId,
   renderPagePreview,
   resolvePageSize,
+  sampleCoverFillsFromPreview,
   type PageFitMode,
   type PageItem,
   type PageOverlay,
@@ -116,9 +117,10 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       }
 
       setLoadingPreview(true);
+      let preview = page.thumbnail;
       try {
-        const url = await renderPagePreview(source, draft.sourcePageIndex, draft.rotation);
-        if (!cancelled) setPreviewUrl(url);
+        preview = await renderPagePreview(source, draft.sourcePageIndex, draft.rotation);
+        if (!cancelled) setPreviewUrl(preview);
       } catch {
         if (!cancelled) setPreviewUrl(page.thumbnail);
       } finally {
@@ -133,7 +135,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             extractPageGraphicOverlays(source, draft.sourcePageIndex, draft.rotation)
           ]);
           if (cancelled) return;
-          for (const t of texts) {
+          const textsWithFill = await sampleCoverFillsFromPreview(preview, texts);
+          for (const t of textsWithFill) {
             const opt = getFontOptionById(t.fontId || 'inter');
             ensureFontCssLoaded(opt);
           }
@@ -144,19 +147,17 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             return {
               ...prev,
               // Texto por cima de imagens para não perder clique; linhas no topo.
-              overlays: [...otherGraphics, ...texts, ...lines, ...manual],
+              overlays: [...otherGraphics, ...textsWithFill, ...lines, ...manual],
               textLayerReady: true
             };
           });
           const names = Array.from(
-            new Set(texts.map((t) => t.fontLabel || t.pdfFontName).filter(Boolean))
+            new Set(textsWithFill.map((t) => t.fontLabel || t.pdfFontName).filter(Boolean))
           ).slice(0, 3);
           const bits: string[] = [];
           if (names.length) bits.push(`Fontes: ${names.join(', ')}`);
           if (graphics.length) {
-            bits.push(
-              `${graphics.length} objeto(s) gráfico(s) (imagem/linha)`
-            );
+            bits.push(`${graphics.length} objeto(s) gráfico(s) (imagem/linha)`);
           }
           setFontStatus(bits.join(' · '));
         } catch (err) {
@@ -669,12 +670,13 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                   <div
                     key={`cover-${overlay.id}`}
                     aria-hidden
-                    className="pointer-events-none absolute z-[5] bg-white"
+                    className="pointer-events-none absolute z-[5]"
                     style={{
                       left: `${overlay.coverX}%`,
                       top: `${overlay.coverY}%`,
                       width: `${overlay.coverW}%`,
-                      height: `${overlay.coverH}%`
+                      height: `${overlay.coverH}%`,
+                      backgroundColor: overlay.coverFill || '#ffffff'
                     }}
                   />
                 );
@@ -746,7 +748,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                             overlay.kind === 'line'
                           ? overlay.fill || overlay.stroke || '#0f172a'
                           : overlay.kind === 'text'
-                            ? '#ffffff'
+                            ? overlay.coverFill || '#ffffff'
                             : undefined,
                       opacity: !showPaintedContent
                         ? 1
@@ -771,8 +773,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                             }
                           }}
                           onPointerDown={(e) => e.stopPropagation()}
-                          className="h-full w-full resize-none border-0 bg-white px-0.5 py-0 outline-none"
+                          className="h-full w-full resize-none border-0 px-0.5 py-0 outline-none"
                           style={{
+                            backgroundColor: overlay.coverFill || '#ffffff',
                             color: overlay.color || '#0f172a',
                             fontSize: `${fontPx(overlay)}px`,
                             fontFamily: cssFontFamily(overlay),
