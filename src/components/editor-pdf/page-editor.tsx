@@ -90,6 +90,18 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   const movedDuringDrag = useRef(false);
+  const replaceImageIdRef = useRef<string | null>(null);
+  const [imageSlot, setImageSlot] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    coverX?: number;
+    coverY?: number;
+    coverW?: number;
+    coverH?: number;
+    coverFill?: string;
+  } | null>(null);
 
   const size = resolvePageSize(draft);
   const aspect = size.width / Math.max(size.height, 1);
@@ -194,7 +206,6 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!selectedId) return;
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
 
       const target = e.target as HTMLElement | null;
       const typing =
@@ -202,6 +213,15 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
         (target.tagName === 'TEXTAREA' ||
           target.tagName === 'INPUT' ||
           target.isContentEditable);
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) {
+        e.preventDefault();
+        removeOverlay(selectedId);
+        return;
+      }
+
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
       // Em edição de texto, use Alt+setas para mover a caixa (setas sozinhas navegam o cursor).
       if (typing && !e.altKey) return;
 
@@ -258,12 +278,135 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   }
 
   function removeOverlay(id: string) {
-    setDraft((prev) => ({
-      ...prev,
-      overlays: prev.overlays.filter((o) => o.id !== id)
-    }));
+    const ov = draft.overlays.find((o) => o.id === id);
+    if (ov?.kind === 'image') {
+      setImageSlot({
+        x: ov.x,
+        y: ov.y,
+        w: ov.w,
+        h: ov.h,
+        coverX: ov.coverX,
+        coverY: ov.coverY,
+        coverW: ov.coverW,
+        coverH: ov.coverH,
+        coverFill: ov.coverFill
+      });
+    }
+
+    setDraft((prev) => {
+      const target = prev.overlays.find((o) => o.id === id);
+      let next = prev.overlays.filter((o) => o.id !== id);
+      // Cobre o raster original ao remover imagem do PDF.
+      if (
+        target?.kind === 'image' &&
+        target.fromPdf &&
+        target.coverX != null &&
+        target.coverY != null &&
+        target.coverW != null &&
+        target.coverH != null
+      ) {
+        next = [
+          ...next,
+          {
+            id: nextId('erase'),
+            kind: 'erase',
+            x: target.coverX,
+            y: target.coverY,
+            w: target.coverW,
+            h: target.coverH,
+            fill: target.coverFill || '#ffffff',
+            opacity: 1
+          }
+        ];
+      }
+      return { ...prev, overlays: next };
+    });
     if (selectedId === id) setSelectedId(null);
     if (editingId === id) setEditingId(null);
+  }
+
+  function startReplaceImage() {
+    if (!selected || selected.kind !== 'image') return;
+    replaceImageIdRef.current = selected.id;
+    imageInputRef.current?.click();
+  }
+
+  async function onImagePicked(file: File | null) {
+    if (!file) return;
+    const dataUrl = await readFileAsDataUrl(file);
+    const replaceId = replaceImageIdRef.current;
+    replaceImageIdRef.current = null;
+
+    if (replaceId) {
+      updateOverlay(replaceId, { imageDataUrl: dataUrl });
+      setSelectedId(replaceId);
+      setTool('select');
+      setImageSlot(null);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      return;
+    }
+
+    const slot = imageSlot;
+    setImageSlot(null);
+    const id = nextId('ov');
+
+    if (slot) {
+      setDraft((prev) => {
+        const withoutHole = prev.overlays.filter(
+          (o) =>
+            !(
+              o.kind === 'erase' &&
+              slot.coverX != null &&
+              Math.abs(o.x - slot.coverX) < 0.35 &&
+              Math.abs(o.y - (slot.coverY || 0)) < 0.35
+            )
+        );
+        return {
+          ...prev,
+          overlays: [
+            ...withoutHole,
+            {
+              id,
+              kind: 'image' as const,
+              x: slot.x,
+              y: slot.y,
+              w: slot.w,
+              h: slot.h,
+              coverX: slot.coverX,
+              coverY: slot.coverY,
+              coverW: slot.coverW,
+              coverH: slot.coverH,
+              coverFill: slot.coverFill,
+              imageDataUrl: dataUrl,
+              fromPdf: slot.coverX != null,
+              dirty: true,
+              coverBackground: true,
+              opacity: 1
+            }
+          ]
+        };
+      });
+    } else {
+      setDraft((prev) => ({
+        ...prev,
+        overlays: [
+          ...prev.overlays,
+          {
+            id,
+            kind: 'image',
+            x: 20,
+            y: 20,
+            w: 40,
+            h: 28,
+            imageDataUrl: dataUrl
+          }
+        ]
+      }));
+    }
+
+    setSelectedId(id);
+    setTool('select');
+    if (imageInputRef.current) imageInputRef.current.value = '';
   }
 
   function setPagePreset(preset: PageSizePreset) {
@@ -485,24 +628,6 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     const pt = relativePoint(e.clientX, e.clientY);
     setDrag({ mode: 'resize', id: overlay.id, startX: pt.x, startY: pt.y, orig: overlay });
     boardRef.current?.setPointerCapture(e.pointerId);
-  }
-
-  async function onImagePicked(file: File | null) {
-    if (!file) return;
-    const dataUrl = await readFileAsDataUrl(file);
-    const id = nextId('ov');
-    const overlay: PageOverlay = {
-      id,
-      kind: 'image',
-      x: 20,
-      y: 20,
-      w: 40,
-      h: 28,
-      imageDataUrl: dataUrl
-    };
-    setDraft((prev) => ({ ...prev, overlays: [...prev.overlays, overlay] }));
-    setSelectedId(id);
-    setTool('select');
   }
 
   function fontPx(overlay: PageOverlay) {
@@ -964,15 +1089,28 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               </h3>
               {!selected ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em texto, imagem ou linha. Setas movem com precisão; Shift+setas andam um pouco mais; Alt+setas movem durante a edição.
+                  Clique em texto, imagem ou linha. Setas movem com precisão; Delete remove.
+                  {imageSlot
+                    ? ' Espaço de imagem guardado — use “Imagem” na barra para inserir outra no mesmo tamanho.'
+                    : ''}
                 </p>
               ) : selected.kind !== 'text' ? (
                 <div className="space-y-2">
                   <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-                    {selected.fromPdf
-                      ? 'Objeto do PDF. Arraste para mover. A posição original fica coberta no export.'
-                      : 'Arraste na página para mover ou use o canto azul para redimensionar.'}
+                    {selected.kind === 'image'
+                      ? 'Troque a imagem mantendo o tamanho, ou remova e insira outra (encaixa no espaço anterior). Delete também remove.'
+                      : selected.fromPdf
+                        ? 'Objeto do PDF. Arraste para mover. A posição original fica coberta no export.'
+                        : 'Arraste na página para mover ou use o canto azul para redimensionar.'}
                   </p>
+                  {selected.kind === 'image' && selected.imageDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selected.imageDataUrl}
+                      alt=""
+                      className="mx-auto max-h-24 rounded-lg border border-slate-200 object-contain"
+                    />
+                  ) : null}
                   {(selected.kind === 'line' || selected.kind === 'rect') && (
                     <FormField label="Cor" htmlFor="ov-shape-color">
                       <Input
@@ -989,6 +1127,17 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                       />
                     </FormField>
                   )}
+                  {selected.kind === 'image' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      icon={ImagePlus}
+                      onClick={startReplaceImage}
+                    >
+                      Trocar imagem (mesmo tamanho)
+                    </Button>
+                  ) : null}
                   <Button
                     variant="danger"
                     size="sm"
@@ -996,7 +1145,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                     icon={Trash2}
                     onClick={() => removeOverlay(selected.id)}
                   >
-                    Remover objeto
+                    {selected.kind === 'image' ? 'Remover imagem' : 'Remover objeto'}
                   </Button>
                 </div>
               ) : (
