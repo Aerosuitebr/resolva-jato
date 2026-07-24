@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  ArrowRight,
   ChevronDown,
   Crown,
   MessageSquarePlus,
@@ -33,6 +34,9 @@ import {
 } from '@/lib/tools-catalog';
 import {
   dismissToolsWizard,
+  fetchServerToolsPrefs,
+  hasCustomizedSections,
+  hydrateLocalFromServer,
   isToolsWizardDismissed,
   loadCollapsedCategoryIds,
   loadFavoriteToolIds,
@@ -41,16 +45,21 @@ import {
   loadRecentToolIds,
   pushRecentToolId,
   reopenToolsWizard,
+  setCollapsedCategoryIds,
   setPinnedCategoryId,
   toggleCollapsedCategoryId,
   toggleFavoriteToolId
 } from '@/lib/tools-prefs';
 import { cn } from '@/lib/utils';
 
+const POPULAR_SEARCHES = ['Recibo', 'Contrato', 'Currículo', 'Orçamento', 'Agenda', 'PDF'];
+
 export default function FerramentasPage() {
   const { usage, plan } = useAuth();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
   const [spyCategory, setSpyCategory] = useState<ToolCategoryId | 'todas'>('todas');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
@@ -64,14 +73,44 @@ export default function FerramentasPage() {
   const ignoreSpyUntil = useRef(0);
 
   useEffect(() => {
-    setFavorites(loadFavoriteToolIds());
-    setRecent(loadRecentToolIds());
+    const localFavorites = loadFavoriteToolIds();
+    const localRecent = loadRecentToolIds();
+    const localPinned = loadPinnedCategoryId();
+    let localCollapsed = loadCollapsedCategoryIds();
+
+    // Primeira visita (sem nenhuma personalização ainda): recolhe as categorias
+    // por padrão, deixando só a primeira aberta — reduz sobrecarga cognitiva.
+    if (
+      !hasCustomizedSections() &&
+      localCollapsed.length === 0 &&
+      localFavorites.length === 0 &&
+      localRecent.length === 0 &&
+      !localPinned
+    ) {
+      const defaultCollapsed = toolCategories.slice(1).map((category) => category.id);
+      localCollapsed = setCollapsedCategoryIds(defaultCollapsed);
+    }
+
+    setFavorites(localFavorites);
+    setRecent(localRecent);
     setMostUsed(loadMostUsedToolIds(3));
-    setPinnedCategory(loadPinnedCategoryId());
-    setCollapsed(loadCollapsedCategoryIds());
+    setPinnedCategory(localPinned);
+    setCollapsed(localCollapsed);
     setShowWizard(!isToolsWizardDismissed());
     setEngagement(getToolsEngagement());
     setPrefsReady(true);
+
+    // Sincroniza com a conta do usuário (fonte de verdade entre dispositivos).
+    fetchServerToolsPrefs().then((serverPrefs) => {
+      if (!serverPrefs) return;
+      hydrateLocalFromServer(serverPrefs);
+      setFavorites(serverPrefs.favoriteToolIds);
+      setRecent(serverPrefs.recentToolIds);
+      setMostUsed(loadMostUsedToolIds(3));
+      setPinnedCategory(serverPrefs.pinnedCategoryId as ToolCategoryId | null);
+      setCollapsed(serverPrefs.collapsedCategories as ToolCategoryId[]);
+      setShowWizard(!serverPrefs.wizardDismissed);
+    });
   }, []);
 
   const searchResults = useMemo(() => searchTools(query), [query]);
@@ -138,6 +177,17 @@ export default function FerramentasPage() {
 
     return () => observer.disconnect();
   }, [isSearching, orderedCategories, sections.length]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!searchBoxRef.current) return;
+      if (!searchBoxRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   function scrollToCategory(id: ToolCategoryId | 'todas') {
     ignoreSpyUntil.current = Date.now() + 700;
@@ -235,15 +285,81 @@ export default function FerramentasPage() {
 
         {prefsReady ? <ToolsEngagementStrip engagement={engagement} /> : null}
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden />
+        <div ref={searchBoxRef} className="relative">
+          <Search
+            className={cn(
+              'pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 transition-colors',
+              searchFocused ? 'text-sky-500' : 'text-slate-400'
+            )}
+            aria-hidden
+          />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onFocus={() => setSearchFocused(true)}
             placeholder="Buscar contrato, recibo, orçamento ou ferramenta..."
             className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-base font-medium text-slate-900 shadow-sm outline-none ring-sky-200 placeholder:text-slate-400 focus:border-sky-400 focus:ring-4"
             aria-label="Buscar ferramentas"
           />
+
+          {searchFocused && !isSearching ? (
+            <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-40 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg">
+              <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Buscas populares
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_SEARCHES.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => setQuery(term)}
+                    className="rj-press rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {searchFocused && isSearching ? (
+            <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-40 max-h-[22rem] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+              {searchResults.length === 0 ? (
+                <p className="px-3 py-4 text-sm font-medium text-slate-500">
+                  Nenhuma ferramenta para “{query.trim()}”.
+                </p>
+              ) : (
+                searchResults.slice(0, 6).map((tool) => {
+                  const Icon = tool.icon;
+                  const category = getToolCategory(tool.categoryId);
+                  return (
+                    <Link
+                      key={tool.id}
+                      href={tool.href}
+                      onClick={() => {
+                        handleOpenTool(tool.id);
+                        setSearchFocused(false);
+                      }}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-sky-50"
+                    >
+                      <span
+                        className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg', category.iconClass)}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-slate-900">{tool.name}</span>
+                        <span className="block truncate text-xs font-medium text-slate-500">
+                          {category.shortLabel}
+                        </span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          ) : null}
         </div>
 
         {prefsReady && (recentTools.length > 0 || mostUsedTools.length > 0 || favoriteTools.length > 0) ? (
@@ -502,11 +618,11 @@ function ToolCard({
   return (
     <article
       className={cn(
-        'group relative flex h-full min-h-[11.5rem] flex-col rounded-2xl border bg-white p-4 transition',
-        'border-slate-200 hover:border-sky-400 hover:shadow-md',
+        'group relative flex h-full min-h-[10.5rem] flex-col rounded-2xl border bg-white p-4 transition-all duration-200',
+        'border-slate-200 hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md',
         'focus-within:border-sky-500 focus-within:ring-4 focus-within:ring-sky-100',
         highlighted && 'border-sky-300 bg-sky-50/40 ring-1 ring-sky-200',
-        compact && 'min-h-[8.5rem]'
+        compact && 'min-h-[7.5rem]'
       )}
     >
       <Link
@@ -518,14 +634,24 @@ function ToolCard({
 
       <div className="pointer-events-none relative z-10 flex flex-1 flex-col">
         <div className="flex items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-900 text-white">
+          <span
+            className={cn(
+              'relative grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-transform duration-200 group-hover:scale-105',
+              category.iconClass
+            )}
+          >
+            <span className={cn('absolute left-0 top-1.5 h-8 w-1 rounded-r-full', category.accentBar)} aria-hidden />
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-1">
               <div className="min-w-0">
-                <h3 className="rj-display text-base font-bold leading-snug text-slate-900">{tool.name}</h3>
-                <p className="mt-0.5 text-xs font-semibold text-slate-500">{category.shortLabel}</p>
+                <h3 className="rj-display text-[0.95rem] font-extrabold leading-snug tracking-tight text-slate-900">
+                  {tool.name}
+                </h3>
+                <p className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  {category.shortLabel}
+                </p>
               </div>
               <div className="flex shrink-0 items-center">
                 {tool.tip ? <ToolTipButton tip={tool.tip} /> : null}
@@ -537,8 +663,8 @@ function ToolCard({
                     onFavorite();
                   }}
                   className={cn(
-                    'pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-xl transition',
-                    favorite ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'
+                    'rj-favorite-btn pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-xl transition',
+                    favorite ? 'is-active text-amber-500' : 'text-slate-300 hover:text-amber-500'
                   )}
                   aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                   aria-pressed={favorite}
@@ -548,31 +674,40 @@ function ToolCard({
               </div>
             </div>
 
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {showPremium ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900">
-                  <Crown className="h-3 w-3" aria-hidden />
-                  {showBeta ? 'Premium · Beta' : 'Premium'}
-                </span>
-              ) : showBeta ? (
-                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-900">
-                  Beta
-                </span>
-              ) : null}
-            </div>
+            {showPremium || showBeta ? (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {showPremium ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+                    <Crown className="h-3 w-3" aria-hidden />
+                    {showBeta ? 'Premium · Beta' : 'Premium'}
+                  </span>
+                ) : showBeta ? (
+                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-900">
+                    Beta
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
 
             {!compact ? (
-              <p className="mt-2 line-clamp-2 min-h-[2.75rem] text-sm font-medium leading-5 text-slate-600">
-                {tool.description}
+              <p
+                className={cn(
+                  'overflow-hidden text-sm font-medium leading-5 text-slate-600 transition-all duration-300 ease-out',
+                  'max-h-11 opacity-100',
+                  'lg:max-h-0 lg:opacity-0 lg:group-hover:mt-2 lg:group-hover:max-h-11 lg:group-hover:opacity-100 lg:group-focus-within:mt-2 lg:group-focus-within:max-h-11 lg:group-focus-within:opacity-100',
+                  'mt-2 lg:mt-0'
+                )}
+              >
+                <span className="line-clamp-2">{tool.description}</span>
               </p>
             ) : null}
           </div>
         </div>
 
-        <div className="mt-auto flex justify-end pt-3">
-          <span className="rj-press inline-flex h-11 min-w-[10rem] items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition group-hover:bg-sky-500">
-            <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+        <div className="mt-auto flex items-center justify-end gap-1.5 pt-3">
+          <span className="rj-press inline-flex h-11 min-w-[9.5rem] items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition group-hover:bg-sky-500">
             {tool.actionLabel}
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-90 transition-transform group-hover:translate-x-0.5" aria-hidden />
           </span>
         </div>
       </div>

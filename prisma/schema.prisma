@@ -81,10 +81,28 @@ model User {
   subscription       Subscription?
   deviceLinks        DeviceCookieLink[]
   auditLogs          AuditLog[]
+  toolsPreference    ToolsPreference?
 
   @@index([createdAt])
   @@index([referredByUserId])
   @@map("users")
+}
+
+model ToolsPreference {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  favoriteToolIds     Json     @default("[]")
+  recentToolIds       Json     @default("[]")
+  openCounts          Json     @default("{}")
+  pinnedCategoryId    String?
+  collapsedCategories Json     @default("[]")
+  sectionsCustomized  Boolean  @default(false)
+  wizardDismissed     Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tools_preferences")
 }
 
 model ReferralActivation {

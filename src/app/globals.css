@@ -291,6 +291,22 @@ a {
   }
 }
 
+.rj-favorite-btn.is-active {
+  animation: rj-favorite-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rj-favorite-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  55% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @keyframes rj-toast-in {
   from {
     opacity: 0;
@@ -350,7 +366,8 @@ a {
   .rj-spotlight-progress,
   .rj-toast-in,
   .rj-progress-indeterminate,
-  .rj-press-flash {
+  .rj-press-flash,
+  .rj-favorite-btn.is-active {
     animation: none;
   }
 
