@@ -1,21 +1,28 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Copy, GraduationCap, MessageCircle } from 'lucide-react';
-import { AuthGate } from '@/components/auth/auth-gate';
-import { PageHero } from '@/components/shared/page-hero';
-import { ToolsBackButton } from '@/components/shared/tools-back-button';
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
-import { analisarRedacao } from '@/lib/redacao-enem/analyze';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  GraduationCap,
+  MessageCircle,
+  Sparkles,
+} from "lucide-react";
+import { AuthGate } from "@/components/auth/auth-gate";
+import { PageHero } from "@/components/shared/page-hero";
+import { ToolsBackButton } from "@/components/shared/tools-back-button";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
+import { analisarRedacao } from "@/lib/redacao-enem/analyze";
+import { cn } from "@/lib/utils";
 
 export function RedacaoEnemApp() {
   const { toast } = useToast();
-  const [tema, setTema] = useState('');
-  const [texto, setTexto] = useState('');
+  const [tema, setTema] = useState("");
+  const [texto, setTexto] = useState("");
 
   const resultado = useMemo(() => {
     if (texto.trim().split(/\s+/).filter(Boolean).length < 20) return null;
@@ -23,35 +30,42 @@ export function RedacaoEnemApp() {
   }, [texto]);
 
   function resumoTexto() {
-    if (!resultado) return '';
+    if (!resultado) return "";
     const linhas = resultado.competencias
       .map((c) => `C${c.id} - ${c.titulo}: ${c.nota}/200`)
-      .join('\n');
+      .join("\n");
     return [
-      '*Correção estimada de redação ENEM — Resolva Jato*',
-      tema ? `Tema: ${tema}` : '',
-      '',
+      "*Correção estimada de redação ENEM — Resolva Jato*",
+      tema ? `Tema: ${tema}` : "",
+      "",
       linhas,
-      '',
+      "",
       `*Nota estimada total: ${resultado.notaTotalEstimada}/1000*`,
-      '',
-      'Estimativa automática baseada em heurísticas de estrutura, coesão e proposta de intervenção — não substitui a correção de um professor ou corretor humano do ENEM.'
+      "",
+      "Estimativa automática baseada em heurísticas de estrutura, coesão e proposta de intervenção — não substitui a correção de um professor ou corretor humano do ENEM.",
     ]
       .filter(Boolean)
-      .join('\n');
+      .join("\n");
   }
 
   function handleCopy() {
     navigator.clipboard.writeText(resumoTexto());
-    toast('Resultado copiado!');
+    toast("Resultado copiado!");
   }
 
   function handleWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(resumoTexto())}`, '_blank', 'noopener,noreferrer');
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(resumoTexto())}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   }
 
   return (
-    <AuthGate title="Corretor de Redação ENEM" description="Cadastre-se gratuitamente para receber a estimativa da sua redação.">
+    <AuthGate
+      title="Corretor de Redação ENEM"
+      description="Cadastre-se gratuitamente para receber a estimativa da sua redação."
+    >
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <ToolsBackButton />
@@ -63,10 +77,30 @@ export function RedacaoEnemApp() {
           icon={GraduationCap}
         />
 
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Insight
+            label="C1-C5"
+            text="Nota estimada por competência, não só total."
+          />
+          <Insight
+            label="Raio-x"
+            text="Mostra pontos fortes e alertas de revisão."
+          />
+          <Insight
+            label="Aviso"
+            text="É uma estimativa automática, não correção humana."
+          />
+        </div>
+
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <FormField label="Tema da redação (opcional)" htmlFor="tema">
-              <Input id="tema" placeholder="Ex: Desafios para o combate à desinformação no Brasil" value={tema} onChange={(e) => setTema(e.target.value)} />
+              <Input
+                id="tema"
+                placeholder="Ex: Desafios para o combate à desinformação no Brasil"
+                value={tema}
+                onChange={(e) => setTema(e.target.value)}
+              />
             </FormField>
 
             <FormField
@@ -85,29 +119,50 @@ export function RedacaoEnemApp() {
               />
             </FormField>
             <p className="text-xs text-slate-500">
-              {texto.trim() ? `${texto.trim().split(/\s+/).filter(Boolean).length} palavra(s)` : 'Escreva ao menos 20 palavras para ver a estimativa.'}
+              {texto.trim()
+                ? `${texto.trim().split(/\s+/).filter(Boolean).length} palavra(s)`
+                : "Escreva ao menos 20 palavras para ver a estimativa."}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="rj-display mb-3 text-base font-bold text-slate-900">Estimativa</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-24">
+            <h2 className="rj-display mb-3 text-base font-bold text-slate-900">
+              Estimativa
+            </h2>
             {!resultado ? (
-              <p className="text-sm font-medium text-slate-500">Cole sua redação ao lado para ver a nota estimada.</p>
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-bold text-slate-800">
+                  Cole pelo menos 20 palavras para começar.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Quanto mais parecido com a redação final, melhor a leitura de
+                  estrutura, coesão e intervenção.
+                </p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-white">
-                  <span className="text-sm font-semibold">Nota estimada total</span>
-                  <span className="rj-display text-lg font-bold">{resultado.notaTotalEstimada}/1000</span>
+                  <span className="text-sm font-semibold">
+                    Nota estimada total
+                  </span>
+                  <span className="rj-display text-lg font-bold">
+                    {resultado.notaTotalEstimada}/1000
+                  </span>
                 </div>
 
                 <ul className="space-y-2">
                   {resultado.competencias.map((c) => (
-                    <li key={c.id} className="rounded-xl border border-slate-200 p-3">
+                    <li
+                      key={c.id}
+                      className="rounded-xl border border-slate-200 p-3"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-bold text-slate-800">
                           C{c.id} · {c.titulo}
                         </p>
-                        <span className="rj-display text-sm font-bold text-sky-700">{c.nota}/200</span>
+                        <span className="rj-display text-sm font-bold text-sky-700">
+                          {c.nota}/200
+                        </span>
                       </div>
                       <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
@@ -115,17 +170,27 @@ export function RedacaoEnemApp() {
                           style={{ width: `${(c.nota / 200) * 100}%` }}
                         />
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">{c.comentario}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {c.comentario}
+                      </p>
                     </li>
                   ))}
                 </ul>
 
                 {resultado.pontosFortes.length > 0 ? (
                   <div className="space-y-1.5 rounded-xl bg-emerald-50 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Pontos fortes</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">
+                      Pontos fortes
+                    </p>
                     {resultado.pontosFortes.map((p, i) => (
-                      <p key={i} className="flex items-start gap-1.5 text-xs font-medium text-emerald-800">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <p
+                        key={i}
+                        className="flex items-start gap-1.5 text-xs font-medium text-emerald-800"
+                      >
+                        <CheckCircle2
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                          aria-hidden
+                        />
                         {p}
                       </p>
                     ))}
@@ -134,10 +199,18 @@ export function RedacaoEnemApp() {
 
                 {resultado.alertas.length > 0 ? (
                   <div className="space-y-1.5 rounded-xl bg-amber-50 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-amber-900">Pontos de atenção</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-900">
+                      Pontos de atenção
+                    </p>
                     {resultado.alertas.map((a, i) => (
-                      <p key={i} className="flex items-start gap-1.5 text-xs font-medium text-amber-900">
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <p
+                        key={i}
+                        className="flex items-start gap-1.5 text-xs font-medium text-amber-900"
+                      >
+                        <AlertTriangle
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                          aria-hidden
+                        />
                         {a}
                       </p>
                     ))}
@@ -145,15 +218,29 @@ export function RedacaoEnemApp() {
                 ) : null}
 
                 <p className="text-xs leading-5 text-slate-500">
-                  Estimativa automática baseada em heurísticas de estrutura, coesão e proposta de intervenção. Não
-                  substitui a correção humana — use como um primeiro raio-x antes de pedir revisão de um professor.
+                  Estimativa automática baseada em heurísticas de estrutura,
+                  coesão e proposta de intervenção. Não substitui a correção
+                  humana — use como um primeiro raio-x antes de pedir revisão de
+                  um professor.
                 </p>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCopy} icon={Copy}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleCopy}
+                    icon={Copy}
+                  >
                     Copiar resultado
                   </Button>
-                  <Button variant="success" size="sm" onClick={handleWhatsApp} icon={MessageCircle}>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleWhatsApp}
+                    icon={MessageCircle}
+                  >
                     Enviar no WhatsApp
                   </Button>
                 </div>
@@ -163,5 +250,20 @@ export function RedacaoEnemApp() {
         </div>
       </div>
     </AuthGate>
+  );
+}
+
+function Insight({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-2xl border border-sky-100 bg-sky-50/70 p-3 text-xs font-semibold leading-5 text-slate-700">
+      <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-sky-600 px-1.5 text-[0.68rem] text-white">
+        {label}
+      </span>
+      <span>{text}</span>
+      <Sparkles
+        className="ml-auto hidden h-4 w-4 shrink-0 text-sky-500 sm:block"
+        aria-hidden
+      />
+    </div>
   );
 }

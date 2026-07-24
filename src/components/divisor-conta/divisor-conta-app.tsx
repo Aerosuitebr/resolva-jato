@@ -1,17 +1,28 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { Copy, MessageCircle, Plus, Trash2, Users } from 'lucide-react';
-import { AuthGate } from '@/components/auth/auth-gate';
-import { PageHero } from '@/components/shared/page-hero';
-import { ToolsBackButton } from '@/components/shared/tools-back-button';
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
-import { formatCurrency, formatCurrencyInput, parseCurrency } from '@/lib/formatters';
-import { calcularDivisao } from '@/lib/divisor-conta/calc';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from "react";
+import {
+  Copy,
+  MessageCircle,
+  Plus,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { AuthGate } from "@/components/auth/auth-gate";
+import { PageHero } from "@/components/shared/page-hero";
+import { ToolsBackButton } from "@/components/shared/tools-back-button";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
+import {
+  formatCurrency,
+  formatCurrencyInput,
+  parseCurrency,
+} from "@/lib/formatters";
+import { calcularDivisao } from "@/lib/divisor-conta/calc";
+import { cn } from "@/lib/utils";
 
 interface PessoaForm {
   nome: string;
@@ -20,18 +31,21 @@ interface PessoaForm {
 
 export function DivisorContaApp() {
   const { toast } = useToast();
-  const [valorTotalInput, setValorTotalInput] = useState('');
+  const [valorTotalInput, setValorTotalInput] = useState("");
   const [taxaServico, setTaxaServico] = useState(10);
   const [dividirIgualmente, setDividirIgualmente] = useState(true);
   const [pessoas, setPessoas] = useState<PessoaForm[]>([
-    { nome: 'Pessoa 1', consumoExtraInput: '' },
-    { nome: 'Pessoa 2', consumoExtraInput: '' }
+    { nome: "Pessoa 1", consumoExtraInput: "" },
+    { nome: "Pessoa 2", consumoExtraInput: "" },
   ]);
 
   const valorTotal = parseCurrency(valorTotalInput);
 
   function addPessoa() {
-    setPessoas((prev) => [...prev, { nome: `Pessoa ${prev.length + 1}`, consumoExtraInput: '' }]);
+    setPessoas((prev) => [
+      ...prev,
+      { nome: `Pessoa ${prev.length + 1}`, consumoExtraInput: "" },
+    ]);
   }
 
   function removerPessoa(idx: number) {
@@ -43,43 +57,59 @@ export function DivisorContaApp() {
   }
 
   function atualizarConsumo(idx: number, value: string) {
-    setPessoas((prev) => prev.map((p, i) => (i === idx ? { ...p, consumoExtraInput: formatCurrencyInput(value) } : p)));
+    setPessoas((prev) =>
+      prev.map((p, i) =>
+        i === idx ? { ...p, consumoExtraInput: formatCurrencyInput(value) } : p,
+      ),
+    );
   }
 
   const resultado = useMemo(() => {
     if (valorTotal <= 0 || pessoas.length === 0) return null;
     return calcularDivisao({
       valorTotal,
-      pessoas: pessoas.map((p) => ({ nome: p.nome || 'Sem nome', consumoExtra: parseCurrency(p.consumoExtraInput) })),
+      pessoas: pessoas.map((p) => ({
+        nome: p.nome || "Sem nome",
+        consumoExtra: parseCurrency(p.consumoExtraInput),
+      })),
       taxaServicoPercentual: taxaServico,
-      dividirIgualmente
+      dividirIgualmente,
     });
   }, [valorTotal, pessoas, taxaServico, dividirIgualmente]);
 
   function resumoTexto() {
-    if (!resultado) return '';
-    const linhas = resultado.porPessoa.map((p) => `• ${p.nome}: ${formatCurrency(p.total)}`).join('\n');
+    if (!resultado) return "";
+    const linhas = resultado.porPessoa
+      .map((p) => `• ${p.nome}: ${formatCurrency(p.total)}`)
+      .join("\n");
     return [
-      '*Divisão da conta — Resolva Jato*',
+      "*Divisão da conta — Resolva Jato*",
       `Valor total (com taxa de serviço): ${formatCurrency(resultado.totalComTaxa)}`,
-      '',
+      "",
       linhas,
-      '',
-      'Divisão automática — confira antes de pagar.'
-    ].join('\n');
+      "",
+      "Divisão automática — confira antes de pagar.",
+    ].join("\n");
   }
 
   function handleCopy() {
     navigator.clipboard.writeText(resumoTexto());
-    toast('Divisão copiada!');
+    toast("Divisão copiada!");
   }
 
   function handleWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(resumoTexto())}`, '_blank', 'noopener,noreferrer');
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(resumoTexto())}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   }
 
   return (
-    <AuthGate title="Divisor de Conta em Grupo" description="Cadastre-se gratuitamente para dividir a conta.">
+    <AuthGate
+      title="Divisor de Conta em Grupo"
+      description="Cadastre-se gratuitamente para dividir a conta."
+    >
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <ToolsBackButton />
@@ -91,16 +121,34 @@ export function DivisorContaApp() {
           icon={Users}
         />
 
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Insight
+            label="Total"
+            text="Informe a conta antes ou depois de conferir a comanda."
+          />
+          <Insight
+            label="Justo"
+            text="Divida igual ou registre consumo individual."
+          />
+          <Insight label="Grupo" text="Envie a divisão pronta no WhatsApp." />
+        </div>
+
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Valor total da conta" htmlFor="valor-total" required>
+              <FormField
+                label="Valor total da conta"
+                htmlFor="valor-total"
+                required
+              >
                 <Input
                   id="valor-total"
                   inputMode="numeric"
                   placeholder="R$ 0,00"
                   value={valorTotalInput}
-                  onChange={(e) => setValorTotalInput(formatCurrencyInput(e.target.value))}
+                  onChange={(e) =>
+                    setValorTotalInput(formatCurrencyInput(e.target.value))
+                  }
                 />
               </FormField>
               <FormField label="Taxa de serviço (%)" htmlFor="taxa">
@@ -110,7 +158,9 @@ export function DivisorContaApp() {
                   min={0}
                   max={30}
                   value={taxaServico}
-                  onChange={(e) => setTaxaServico(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(e) =>
+                    setTaxaServico(Math.max(0, Number(e.target.value) || 0))
+                  }
                 />
               </FormField>
             </div>
@@ -126,7 +176,9 @@ export function DivisorContaApp() {
             </label>
 
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">Participantes</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
+                Participantes
+              </p>
               <div className="space-y-2">
                 {pessoas.map((p, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -157,28 +209,52 @@ export function DivisorContaApp() {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" size="sm" className="mt-2" onClick={addPessoa} icon={Plus}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={addPessoa}
+                icon={Plus}
+              >
                 Adicionar pessoa
               </Button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="rj-display mb-3 text-base font-bold text-slate-900">Quanto cada um paga</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-24">
+            <h2 className="rj-display mb-3 text-base font-bold text-slate-900">
+              Quanto cada um paga
+            </h2>
             {!resultado ? (
-              <p className="text-sm font-medium text-slate-500">Informe o valor total e os participantes.</p>
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-bold text-slate-800">
+                  A divisão aparece aqui em tempo real.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Informe o total, ajuste a taxa e adicione os participantes
+                  para evitar conta de cabeça na mesa.
+                </p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <ul className="space-y-2">
                   {resultado.porPessoa.map((p) => (
-                    <li key={p.nome} className="rounded-xl border border-slate-200 p-3">
+                    <li
+                      key={p.nome}
+                      className="rounded-xl border border-slate-200 p-3"
+                    >
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-bold text-slate-900">{p.nome}</p>
-                        <span className="rj-display text-base font-bold text-sky-700">{formatCurrency(p.total)}</span>
+                        <p className="text-sm font-bold text-slate-900">
+                          {p.nome}
+                        </p>
+                        <span className="rj-display text-base font-bold text-sky-700">
+                          {formatCurrency(p.total)}
+                        </span>
                       </div>
                       {!dividirIgualmente ? (
                         <p className="mt-1 text-xs text-slate-500">
-                          Comum: {formatCurrency(p.parteComum)} · Individual: {formatCurrency(p.consumoExtra)} · Taxa:{' '}
+                          Comum: {formatCurrency(p.parteComum)} · Individual:{" "}
+                          {formatCurrency(p.consumoExtra)} · Taxa:{" "}
                           {formatCurrency(p.taxaServico)}
                         </p>
                       ) : null}
@@ -187,15 +263,31 @@ export function DivisorContaApp() {
                 </ul>
 
                 <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-white">
-                  <span className="text-sm font-semibold">Total com taxa de serviço</span>
-                  <span className="rj-display text-lg font-bold">{formatCurrency(resultado.totalComTaxa)}</span>
+                  <span className="text-sm font-semibold">
+                    Total com taxa de serviço
+                  </span>
+                  <span className="rj-display text-lg font-bold">
+                    {formatCurrency(resultado.totalComTaxa)}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCopy} icon={Copy}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleCopy}
+                    icon={Copy}
+                  >
                     Copiar divisão
                   </Button>
-                  <Button variant="success" size="sm" onClick={handleWhatsApp} icon={MessageCircle}>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleWhatsApp}
+                    icon={MessageCircle}
+                  >
                     Enviar no WhatsApp
                   </Button>
                 </div>
@@ -205,5 +297,20 @@ export function DivisorContaApp() {
         </div>
       </div>
     </AuthGate>
+  );
+}
+
+function Insight({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-2xl border border-sky-100 bg-sky-50/70 p-3 text-xs font-semibold leading-5 text-slate-700">
+      <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-sky-600 px-1.5 text-[0.68rem] text-white">
+        {label}
+      </span>
+      <span>{text}</span>
+      <Sparkles
+        className="ml-auto hidden h-4 w-4 shrink-0 text-sky-500 sm:block"
+        aria-hidden
+      />
+    </div>
   );
 }
