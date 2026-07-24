@@ -190,6 +190,51 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     }
   }, [editingId]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!selectedId) return;
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
+      const target = e.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === 'TEXTAREA' ||
+          target.tagName === 'INPUT' ||
+          target.isContentEditable);
+      // Em edição de texto, use Alt+setas para mover a caixa (setas sozinhas navegam o cursor).
+      if (typing && !e.altKey) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      const step = e.shiftKey ? 1.2 : 0.4;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === 'ArrowLeft') dx = -step;
+      if (e.key === 'ArrowRight') dx = step;
+      if (e.key === 'ArrowUp') dy = -step;
+      if (e.key === 'ArrowDown') dy = step;
+
+      setDraft((prev) => {
+        const ov = prev.overlays.find((o) => o.id === selectedId);
+        if (!ov) return prev;
+        const x = Math.min(100 - ov.w, Math.max(0, ov.x + dx));
+        const y = Math.min(100 - ov.h, Math.max(0, ov.y + dy));
+        if (x === ov.x && y === ov.y) return prev;
+        return {
+          ...prev,
+          overlays: prev.overlays.map((o) =>
+            o.id === selectedId
+              ? { ...o, x, y, ...(o.fromPdf ? { dirty: true } : {}) }
+              : o
+          )
+        };
+      });
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedId]);
+
   const presetOptions = useMemo(
     () => [
       { value: 'original', label: 'Tamanho original' },
@@ -500,7 +545,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">Editor de página</p>
               <h2 className="rj-display truncate text-base font-bold text-slate-900">
-                Clique para editar · arraste objetos para mover
+                Clique para editar · setas movem a caixa
               </h2>
             {fontStatus ? (
               <p className="mt-0.5 truncate text-[0.7rem] font-medium text-slate-500">{fontStatus}</p>
@@ -786,8 +831,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-5 text-slate-600">
               {textCount > 0 || graphicCount > 0
-                ? `${textCount} texto(s)${graphicCount ? ` · ${graphicCount} imagem/linha` : ''}. Clique para editar, arraste para mover.`
-                : 'Clique em um texto para editar. Arraste imagens e linhas. Use as ferramentas para adicionar objetos.'}
+                ? `${textCount} texto(s)${graphicCount ? ` · ${graphicCount} imagem/linha` : ''}. Clique para editar; setas (ou Alt+setas) movem a caixa.`
+                : 'Clique em um texto para editar. Setas movem a seleção. Use as ferramentas para adicionar objetos.'}
             </p>
           </div>
 
@@ -884,7 +929,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               </h3>
               {!selected ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em texto, imagem ou linha. Arraste para mover; use o canto azul para redimensionar.
+                  Clique em texto, imagem ou linha. Setas movem; Shift+setas andam mais; Alt+setas movem durante a edição.
                 </p>
               ) : selected.kind !== 'text' ? (
                 <div className="space-y-2">
