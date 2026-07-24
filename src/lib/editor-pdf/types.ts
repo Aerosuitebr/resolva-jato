@@ -9,7 +9,7 @@ export interface PageSizeConfig {
   fit: PageFitMode;
 }
 
-export type OverlayKind = 'text' | 'image' | 'rect' | 'highlight' | 'erase';
+export type OverlayKind = 'text' | 'image' | 'rect' | 'highlight' | 'erase' | 'line';
 
 export interface PageOverlay {
   id: string;
@@ -34,11 +34,25 @@ export interface PageOverlay {
   fontId?: string;
   imageDataUrl?: string;
   fill?: string;
+  /** Cor do traço (linhas). */
+  stroke?: string;
+  /** Espessura do traço em % da menor aresta da página. */
+  strokeWidth?: number;
   opacity?: number;
-  /** Veio do texto do PDF — edição in-place. */
+  /** Veio do conteúdo do PDF — edição in-place. */
   fromPdf?: boolean;
+  /** Usuário alterou posição/conteúdo — precisa redesenhar no export. */
+  dirty?: boolean;
   /** Desenha fundo branco atrás (cobre o pixel original no export). */
   coverBackground?: boolean;
+  /**
+   * Região original a cobrir com branco no preview/export (fixa ao mover).
+   * Em % da página, igual a x/y/w/h na extração.
+   */
+  coverX?: number;
+  coverY?: number;
+  coverW?: number;
+  coverH?: number;
 }
 
 export interface SourceFile {
@@ -102,4 +116,9 @@ export function resolvePageSize(
     width: Math.max(72, page.pageSize.width),
     height: Math.max(72, page.pageSize.height)
   };
+}
+
+/** Overlay do PDF ainda não alterado — deve só servir de hit-target. */
+export function isFromPdfPristine(overlay: PageOverlay): boolean {
+  return Boolean(overlay.fromPdf) && !overlay.dirty;
 }

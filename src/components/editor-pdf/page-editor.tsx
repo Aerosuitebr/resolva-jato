@@ -29,7 +29,9 @@ import {
 } from '@/lib/editor-pdf/fonts';
 import {
   PAGE_PRESETS,
+  extractPageGraphicOverlays,
   extractPageTextOverlays,
+  isFromPdfPristine,
   nextId,
   renderPagePreview,
   resolvePageSize,
@@ -45,13 +47,14 @@ const ZOOM_MIN = 50;
 const ZOOM_MAX = 200;
 const ZOOM_STEP = 10;
 
-type Tool = 'select' | 'text' | 'image' | 'rect' | 'highlight' | 'erase';
+type Tool = 'select' | 'text' | 'image' | 'rect' | 'line' | 'highlight' | 'erase';
 
 const TOOLS: Array<{ id: Tool; label: string; icon: typeof Type }> = [
   { id: 'select', label: 'Editar', icon: MousePointer2 },
   { id: 'text', label: 'Novo texto', icon: Type },
   { id: 'image', label: 'Imagem', icon: ImagePlus },
   { id: 'rect', label: 'Retângulo', icon: Square },
+  { id: 'line', label: 'Linha', icon: Minus },
   { id: 'highlight', label: 'Marca-texto', icon: Highlighter },
   { id: 'erase', label: 'Apagar área', icon: Eraser }
 ];
@@ -85,11 +88,15 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const movedDuringDrag = useRef(false);
 
   const size = resolvePageSize(draft);
   const aspect = size.width / Math.max(size.height, 1);
   const selected = draft.overlays.find((o) => o.id === selectedId) || null;
   const textCount = draft.overlays.filter((o) => o.kind === 'text' && o.fromPdf).length;
+  const graphicCount = draft.overlays.filter(
+    (o) => o.fromPdf && (o.kind === 'image' || o.kind === 'line' || o.kind === 'rect')
+  ).length;
 
   useEffect(() => {
     setMounted(true);
@@ -121,11 +128,10 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       if (!page.textLayerReady) {
         setLoadingText(true);
         try {
-          const texts = await extractPageTextOverlays(
-            source,
-            draft.sourcePageIndex,
-            draft.rotation
-          );
+          const [texts, graphics] = await Promise.all([
+            extractPageTextOverlays(source, draft.sourcePageIndex, draft.rotation),
+            extractPageGraphicOverlays(source, draft.sourcePageIndex, draft.rotation)
+          ]);
           if (cancelled) return;
           for (const t of texts) {
             const opt = getFontOptionById(t.fontId || 'inter');
@@ -135,18 +141,21 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             const manual = prev.overlays.filter((o) => !o.fromPdf);
             return {
               ...prev,
-              overlays: [...texts, ...manual],
+              overlays: [...graphics, ...texts, ...manual],
               textLayerReady: true
             };
           });
           const names = Array.from(
             new Set(texts.map((t) => t.fontLabel || t.pdfFontName).filter(Boolean))
           ).slice(0, 3);
-          setFontStatus(
-            names.length
-              ? `Fontes detectadas: ${names.join(', ')}${texts.length > 3 ? '…' : ''}`
-              : ''
-          );
+          const bits: string[] = [];
+          if (names.length) bits.push(`Fontes: ${names.join(', ')}`);
+          if (graphics.length) {
+            bits.push(
+              `${graphics.length} objeto(s) gráfico(s) (imagem/linha)`
+            );
+          }
+          setFontStatus(bits.join(' · '));
         } catch (err) {
           console.error(err);
         } finally {
@@ -193,7 +202,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   function updateOverlay(id: string, patch: Partial<PageOverlay>) {
     setDraft((prev) => ({
       ...prev,
-      overlays: prev.overlays.map((o) => (o.id === id ? { ...o, ...patch } : o))
+      overlays: prev.overlays.map((o) =>
+        o.id === id ? { ...o, ...patch, ...(o.fromPdf ? { dirty: true } : {}) } : o
+      )
     }));
   }
 
@@ -289,6 +300,27 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       return;
     }
 
+    if (tool === 'line') {
+      const id = nextId('ov');
+      const overlay: PageOverlay = {
+        id,
+        kind: 'line',
+        x: pt.x,
+        y: pt.y,
+        w: 1,
+        h: 0.45,
+        stroke: '#0f172a',
+        fill: '#0f172a',
+        strokeWidth: 0.45,
+        opacity: 1
+      };
+      setDraft((prev) => ({ ...prev, overlays: [...prev.overlays, overlay] }));
+      setSelectedId(id);
+      setDrag({ mode: 'create', id, startX: pt.x, startY: pt.y, orig: overlay });
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
+
     const id = nextId('ov');
     const kind = tool as 'rect' | 'highlight' | 'erase';
     const overlay: PageOverlay = {
@@ -314,6 +346,27 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     if (drag.mode === 'create' && drag.id && drag.orig) {
       const x = Math.min(drag.startX, pt.x);
       const y = Math.min(drag.startY, pt.y);
+      if (drag.orig.kind === 'line') {
+        const dx = Math.abs(pt.x - drag.startX);
+        const dy = Math.abs(pt.y - drag.startY);
+        const horizontal = dx >= dy;
+        if (horizontal) {
+          updateOverlay(drag.id, {
+            x,
+            y: drag.startY,
+            w: Math.max(1, dx),
+            h: Math.max(0.35, drag.orig.h || 0.45)
+          });
+        } else {
+          updateOverlay(drag.id, {
+            x: drag.startX,
+            y,
+            w: Math.max(0.35, drag.orig.w || 0.45),
+            h: Math.max(1, dy)
+          });
+        }
+        return;
+      }
       const w = Math.max(1, Math.abs(pt.x - drag.startX));
       const h = Math.max(1, Math.abs(pt.y - drag.startY));
       updateOverlay(drag.id, { x, y, w, h });
@@ -323,6 +376,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     if (drag.mode === 'move' && drag.id && drag.orig) {
       const dx = pt.x - drag.startX;
       const dy = pt.y - drag.startY;
+      if (Math.abs(dx) + Math.abs(dy) > 0.35) movedDuringDrag.current = true;
       updateOverlay(drag.id, {
         x: Math.min(100 - drag.orig.w, Math.max(0, drag.orig.x + dx)),
         y: Math.min(100 - drag.orig.h, Math.max(0, drag.orig.y + dy))
@@ -346,7 +400,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     e.stopPropagation();
     setSelectedId(overlay.id);
     if (tool !== 'select') return;
-    if (overlay.kind === 'text') return; // texto: clique edita; arrastar pelo handle/sidebar
+    movedDuringDrag.current = false;
     const pt = relativePoint(e.clientX, e.clientY);
     setDrag({ mode: 'move', id: overlay.id, startX: pt.x, startY: pt.y, orig: overlay });
     boardRef.current?.setPointerCapture(e.pointerId);
@@ -418,9 +472,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
         <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">Editor de página</p>
-            <h2 className="rj-display truncate text-base font-bold text-slate-900">
-              Clique em qualquer texto para editar
-            </h2>
+              <h2 className="rj-display truncate text-base font-bold text-slate-900">
+                Clique para editar · arraste objetos para mover
+              </h2>
             {fontStatus ? (
               <p className="mt-0.5 truncate text-[0.7rem] font-medium text-slate-500">{fontStatus}</p>
             ) : null}
@@ -523,18 +577,46 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                 <div className="absolute inset-0 z-30 grid place-items-center bg-white/70 text-sm font-semibold text-slate-700">
                   <span className="inline-flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
-                    {loadingText ? 'Lendo o texto da página…' : 'Carregando página…'}
+                    {loadingText ? 'Lendo texto, imagens e linhas…' : 'Carregando página…'}
                   </span>
                 </div>
               )}
 
               {draft.overlays.map((overlay) => {
+                if (
+                  !overlay.fromPdf ||
+                  isFromPdfPristine(overlay) ||
+                  overlay.coverX == null ||
+                  overlay.coverY == null ||
+                  overlay.coverW == null ||
+                  overlay.coverH == null
+                ) {
+                  return null;
+                }
+                return (
+                  <div
+                    key={`cover-${overlay.id}`}
+                    aria-hidden
+                    className="pointer-events-none absolute z-[5] bg-white"
+                    style={{
+                      left: `${overlay.coverX}%`,
+                      top: `${overlay.coverY}%`,
+                      width: `${overlay.coverW}%`,
+                      height: `${overlay.coverH}%`
+                    }}
+                  />
+                );
+              })}
+
+              {draft.overlays.map((overlay) => {
                 const isSelected = selectedId === overlay.id;
                 const isEditing = editingId === overlay.id;
+                const pristine = isFromPdfPristine(overlay);
                 const changed =
                   overlay.kind === 'text' &&
                   overlay.fromPdf &&
                   overlay.text !== overlay.originalText;
+                const showPaintedContent = !pristine || isEditing;
 
                 return (
                   <div
@@ -544,38 +626,49 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedId(overlay.id);
-                      if (overlay.kind === 'text' && tool === 'select') {
+                      if (
+                        overlay.kind === 'text' &&
+                        tool === 'select' &&
+                        !movedDuringDrag.current
+                      ) {
                         beginEditText(overlay.id);
                       }
                     }}
                     className={cn(
-                      'absolute box-border',
+                      'absolute box-border bg-transparent',
                       isSelected || isEditing ? 'z-20' : 'z-10',
-                      overlay.kind === 'text' && !isEditing && 'cursor-text hover:ring-1 hover:ring-sky-400/80',
+                      overlay.kind === 'text' && !isEditing && 'cursor-text hover:ring-1 hover:ring-sky-400/70',
+                      overlay.kind !== 'text' && tool === 'select' && 'cursor-move hover:ring-1 hover:ring-sky-400/70',
                       (isSelected || isEditing) && 'ring-2 ring-sky-500',
                       changed && 'ring-emerald-400',
-                      overlay.kind === 'erase' && 'bg-white',
-                      overlay.kind === 'rect' && 'border border-sky-700/40',
-                      overlay.kind === 'highlight' && 'mix-blend-multiply'
+                      !pristine && overlay.kind === 'erase' && 'bg-white',
+                      !pristine && overlay.kind === 'rect' && 'border border-sky-700/40',
+                      !pristine && overlay.kind === 'highlight' && 'mix-blend-multiply',
+                      !pristine && overlay.kind === 'line' && 'rounded-[1px]'
                     )}
                     style={{
                       left: `${overlay.x}%`,
                       top: `${overlay.y}%`,
                       width: `${overlay.w}%`,
                       height: `${overlay.h}%`,
-                      backgroundColor:
-                        overlay.kind === 'rect' ||
-                        overlay.kind === 'highlight' ||
-                        overlay.kind === 'erase'
-                          ? overlay.fill
+                      backgroundColor: !showPaintedContent
+                        ? 'transparent'
+                        : overlay.kind === 'rect' ||
+                            overlay.kind === 'highlight' ||
+                            overlay.kind === 'erase' ||
+                            overlay.kind === 'line'
+                          ? overlay.fill || overlay.stroke || '#0f172a'
                           : overlay.kind === 'text'
                             ? '#ffffff'
                             : undefined,
-                      opacity:
-                        overlay.kind === 'highlight' ? overlay.opacity ?? 0.35 : overlay.opacity ?? 1
+                      opacity: !showPaintedContent
+                        ? 1
+                        : overlay.kind === 'highlight'
+                          ? overlay.opacity ?? 0.35
+                          : overlay.opacity ?? 1
                     }}
                   >
-                    {overlay.kind === 'text' ? (
+                    {overlay.kind === 'text' && showPaintedContent ? (
                       isEditing ? (
                         <textarea
                           ref={(node) => {
@@ -619,9 +712,14 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                       )
                     ) : null}
 
-                    {overlay.kind === 'image' && overlay.imageDataUrl ? (
+                    {overlay.kind === 'image' && showPaintedContent && overlay.imageDataUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={overlay.imageDataUrl} alt="" className="h-full w-full object-contain" />
+                      <img
+                        src={overlay.imageDataUrl}
+                        alt=""
+                        className="pointer-events-none h-full w-full object-fill"
+                        draggable={false}
+                      />
                     ) : null}
 
                     {isSelected ? (
@@ -638,9 +736,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             </div>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-5 text-slate-600">
-              {textCount > 0
-                ? `${textCount} trechos de texto detectados — clique em qualquer um para alterar.`
-                : 'Clique em um texto da página para editar. Use Novo texto para adicionar conteúdo.'}
+              {textCount > 0 || graphicCount > 0
+                ? `${textCount} texto(s)${graphicCount ? ` · ${graphicCount} imagem/linha` : ''}. Clique para editar, arraste para mover.`
+                : 'Clique em um texto para editar. Arraste imagens e linhas. Use as ferramentas para adicionar objetos.'}
             </p>
           </div>
 
@@ -726,11 +824,52 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             </p>
 
             <div className="border-t border-slate-200 pt-3">
-              <h3 className="mb-2 text-sm font-bold text-slate-900">Texto selecionado</h3>
-              {!selected || selected.kind !== 'text' ? (
+              <h3 className="mb-2 text-sm font-bold text-slate-900">
+                {selected?.kind === 'image'
+                  ? 'Imagem selecionada'
+                  : selected?.kind === 'line'
+                    ? 'Linha selecionada'
+                    : selected && selected.kind !== 'text'
+                      ? 'Forma selecionada'
+                      : 'Texto selecionado'}
+              </h3>
+              {!selected ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em um número ou palavra na página. Fonte, cor e tamanho valem só para esse bloco.
+                  Clique em texto, imagem ou linha. Arraste para mover; use o canto azul para redimensionar.
                 </p>
+              ) : selected.kind !== 'text' ? (
+                <div className="space-y-2">
+                  <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                    {selected.fromPdf
+                      ? 'Objeto do PDF. Arraste para mover. A posição original fica coberta no export.'
+                      : 'Arraste na página para mover ou use o canto azul para redimensionar.'}
+                  </p>
+                  {(selected.kind === 'line' || selected.kind === 'rect') && (
+                    <FormField label="Cor" htmlFor="ov-shape-color">
+                      <Input
+                        id="ov-shape-color"
+                        type="color"
+                        value={selected.fill || selected.stroke || '#0f172a'}
+                        onChange={(e) =>
+                          updateOverlay(selected.id, {
+                            fill: e.target.value,
+                            stroke: e.target.value
+                          })
+                        }
+                        className="h-11 w-full cursor-pointer p-1"
+                      />
+                    </FormField>
+                  )}
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="w-full"
+                    icon={Trash2}
+                    onClick={() => removeOverlay(selected.id)}
+                  >
+                    Remover objeto
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <div className="rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-2 text-xs leading-5 text-slate-700">

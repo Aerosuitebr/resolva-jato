@@ -7,6 +7,7 @@ import {
 } from '@/lib/editor-pdf/fonts';
 import {
   defaultPageSize,
+  isFromPdfPristine,
   resolvePageSize,
   type BuildOptions,
   type PageItem,
@@ -24,7 +25,7 @@ export type {
   SourceFile
 } from '@/lib/editor-pdf/types';
 
-export { PAGE_PRESETS, defaultPageSize, resolvePageSize } from '@/lib/editor-pdf/types';
+export { PAGE_PRESETS, defaultPageSize, isFromPdfPristine, resolvePageSize } from '@/lib/editor-pdf/types';
 
 let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null;
 
@@ -183,14 +184,13 @@ export async function extractPageTextOverlays(
 
     const resolved = resolveFontFromPdfName(item.fontName);
     const bold = isBoldPdfFont(item.fontName);
+    const box = normalizeOverlayBox(x, y, w, h);
 
     overlays.push({
       id: nextId('txt'),
       kind: 'text',
-      x: clamp(x, 0, 99.5),
-      y: clamp(y, 0, 99.5),
-      w: clamp(w, 0.2, 100 - clamp(x, 0, 99.5)),
-      h: clamp(h, 0.35, 100 - clamp(y, 0, 99.5)),
+      ...box,
+      ...coverFromBox(box),
       text: str,
       originalText: str,
       fontSize: Math.max(7, height * 0.9),
@@ -203,6 +203,343 @@ export async function extractPageTextOverlays(
       coverBackground: true,
       align: 'left'
     });
+  }
+
+  await doc.destroy();
+  return overlays;
+}
+
+type Matrix = [number, number, number, number, number, number];
+
+function multiplyMatrix(a: Matrix, b: Matrix): Matrix {
+  return [
+    a[0] * b[0] + a[2] * b[1],
+    a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3],
+    a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4],
+    a[1] * b[4] + a[3] * b[5] + a[5]
+  ];
+}
+
+function applyMatrix(m: Matrix, x: number, y: number) {
+  return {
+    x: m[0] * x + m[2] * y + m[4],
+    y: m[1] * x + m[3] * y + m[5]
+  };
+}
+
+function normalizeOverlayBox(x: number, y: number, w: number, h: number) {
+  const nx = clamp(x, 0, 99.5);
+  const ny = clamp(y, 0, 99.5);
+  return {
+    x: nx,
+    y: ny,
+    w: clamp(w, 0.15, 100 - nx),
+    h: clamp(h, 0.15, 100 - ny)
+  };
+}
+
+function coverFromBox(box: { x: number; y: number; w: number; h: number }) {
+  return {
+    coverX: box.x,
+    coverY: box.y,
+    coverW: box.w,
+    coverH: box.h
+  };
+}
+
+function boxFromUserQuad(
+  viewport: { width: number; height: number; transform: number[] },
+  pdfjs: typeof import('pdfjs-dist'),
+  ctm: Matrix,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number
+) {
+  const corners = [
+    applyMatrix(ctm, x0, y0),
+    applyMatrix(ctm, x1, y0),
+    applyMatrix(ctm, x0, y1),
+    applyMatrix(ctm, x1, y1)
+  ].map((p) => {
+    const v = pdfjs.Util.applyTransform([p.x, p.y], viewport.transform);
+    return { x: v[0], y: v[1] };
+  });
+  const xs = corners.map((p) => p.x);
+  const ys = corners.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return normalizeOverlayBox(
+    (minX / viewport.width) * 100,
+    (minY / viewport.height) * 100,
+    ((maxX - minX) / viewport.width) * 100,
+    ((maxY - minY) / viewport.height) * 100
+  );
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  const to = (n: number) =>
+    Math.round(clamp(n, 0, 1) * 255)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+/**
+ * Extrai imagens e linhas/retângulos finos da página (operator list do pdf.js)
+ * para seleção e movimentação no editor.
+ */
+export async function extractPageGraphicOverlays(
+  source: SourceFile,
+  pageIndex: number,
+  rotation = 0
+): Promise<PageOverlay[]> {
+  const pdfjs = await getPdfjs();
+  const doc = await pdfjs.getDocument({ data: source.bytes.slice(0) }).promise;
+  const page = await doc.getPage(pageIndex + 1);
+  const viewport = page.getViewport({ scale: 1, rotation });
+  const opList = await page.getOperatorList();
+  const { OPS } = pdfjs;
+
+  const overlays: PageOverlay[] = [];
+  const ctmStack: Matrix[] = [];
+  let ctm: Matrix = [1, 0, 0, 1, 0, 0];
+  let strokeRgb = { r: 0, g: 0, b: 0 };
+  let fillRgb = { r: 0, g: 0, b: 0 };
+  let lineWidth = 1;
+  let pendingRect: { x: number; y: number; w: number; h: number } | null = null;
+  let pathPoints: Array<{ x: number; y: number }> = [];
+  let pathStart: { x: number; y: number } | null = null;
+
+  const pushImageSlot = () => {
+    // Imagem PDF: quadrado unitário transformado pelo CTM.
+    const box = boxFromUserQuad(viewport, pdfjs, ctm, 0, 0, 1, 1);
+    const area = box.w * box.h;
+    if (area < 0.15 || box.w < 0.5 || box.h < 0.5) return;
+    if (overlays.some((o) => o.kind === 'image' && Math.abs(o.x - box.x) < 0.35 && Math.abs(o.y - box.y) < 0.35)) {
+      return;
+    }
+    overlays.push({
+      id: nextId('img'),
+      kind: 'image',
+      ...box,
+      ...coverFromBox(box),
+      fromPdf: true,
+      coverBackground: true,
+      opacity: 1
+    });
+  };
+
+  const pushThinShape = (ux: number, uy: number, uw: number, uh: number, color: string, asStroke: boolean) => {
+    if (!asStroke) return; // evita pontos/blobs de fills do PDF por cima do preview
+    const box = boxFromUserQuad(viewport, pdfjs, ctm, ux, uy, ux + uw, uy + uh);
+    const minSide = Math.min(box.w, box.h);
+    const maxSide = Math.max(box.w, box.h);
+    if (maxSide < 6) return; // só linhas longas (separadores de tabela etc.)
+    const isLine = minSide <= 1.35 && maxSide >= 6 && minSide / maxSide < 0.1;
+    if (!isLine) return;
+    const hitBox =
+      box.w >= box.h
+        ? { ...box, h: Math.max(box.h, 0.55), y: box.y - Math.max(0, (0.55 - box.h) / 2) }
+        : { ...box, w: Math.max(box.w, 0.55), x: box.x - Math.max(0, (0.55 - box.w) / 2) };
+    const normalized = normalizeOverlayBox(hitBox.x, hitBox.y, hitBox.w, hitBox.h);
+    overlays.push({
+      id: nextId('ln'),
+      kind: 'line',
+      ...normalized,
+      ...coverFromBox(box),
+      stroke: color,
+      fill: color,
+      strokeWidth: Math.max(0.15, minSide),
+      fromPdf: true,
+      coverBackground: true,
+      opacity: 1
+    });
+  };
+
+  for (let i = 0; i < opList.fnArray.length; i += 1) {
+    const fn = opList.fnArray[i];
+    const args = opList.argsArray[i] as unknown[];
+
+    if (fn === OPS.save) {
+      ctmStack.push(ctm.slice() as Matrix);
+      continue;
+    }
+    if (fn === OPS.restore) {
+      ctm = ctmStack.pop() || ([1, 0, 0, 1, 0, 0] as Matrix);
+      pendingRect = null;
+      pathPoints = [];
+      pathStart = null;
+      continue;
+    }
+    if (fn === OPS.transform && args?.length >= 6) {
+      ctm = multiplyMatrix(ctm, args as Matrix);
+      continue;
+    }
+    if (fn === OPS.setLineWidth && typeof args?.[0] === 'number') {
+      lineWidth = Math.max(0.2, args[0] as number);
+      continue;
+    }
+    if (fn === OPS.setStrokeRGBColor && args?.length >= 3) {
+      strokeRgb = { r: args[0] as number, g: args[1] as number, b: args[2] as number };
+      continue;
+    }
+    if (fn === OPS.setFillRGBColor && args?.length >= 3) {
+      fillRgb = { r: args[0] as number, g: args[1] as number, b: args[2] as number };
+      continue;
+    }
+    if (fn === OPS.setStrokeGray && typeof args?.[0] === 'number') {
+      const g = args[0] as number;
+      strokeRgb = { r: g, g, b: g };
+      continue;
+    }
+    if (fn === OPS.setFillGray && typeof args?.[0] === 'number') {
+      const g = args[0] as number;
+      fillRgb = { r: g, g, b: g };
+      continue;
+    }
+    if (fn === OPS.rectangle && args?.length >= 4) {
+      pendingRect = {
+        x: args[0] as number,
+        y: args[1] as number,
+        w: args[2] as number,
+        h: args[3] as number
+      };
+      pathPoints = [];
+      pathStart = null;
+      continue;
+    }
+    if (fn === OPS.moveTo && args?.length >= 2) {
+      pathStart = { x: args[0] as number, y: args[1] as number };
+      pathPoints = [pathStart];
+      pendingRect = null;
+      continue;
+    }
+    if (fn === OPS.lineTo && args?.length >= 2) {
+      pathPoints.push({ x: args[0] as number, y: args[1] as number });
+      continue;
+    }
+    if (fn === OPS.closePath && pathStart) {
+      pathPoints.push(pathStart);
+      continue;
+    }
+    if (
+      fn === OPS.stroke ||
+      fn === OPS.closeStroke ||
+      fn === OPS.fillStroke ||
+      fn === OPS.closeFillStroke
+    ) {
+      const color = rgbToHex(strokeRgb.r, strokeRgb.g, strokeRgb.b);
+      if (pendingRect) {
+        const { x, y, w, h } = pendingRect;
+        // Se a altura/largura do rect for ~0, usar lineWidth.
+        const rw = Math.abs(w) < 0.01 ? lineWidth : w;
+        const rh = Math.abs(h) < 0.01 ? lineWidth : h;
+        pushThinShape(x, y, rw, rh, color, true);
+        pendingRect = null;
+      } else if (pathPoints.length >= 2) {
+        for (let p = 1; p < pathPoints.length; p += 1) {
+          const a = pathPoints[p - 1];
+          const b = pathPoints[p];
+          const minX = Math.min(a.x, b.x);
+          const minY = Math.min(a.y, b.y);
+          const dx = Math.abs(a.x - b.x);
+          const dy = Math.abs(a.y - b.y);
+          if (dx < 0.01 && dy < 0.01) continue;
+          if (dy <= dx * 0.08) {
+            pushThinShape(minX, minY - lineWidth / 2, Math.max(dx, 0.5), lineWidth, color, true);
+          } else if (dx <= dy * 0.08) {
+            pushThinShape(minX - lineWidth / 2, minY, lineWidth, Math.max(dy, 0.5), color, true);
+          }
+        }
+      }
+      pathPoints = [];
+      pathStart = null;
+      continue;
+    }
+    if (fn === OPS.fill || fn === OPS.eoFill) {
+      const color = rgbToHex(fillRgb.r, fillRgb.g, fillRgb.b);
+      if (pendingRect) {
+        pushThinShape(pendingRect.x, pendingRect.y, pendingRect.w, pendingRect.h, color, false);
+        pendingRect = null;
+      }
+      pathPoints = [];
+      pathStart = null;
+      continue;
+    }
+    if (fn === OPS.paintImageXObject || fn === OPS.paintImageMaskXObject) {
+      pushImageSlot();
+      continue;
+    }
+    if (fn === OPS.paintInlineImageXObject) {
+      pushImageSlot();
+      continue;
+    }
+    if (fn === OPS.constructPath && Array.isArray(args) && args.length >= 2) {
+      // pdf.js moderno: [ops, coords]
+      const subOps = args[0] as number[];
+      const coords = args[1] as number[];
+      let ci = 0;
+      let localPoints: Array<{ x: number; y: number }> = [];
+      let localStart: { x: number; y: number } | null = null;
+      let localRect: { x: number; y: number; w: number; h: number } | null = null;
+      for (const op of subOps) {
+        if (op === OPS.rectangle) {
+          localRect = {
+            x: coords[ci++],
+            y: coords[ci++],
+            w: coords[ci++],
+            h: coords[ci++]
+          };
+        } else if (op === OPS.moveTo) {
+          localStart = { x: coords[ci++], y: coords[ci++] };
+          localPoints = [localStart];
+        } else if (op === OPS.lineTo) {
+          localPoints.push({ x: coords[ci++], y: coords[ci++] });
+        } else if (op === OPS.closePath && localStart) {
+          localPoints.push(localStart);
+        } else {
+          // op desconhecido: avançar com cuidado
+          break;
+        }
+      }
+      if (localRect) pendingRect = localRect;
+      if (localPoints.length) {
+        pathPoints = localPoints;
+        pathStart = localStart;
+      }
+    }
+  }
+
+  // Recorta bitmaps do raster da página (fiel ao preview; evita máscaras quebradas).
+  const imageOverlays = overlays.filter((o) => o.kind === 'image');
+  if (imageOverlays.length > 0) {
+    const scale = Math.min(2.5, 1600 / Math.max(viewport.width, viewport.height));
+    const renderViewport = page.getViewport({ scale, rotation });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(renderViewport.width);
+    canvas.height = Math.ceil(renderViewport.height);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+      for (const ov of imageOverlays) {
+        const sx = Math.floor((ov.x / 100) * canvas.width);
+        const sy = Math.floor((ov.y / 100) * canvas.height);
+        const sw = Math.max(1, Math.ceil((ov.w / 100) * canvas.width));
+        const sh = Math.max(1, Math.ceil((ov.h / 100) * canvas.height));
+        const crop = document.createElement('canvas');
+        crop.width = sw;
+        crop.height = sh;
+        const cctx = crop.getContext('2d');
+        if (!cctx) continue;
+        cctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        ov.imageDataUrl = crop.toDataURL('image/png');
+      }
+    }
   }
 
   await doc.destroy();
@@ -277,12 +614,38 @@ async function drawOverlays(
   const { width, height } = page.getSize();
 
   for (const overlay of overlays) {
+    // Mantém o PDF original intacto até o usuário alterar o overlay.
+    if (isFromPdfPristine(overlay)) continue;
+
     const x = (overlay.x / 100) * width;
     const w = Math.max(1, (overlay.w / 100) * width);
     const h = Math.max(1, (overlay.h / 100) * height);
     const yTop = (overlay.y / 100) * height;
     const y = height - yTop - h;
     const opacity = overlay.opacity ?? 1;
+
+    if (
+      overlay.fromPdf &&
+      overlay.coverX != null &&
+      overlay.coverY != null &&
+      overlay.coverW != null &&
+      overlay.coverH != null
+    ) {
+      const cx = (overlay.coverX / 100) * width;
+      const cw = Math.max(1, (overlay.coverW / 100) * width);
+      const ch = Math.max(1, (overlay.coverH / 100) * height);
+      const cyTop = (overlay.coverY / 100) * height;
+      const cy = height - cyTop - ch;
+      const pad = 1.2;
+      page.drawRectangle({
+        x: cx - pad,
+        y: cy - pad,
+        width: cw + pad * 2,
+        height: ch + pad * 2,
+        color: rgb(1, 1, 1),
+        opacity: 1
+      });
+    }
 
     if (overlay.kind === 'erase' || overlay.kind === 'rect' || overlay.kind === 'highlight') {
       const fill = hexToRgb(overlay.fill || (overlay.kind === 'erase' ? '#ffffff' : '#0ea5e9'));
@@ -293,6 +656,19 @@ async function drawOverlays(
         height: h,
         color: rgb(fill.r, fill.g, fill.b),
         opacity: overlay.kind === 'highlight' ? Math.min(opacity, 0.45) : opacity
+      });
+      continue;
+    }
+
+    if (overlay.kind === 'line') {
+      const stroke = hexToRgb(overlay.stroke || overlay.fill || '#0f172a');
+      page.drawRectangle({
+        x,
+        y,
+        width: w,
+        height: h,
+        color: rgb(stroke.r, stroke.g, stroke.b),
+        opacity
       });
       continue;
     }
@@ -313,7 +689,10 @@ async function drawOverlays(
     }
 
     if (overlay.kind === 'text' && overlay.text != null) {
-      if (overlay.coverBackground || overlay.fromPdf) {
+      if (
+        (overlay.coverBackground || overlay.fromPdf) &&
+        (overlay.coverX == null || overlay.coverY == null)
+      ) {
         const pad = 1.2;
         page.drawRectangle({
           x: x - pad,
