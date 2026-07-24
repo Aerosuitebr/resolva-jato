@@ -160,14 +160,14 @@ export async function extractPageTextOverlays(
     const tx = pdfjs.Util.transform(viewport.transform, item.transform);
     const fontHeight = Math.hypot(tx[2], tx[3]) || Math.hypot(tx[0], tx[1]) || 12;
     const scaleX = Math.hypot(tx[0], tx[1]) || 1;
-    const width = Math.max(fontHeight * 0.35, (item.width || 0) * scaleX);
-    const height = Math.max(fontHeight * 0.85, fontHeight);
-    // Origem do transform = baseline; sobe pela altura da fonte.
+    const width = Math.max(fontHeight * 0.4, (item.width || 0) * scaleX);
+    // Baseline → topo da caixa (viewport já tem Y para baixo).
+    const height = Math.max(fontHeight * 0.9, fontHeight);
     const xPdf = tx[4];
-    const yPdf = tx[5] - height * 0.8;
+    const yPdf = tx[5] - height;
 
-    const padX = Math.max(0.6, width * 0.04);
-    const padY = Math.max(0.5, height * 0.12);
+    const padX = Math.max(0.4, width * 0.02);
+    const padY = Math.max(0.35, height * 0.08);
     const x = ((xPdf - padX) / viewport.width) * 100;
     const y = ((yPdf - padY) / viewport.height) * 100;
     const w = ((width + padX * 2) / viewport.width) * 100;
@@ -178,13 +178,13 @@ export async function extractPageTextOverlays(
     overlays.push({
       id: nextId('txt'),
       kind: 'text',
-      x: clamp(x, -2, 100),
-      y: clamp(y, -2, 100),
-      w: clamp(w, 0.2, 105),
-      h: clamp(h, 0.3, 20),
+      x: clamp(x, 0, 99.5),
+      y: clamp(y, 0, 99.5),
+      w: clamp(w, 0.2, 100 - clamp(x, 0, 99.5)),
+      h: clamp(h, 0.35, 100 - clamp(y, 0, 99.5)),
       text: str,
       originalText: str,
-      fontSize: Math.max(7, height * 0.92),
+      fontSize: Math.max(7, height * 0.9),
       color: '#0f172a',
       bold: /bold|black|heavy/i.test(item.fontName || ''),
       fromPdf: true,

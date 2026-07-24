@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Eraser,
   Highlighter,
@@ -51,6 +52,7 @@ interface PageEditorProps {
 }
 
 export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
+  const [mounted, setMounted] = useState(false);
   const [draft, setDraft] = useState<PageItem>(page);
   const [tool, setTool] = useState<Tool>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -74,6 +76,15 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const aspect = size.width / Math.max(size.height, 1);
   const selected = draft.overlays.find((o) => o.id === selectedId) || null;
   const textCount = draft.overlays.filter((o) => o.kind === 'text' && o.fromPdf).length;
+
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,7 +143,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [loadingPreview, loadingText]);
+  }, [loadingPreview, loadingText, mounted]);
 
   useEffect(() => {
     if (editingId && editRef.current) {
@@ -347,10 +358,15 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     return Math.max(9, (overlay.h / 100) * boardHeight * 0.72);
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/70 p-3 backdrop-blur-sm sm:p-5">
-      <div className="mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl">
-        <header className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3">
+  const ui = (
+    <div
+      className="fixed inset-0 z-[400] flex items-stretch justify-center bg-slate-950/75 p-3 backdrop-blur-sm sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Editor de página PDF"
+    >
+      <div className="flex h-full w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl">
+        <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">Editor de página</p>
             <h2 className="rj-display truncate text-base font-bold text-slate-900">
@@ -373,8 +389,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           </Button>
         </header>
 
-        <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[4.5rem_minmax(0,1fr)_17rem]">
-          <aside className="flex flex-row gap-1 overflow-x-auto border-b border-slate-200 bg-white p-2 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 lg:grid-cols-[7.5rem_minmax(0,1fr)_18rem]">
+          <aside className="flex shrink-0 flex-row gap-1.5 overflow-x-auto border-b border-slate-200 bg-white p-2.5 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:border-b-0 lg:border-r">
             {TOOLS.map((item) => {
               const Icon = item.icon;
               return (
@@ -384,18 +400,18 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                   title={item.label}
                   onClick={() => setTool(item.id)}
                   className={cn(
-                    'flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.65rem] font-bold transition',
+                    'flex w-full min-w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[0.68rem] font-bold transition lg:min-w-0',
                     tool === item.id ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {item.label}
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="text-center leading-tight">{item.label}</span>
                 </button>
               );
             })}
           </aside>
 
-          <div className="min-h-0 overflow-auto bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-4">
+          <div className="min-h-0 min-w-0 overflow-auto bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-4 sm:p-5">
             <div
               ref={boardRef}
               onPointerDown={onBoardPointerDown}
@@ -406,7 +422,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                 tool === 'select' ? 'cursor-default' : 'cursor-crosshair'
               )}
               style={{
-                width: 'min(100%, 720px)',
+                width: 'min(100%, 680px)',
                 aspectRatio: `${aspect}`
               }}
               role="application"
@@ -416,15 +432,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               <img
                 src={previewUrl}
                 alt=""
-                className="pointer-events-none absolute inset-0 h-full w-full"
-                style={{
-                  objectFit:
-                    draft.pageSize.fit === 'stretch'
-                      ? 'fill'
-                      : draft.pageSize.fit === 'cover'
-                        ? 'cover'
-                        : 'contain'
-                }}
+                className="pointer-events-none absolute inset-0 h-full w-full object-fill"
               />
 
               {(loadingPreview || loadingText) && (
@@ -549,7 +557,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             </p>
           </div>
 
-          <aside className="space-y-3 overflow-y-auto border-t border-slate-200 bg-white p-4 lg:border-l lg:border-t-0">
+          <aside className="min-h-0 space-y-3 overflow-y-auto border-t border-slate-200 bg-white p-4 lg:border-l lg:border-t-0">
             <div className="flex items-center gap-2">
               <Maximize2 className="h-4 w-4 text-sky-700" aria-hidden />
               <h3 className="text-sm font-bold text-slate-900">Tamanho da página</h3>
@@ -707,6 +715,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       />
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(ui, document.body);
 }
 
 function readFileAsDataUrl(file: File) {
