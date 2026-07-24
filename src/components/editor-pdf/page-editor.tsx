@@ -206,7 +206,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
 
       e.preventDefault();
       e.stopPropagation();
-      const step = e.shiftKey ? 1.2 : 0.4;
+      const step = e.shiftKey ? 0.28 : 0.08;
       let dx = 0;
       let dy = 0;
       if (e.key === 'ArrowLeft') dx = -step;
@@ -929,7 +929,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               </h3>
               {!selected ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em texto, imagem ou linha. Setas movem; Shift+setas andam mais; Alt+setas movem durante a edição.
+                  Clique em texto, imagem ou linha. Setas movem com precisão; Shift+setas andam um pouco mais; Alt+setas movem durante a edição.
                 </p>
               ) : selected.kind !== 'text' ? (
                 <div className="space-y-2">

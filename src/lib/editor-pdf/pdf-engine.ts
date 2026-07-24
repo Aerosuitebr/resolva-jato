@@ -177,19 +177,20 @@ export async function extractPageTextOverlays(
       if (width < estimatedWidth * 0.4) width = estimatedWidth;
     }
     // Baseline → topo da caixa (viewport já tem Y para baixo).
-    const height = Math.max(fontHeight * 0.95, fontHeight);
+    // Caixa justa no glifo para não invadir a linha de baixo.
+    const height = fontHeight * 0.88;
     const xPdf = tx[4];
-    const yPdf = tx[5] - height * 0.82;
+    const yPdf = tx[5] - fontHeight * 0.78;
 
-    const padX = Math.max(0.25, fontHeight * 0.04);
-    const padY = Math.max(0.35, fontHeight * 0.1);
+    const padX = Math.max(0.15, fontHeight * 0.03);
+    const padY = Math.max(0.06, fontHeight * 0.02);
     const x = ((xPdf - padX) / viewport.width) * 100;
     const y = ((yPdf - padY) / viewport.height) * 100;
     let w = ((width + padX * 2) / viewport.width) * 100;
     let h = ((height + padY * 2) / viewport.height) * 100;
-    // Área mínima clicável (comprovantes têm fonte ~6–8pt).
-    h = Math.max(h, 1.15);
-    w = Math.max(w, 1.1);
+    // Mínimo clicável sem “comer” a linha seguinte.
+    h = Math.max(h, 0.72);
+    w = Math.max(w, 0.9);
 
     if (w <= 0.05 || h <= 0.05) continue;
     // Descarta caixas patológicas.
