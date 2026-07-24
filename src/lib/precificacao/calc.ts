@@ -9,6 +9,12 @@ export interface PrecificacaoInput {
   margemLucroDesejadaPercentual: number; // %, ex: 20
 }
 
+export interface PrecificacaoCompositionSlice {
+  id: 'material' | 'maoDeObra' | 'custoFixo' | 'taxasImpostos' | 'lucro';
+  label: string;
+  value: number;
+}
+
 export interface PrecificacaoResult {
   custoFixoRateado: number;
   custoMaoDeObra: number;
@@ -18,6 +24,8 @@ export interface PrecificacaoResult {
   lucroLiquidoPorVenda: number;
   margemLiquidaReal: number; // %
   markup: number; // multiplicador sobre custo direto
+  /** Fatias do preço final (custos vs lucro) para visualização. */
+  composition: PrecificacaoCompositionSlice[];
 }
 
 export function calcularPrecificacao(input: PrecificacaoInput): PrecificacaoResult {
@@ -47,6 +55,14 @@ export function calcularPrecificacao(input: PrecificacaoInput): PrecificacaoResu
   const margemLiquidaReal = precoFinal > 0 ? (lucroLiquidoPorVenda / precoFinal) * 100 : 0;
   const markup = custoDireto > 0 ? precoFinal / custoDireto : 0;
 
+  const composition: PrecificacaoCompositionSlice[] = [
+    { id: 'material', label: 'Materiais', value: Math.max(0, custoDireto) },
+    { id: 'maoDeObra', label: 'Seu tempo', value: Math.max(0, custoMaoDeObra) },
+    { id: 'custoFixo', label: 'Custos fixos', value: Math.max(0, custoFixoRateado) },
+    { id: 'taxasImpostos', label: 'Taxas e impostos', value: Math.max(0, custosVariaveisSobrePreco) },
+    { id: 'lucro', label: 'Lucro', value: Math.max(0, lucroLiquidoPorVenda) }
+  ];
+
   return {
     custoFixoRateado,
     custoMaoDeObra,
@@ -55,6 +71,7 @@ export function calcularPrecificacao(input: PrecificacaoInput): PrecificacaoResu
     precoFinal,
     lucroLiquidoPorVenda,
     margemLiquidaReal,
-    markup
+    markup,
+    composition
   };
 }
