@@ -265,6 +265,7 @@ export function EditorPdfApp() {
         p.id === next.id
           ? {
               ...next,
+              textLayerReady: true,
               thumbnail: next.isBlank
                 ? blankPageThumbnail(next.pageSize.width, next.pageSize.height)
                 : next.thumbnail
@@ -273,10 +274,13 @@ export function EditorPdfApp() {
       )
     );
     setEditingPageId(null);
+    const editedTexts = next.overlays.filter(
+      (o) => o.kind === 'text' && o.fromPdf && o.text !== o.originalText
+    ).length;
     toast(
-      next.overlays.length
-        ? 'Página atualizada com o conteúdo editado.'
-        : 'Tamanho/ajustes da página salvos.'
+      editedTexts > 0
+        ? `Página salva com ${editedTexts} texto(s) alterado(s).`
+        : 'Página salva.'
     );
   }
 
@@ -289,12 +293,12 @@ export function EditorPdfApp() {
 
         <PageHero
           title="Editor de PDF"
-          subtitle="Edite texto e imagens na página, redimensione o formato, junte arquivos, gire, extraia e finalize — tudo no navegador, sem enviar o PDF para servidor."
+          subtitle="Clique no texto da página para editar, redimensione o formato, junte arquivos e finalize — tudo no navegador, sem enviar o PDF para servidor."
           icon={FileStack}
         />
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <Insight icon={Type} text="Abra a página e adicione/altere texto, imagens e formas." />
+          <Insight icon={Type} text="Clique em qualquer letra ou número da página para editar." />
           <Insight icon={Maximize2} text="Redimensione para A4, Letter, A5 ou tamanho personalizado." />
           <Insight icon={Lock} text="100% local: seus arquivos nunca saem do navegador." />
         </div>

@@ -129,6 +129,78 @@ export async function renderPagePreview(
   return url;
 }
 
+/**
+ * Extrai os trechos de texto da página com posição, para edição in-place.
+ * Cada item vira um overlay editável que cobre o glyph original.
+ */
+export async function extractPageTextOverlays(
+  source: SourceFile,
+  pageIndex: number,
+  rotation = 0
+): Promise<PageOverlay[]> {
+  const pdfjs = await getPdfjs();
+  const doc = await pdfjs.getDocument({ data: source.bytes.slice(0) }).promise;
+  const page = await doc.getPage(pageIndex + 1);
+  const viewport = page.getViewport({ scale: 1, rotation });
+  const textContent = await page.getTextContent();
+  const overlays: PageOverlay[] = [];
+
+  for (const raw of textContent.items) {
+    if (!raw || typeof raw !== 'object' || !('str' in raw)) continue;
+    const item = raw as {
+      str: string;
+      transform: number[];
+      width: number;
+      height?: number;
+      fontName?: string;
+    };
+    const str = item.str;
+    if (!str || !str.trim()) continue;
+
+    const tx = pdfjs.Util.transform(viewport.transform, item.transform);
+    const fontHeight = Math.hypot(tx[2], tx[3]) || Math.hypot(tx[0], tx[1]) || 12;
+    const scaleX = Math.hypot(tx[0], tx[1]) || 1;
+    const width = Math.max(fontHeight * 0.35, (item.width || 0) * scaleX);
+    const height = Math.max(fontHeight * 0.85, fontHeight);
+    // Origem do transform = baseline; sobe pela altura da fonte.
+    const xPdf = tx[4];
+    const yPdf = tx[5] - height * 0.8;
+
+    const padX = Math.max(0.6, width * 0.04);
+    const padY = Math.max(0.5, height * 0.12);
+    const x = ((xPdf - padX) / viewport.width) * 100;
+    const y = ((yPdf - padY) / viewport.height) * 100;
+    const w = ((width + padX * 2) / viewport.width) * 100;
+    const h = ((height + padY * 2) / viewport.height) * 100;
+
+    if (w <= 0.05 || h <= 0.05) continue;
+
+    overlays.push({
+      id: nextId('txt'),
+      kind: 'text',
+      x: clamp(x, -2, 100),
+      y: clamp(y, -2, 100),
+      w: clamp(w, 0.2, 105),
+      h: clamp(h, 0.3, 20),
+      text: str,
+      originalText: str,
+      fontSize: Math.max(7, height * 0.92),
+      color: '#0f172a',
+      bold: /bold|black|heavy/i.test(item.fontName || ''),
+      fromPdf: true,
+      coverBackground: true,
+      align: 'left'
+    });
+  }
+
+  await doc.destroy();
+  return overlays;
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
 /** Gera a miniatura de uma página em branco A4. */
 export function blankPageThumbnail(width = 595.28, height = 841.89): string {
   const canvas = document.createElement('canvas');
@@ -220,27 +292,42 @@ async function drawOverlays(
       continue;
     }
 
-    if (overlay.kind === 'text' && overlay.text?.trim()) {
+    if (overlay.kind === 'text' && overlay.text != null) {
+      if (overlay.coverBackground || overlay.fromPdf) {
+        const pad = 1.2;
+        page.drawRectangle({
+          x: x - pad,
+          y: y - pad,
+          width: w + pad * 2,
+          height: h + pad * 2,
+          color: rgb(1, 1, 1),
+          opacity: 1
+        });
+      }
+
+      if (!overlay.text.trim()) continue;
+
       const font = overlay.bold ? fonts.bold : fonts.regular;
-      const fontSize = Math.max(8, overlay.fontSize || 14);
+      const fontSize = Math.max(6, overlay.fontSize || h * 0.75);
       const color = hexToRgb(overlay.color || '#0f172a');
       const lines = overlay.text.replace(/\r/g, '').split('\n');
-      const lineHeight = fontSize * 1.25;
+      const lineHeight = fontSize * 1.2;
       lines.forEach((line, idx) => {
-        const textWidth = font.widthOfTextAtSize(line, fontSize);
+        const textWidth = font.widthOfTextAtSize(line || ' ', fontSize);
         let drawX = x;
         if (overlay.align === 'center') drawX = x + (w - textWidth) / 2;
         if (overlay.align === 'right') drawX = x + w - textWidth;
         page.drawText(line || ' ', {
           x: Math.max(0, drawX),
-          y: Math.max(0, y + h - fontSize - idx * lineHeight),
+          y: Math.max(0, y + h - fontSize - idx * lineHeight - 1),
           size: fontSize,
           font,
           color: rgb(color.r, color.g, color.b),
           opacity,
-          maxWidth: w
+          maxWidth: Math.max(fontSize, w)
         });
       });
+      continue;
     }
   }
 }

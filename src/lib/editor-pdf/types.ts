@@ -20,6 +20,8 @@ export interface PageOverlay {
   w: number;
   h: number;
   text?: string;
+  /** Texto original extraído do PDF (para saber se mudou). */
+  originalText?: string;
   fontSize?: number;
   color?: string;
   align?: 'left' | 'center' | 'right';
@@ -27,6 +29,10 @@ export interface PageOverlay {
   imageDataUrl?: string;
   fill?: string;
   opacity?: number;
+  /** Veio do texto do PDF — edição in-place. */
+  fromPdf?: boolean;
+  /** Desenha fundo branco atrás (cobre o pixel original no export). */
+  coverBackground?: boolean;
 }
 
 export interface SourceFile {
@@ -48,6 +54,8 @@ export interface PageItem {
   originalHeight: number;
   pageSize: PageSizeConfig;
   overlays: PageOverlay[];
+  /** Já carregou a camada de texto editável do PDF. */
+  textLayerReady?: boolean;
 }
 
 export interface BuildOptions {

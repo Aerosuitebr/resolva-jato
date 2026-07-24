@@ -5,6 +5,7 @@ import {
   Eraser,
   Highlighter,
   ImagePlus,
+  Loader2,
   Maximize2,
   MousePointer2,
   Square,
@@ -19,6 +20,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   PAGE_PRESETS,
+  extractPageTextOverlays,
   nextId,
   renderPagePreview,
   resolvePageSize,
@@ -33,12 +35,12 @@ import { cn } from '@/lib/utils';
 type Tool = 'select' | 'text' | 'image' | 'rect' | 'highlight' | 'erase';
 
 const TOOLS: Array<{ id: Tool; label: string; icon: typeof Type }> = [
-  { id: 'select', label: 'Selecionar', icon: MousePointer2 },
-  { id: 'text', label: 'Texto', icon: Type },
+  { id: 'select', label: 'Editar', icon: MousePointer2 },
+  { id: 'text', label: 'Novo texto', icon: Type },
   { id: 'image', label: 'Imagem', icon: ImagePlus },
   { id: 'rect', label: 'Retângulo', icon: Square },
   { id: 'highlight', label: 'Marca-texto', icon: Highlighter },
-  { id: 'erase', label: 'Cobrir/apagar', icon: Eraser }
+  { id: 'erase', label: 'Apagar área', icon: Eraser }
 ];
 
 interface PageEditorProps {
@@ -52,8 +54,11 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const [draft, setDraft] = useState<PageItem>(page);
   const [tool, setTool] = useState<Tool>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState(page.thumbnail);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [loadingText, setLoadingText] = useState(false);
+  const [boardHeight, setBoardHeight] = useState(800);
   const [drag, setDrag] = useState<{
     mode: 'move' | 'resize' | 'create';
     id?: string;
@@ -63,18 +68,21 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
 
   const size = resolvePageSize(draft);
   const aspect = size.width / Math.max(size.height, 1);
   const selected = draft.overlays.find((o) => o.id === selectedId) || null;
+  const textCount = draft.overlays.filter((o) => o.kind === 'text' && o.fromPdf).length;
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    async function boot() {
       if (draft.isBlank || !source) {
         setPreviewUrl(page.thumbnail);
         return;
       }
+
       setLoadingPreview(true);
       try {
         const url = await renderPagePreview(source, draft.sourcePageIndex, draft.rotation);
@@ -84,12 +92,54 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       } finally {
         if (!cancelled) setLoadingPreview(false);
       }
+
+      if (!page.textLayerReady) {
+        setLoadingText(true);
+        try {
+          const texts = await extractPageTextOverlays(
+            source,
+            draft.sourcePageIndex,
+            draft.rotation
+          );
+          if (cancelled) return;
+          setDraft((prev) => {
+            const manual = prev.overlays.filter((o) => !o.fromPdf);
+            return {
+              ...prev,
+              overlays: [...texts, ...manual],
+              textLayerReady: true
+            };
+          });
+        } catch (err) {
+          console.error(err);
+        } finally {
+          if (!cancelled) setLoadingText(false);
+        }
+      }
     }
-    void load();
+    void boot();
     return () => {
       cancelled = true;
     };
-  }, [draft.isBlank, draft.rotation, draft.sourcePageIndex, page.thumbnail, source]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once per page open
+  }, [page.id, page.textLayerReady, source]);
+
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const update = () => setBoardHeight(el.clientHeight || 800);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loadingPreview, loadingText]);
+
+  useEffect(() => {
+    if (editingId && editRef.current) {
+      editRef.current.focus();
+      editRef.current.select?.();
+    }
+  }, [editingId]);
 
   const presetOptions = useMemo(
     () => [
@@ -116,6 +166,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
       overlays: prev.overlays.filter((o) => o.id !== id)
     }));
     if (selectedId === id) setSelectedId(null);
+    if (editingId === id) setEditingId(null);
   }
 
   function setPagePreset(preset: PageSizePreset) {
@@ -142,12 +193,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           preset,
           width: meta.width,
           height: meta.height
-        },
-        thumbnail:
-          prev.isBlank
-            ? // regenerate blank thumb lazily on save via app
-              prev.thumbnail
-            : prev.thumbnail
+        }
       };
     });
   }
@@ -162,8 +208,15 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     };
   }
 
+  function beginEditText(id: string) {
+    setTool('select');
+    setSelectedId(id);
+    setEditingId(id);
+  }
+
   function onBoardPointerDown(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest('[data-overlay]')) return;
+    setEditingId(null);
     const pt = relativePoint(e.clientX, e.clientY);
 
     if (tool === 'select') {
@@ -178,17 +231,17 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
         kind: 'text',
         x: pt.x,
         y: pt.y,
-        w: 36,
-        h: 8,
-        text: 'Digite aqui',
-        fontSize: 16,
+        w: 28,
+        h: 4.5,
+        text: '',
+        fontSize: 14,
         color: '#0f172a',
         align: 'left',
-        bold: false
+        bold: false,
+        coverBackground: true
       };
       setDraft((prev) => ({ ...prev, overlays: [...prev.overlays, overlay] }));
-      setSelectedId(id);
-      setTool('select');
+      beginEditText(id);
       return;
     }
 
@@ -239,8 +292,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     }
 
     if (drag.mode === 'resize' && drag.id && drag.orig) {
-      const w = Math.max(3, Math.min(100 - drag.orig.x, pt.x - drag.orig.x));
-      const h = Math.max(3, Math.min(100 - drag.orig.y, pt.y - drag.orig.y));
+      const w = Math.max(2, Math.min(100 - drag.orig.x, pt.x - drag.orig.x));
+      const h = Math.max(2, Math.min(100 - drag.orig.y, pt.y - drag.orig.y));
       updateOverlay(drag.id, { w, h });
     }
   }
@@ -250,9 +303,11 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   }
 
   function startMove(e: React.PointerEvent, overlay: PageOverlay) {
+    if (editingId === overlay.id) return;
     e.stopPropagation();
     setSelectedId(overlay.id);
     if (tool !== 'select') return;
+    if (overlay.kind === 'text') return; // texto: clique edita; arrastar pelo handle/sidebar
     const pt = relativePoint(e.clientX, e.clientY);
     setDrag({ mode: 'move', id: overlay.id, startX: pt.x, startY: pt.y, orig: overlay });
     boardRef.current?.setPointerCapture(e.pointerId);
@@ -284,6 +339,14 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     setTool('select');
   }
 
+  function fontPx(overlay: PageOverlay) {
+    if (overlay.fontSize && boardHeight > 0) {
+      // fontSize está em pontos PDF ≈ % da altura da página
+      return Math.max(9, (overlay.fontSize / size.height) * boardHeight);
+    }
+    return Math.max(9, (overlay.h / 100) * boardHeight * 0.72);
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/70 p-3 backdrop-blur-sm sm:p-5">
       <div className="mx-auto flex h-full w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl">
@@ -291,7 +354,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">Editor de página</p>
             <h2 className="rj-display truncate text-base font-bold text-slate-900">
-              Edite texto, imagens e o tamanho da página
+              Clique em qualquer texto para editar
             </h2>
           </div>
           <Button variant="outline" size="sm" onClick={onClose} icon={X}>
@@ -302,11 +365,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             onClick={() =>
               onSave({
                 ...draft,
-                thumbnail: draft.isBlank
-                  ? draft.thumbnail
-                  : draft.overlays.length
-                    ? draft.thumbnail
-                    : draft.thumbnail
+                textLayerReady: true
               })
             }
           >
@@ -326,9 +385,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                   onClick={() => setTool(item.id)}
                   className={cn(
                     'flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.65rem] font-bold transition',
-                    tool === item.id
-                      ? 'bg-sky-600 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
+                    tool === item.id ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
                   <Icon className="h-4 w-4" aria-hidden />
@@ -359,7 +416,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
               <img
                 src={previewUrl}
                 alt=""
-                className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                className="pointer-events-none absolute inset-0 h-full w-full"
                 style={{
                   objectFit:
                     draft.pageSize.fit === 'stretch'
@@ -369,73 +426,126 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                         : 'contain'
                 }}
               />
-              {loadingPreview ? (
-                <div className="absolute inset-0 grid place-items-center bg-white/50 text-sm font-semibold text-slate-600">
-                  Carregando página…
-                </div>
-              ) : null}
 
-              {draft.overlays.map((overlay) => (
-                <div
-                  key={overlay.id}
-                  data-overlay
-                  onPointerDown={(e) => startMove(e, overlay)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedId(overlay.id);
-                  }}
-                  className={cn(
-                    'absolute box-border',
-                    selectedId === overlay.id ? 'z-20 ring-2 ring-sky-500' : 'z-10',
-                    overlay.kind === 'text' && 'bg-transparent',
-                    overlay.kind === 'erase' && 'bg-white',
-                    overlay.kind === 'rect' && 'border border-sky-700/40',
-                    overlay.kind === 'highlight' && 'mix-blend-multiply'
-                  )}
-                  style={{
-                    left: `${overlay.x}%`,
-                    top: `${overlay.y}%`,
-                    width: `${overlay.w}%`,
-                    height: `${overlay.h}%`,
-                    backgroundColor:
-                      overlay.kind === 'rect' || overlay.kind === 'highlight' || overlay.kind === 'erase'
-                        ? overlay.fill
-                        : undefined,
-                    opacity: overlay.kind === 'highlight' ? overlay.opacity ?? 0.35 : overlay.opacity ?? 1
-                  }}
-                >
-                  {overlay.kind === 'text' ? (
-                    <div
-                      className="h-full w-full overflow-hidden whitespace-pre-wrap break-words px-1 py-0.5"
-                      style={{
-                        color: overlay.color || '#0f172a',
-                        fontSize: `${Math.max(10, overlay.fontSize || 14)}px`,
-                        fontWeight: overlay.bold ? 700 : 500,
-                        textAlign: overlay.align || 'left',
-                        lineHeight: 1.25
-                      }}
-                    >
-                      {overlay.text}
-                    </div>
-                  ) : null}
-                  {overlay.kind === 'image' && overlay.imageDataUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={overlay.imageDataUrl} alt="" className="h-full w-full object-contain" />
-                  ) : null}
-                  {selectedId === overlay.id ? (
-                    <button
-                      type="button"
-                      aria-label="Redimensionar"
-                      onPointerDown={(e) => startResize(e, overlay)}
-                      className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-se-resize rounded-sm border border-white bg-sky-600"
-                    />
-                  ) : null}
+              {(loadingPreview || loadingText) && (
+                <div className="absolute inset-0 z-30 grid place-items-center bg-white/70 text-sm font-semibold text-slate-700">
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+                    {loadingText ? 'Lendo o texto da página…' : 'Carregando página…'}
+                  </span>
                 </div>
-              ))}
+              )}
+
+              {draft.overlays.map((overlay) => {
+                const isSelected = selectedId === overlay.id;
+                const isEditing = editingId === overlay.id;
+                const changed =
+                  overlay.kind === 'text' &&
+                  overlay.fromPdf &&
+                  overlay.text !== overlay.originalText;
+
+                return (
+                  <div
+                    key={overlay.id}
+                    data-overlay
+                    onPointerDown={(e) => startMove(e, overlay)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedId(overlay.id);
+                      if (overlay.kind === 'text' && tool === 'select') {
+                        beginEditText(overlay.id);
+                      }
+                    }}
+                    className={cn(
+                      'absolute box-border',
+                      isSelected || isEditing ? 'z-20' : 'z-10',
+                      overlay.kind === 'text' && !isEditing && 'cursor-text hover:ring-1 hover:ring-sky-400/80',
+                      (isSelected || isEditing) && 'ring-2 ring-sky-500',
+                      changed && 'ring-emerald-400',
+                      overlay.kind === 'erase' && 'bg-white',
+                      overlay.kind === 'rect' && 'border border-sky-700/40',
+                      overlay.kind === 'highlight' && 'mix-blend-multiply'
+                    )}
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      width: `${overlay.w}%`,
+                      height: `${overlay.h}%`,
+                      backgroundColor:
+                        overlay.kind === 'rect' ||
+                        overlay.kind === 'highlight' ||
+                        overlay.kind === 'erase'
+                          ? overlay.fill
+                          : overlay.kind === 'text'
+                            ? '#ffffff'
+                            : undefined,
+                      opacity:
+                        overlay.kind === 'highlight' ? overlay.opacity ?? 0.35 : overlay.opacity ?? 1
+                    }}
+                  >
+                    {overlay.kind === 'text' ? (
+                      isEditing ? (
+                        <textarea
+                          ref={(node) => {
+                            editRef.current = node;
+                          }}
+                          value={overlay.text || ''}
+                          onChange={(e) => updateOverlay(overlay.id, { text: e.target.value })}
+                          onBlur={() => setEditingId(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setEditingId(null);
+                            }
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="h-full w-full resize-none border-0 bg-white px-0.5 py-0 outline-none"
+                          style={{
+                            color: overlay.color || '#0f172a',
+                            fontSize: `${fontPx(overlay)}px`,
+                            fontWeight: overlay.bold ? 700 : 500,
+                            textAlign: overlay.align || 'left',
+                            lineHeight: 1.15
+                          }}
+                          aria-label="Editar texto"
+                        />
+                      ) : (
+                        <div
+                          className="h-full w-full overflow-hidden whitespace-pre px-0.5 py-0"
+                          style={{
+                            color: overlay.color || '#0f172a',
+                            fontSize: `${fontPx(overlay)}px`,
+                            fontWeight: overlay.bold ? 700 : 500,
+                            textAlign: overlay.align || 'left',
+                            lineHeight: 1.15
+                          }}
+                        >
+                          {overlay.text}
+                        </div>
+                      )
+                    ) : null}
+
+                    {overlay.kind === 'image' && overlay.imageDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={overlay.imageDataUrl} alt="" className="h-full w-full object-contain" />
+                    ) : null}
+
+                    {isSelected ? (
+                      <button
+                        type="button"
+                        aria-label="Redimensionar"
+                        onPointerDown={(e) => startResize(e, overlay)}
+                        className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-se-resize rounded-sm border border-white bg-sky-600"
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-5 text-slate-600">
-              Use <strong>Cobrir/apagar</strong> para tapar texto antigo e <strong>Texto</strong> para escrever por cima.
-              Arraste para mover; o cantinho azul redimensiona.
+              {textCount > 0
+                ? `${textCount} trechos de texto detectados — clique em qualquer um para alterar.`
+                : 'Clique em um texto da página para editar. Use Novo texto para adicionar conteúdo.'}
             </p>
           </div>
 
@@ -521,68 +631,57 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             </p>
 
             <div className="border-t border-slate-200 pt-3">
-              <h3 className="mb-2 text-sm font-bold text-slate-900">Objeto selecionado</h3>
-              {!selected ? (
+              <h3 className="mb-2 text-sm font-bold text-slate-900">Texto selecionado</h3>
+              {!selected || selected.kind !== 'text' ? (
                 <p className="text-xs leading-5 text-slate-500">
-                  Clique em um objeto no canvas ou adicione texto/imagem/formas.
+                  Clique em um número ou palavra na página. O texto original fica editável na hora.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {selected.kind === 'text' ? (
-                    <>
-                      <FormField label="Texto" htmlFor="ov-text">
-                        <Textarea
-                          id="ov-text"
-                          rows={4}
-                          value={selected.text || ''}
-                          onChange={(e) => updateOverlay(selected.id, { text: e.target.value })}
-                        />
-                      </FormField>
-                      <FormField label="Tamanho da fonte" htmlFor="ov-size">
-                        <Input
-                          id="ov-size"
-                          type="number"
-                          min={8}
-                          max={96}
-                          value={selected.fontSize || 16}
-                          onChange={(e) =>
-                            updateOverlay(selected.id, {
-                              fontSize: Math.max(8, Number(e.target.value) || 16)
-                            })
-                          }
-                        />
-                      </FormField>
-                      <FormField label="Cor" htmlFor="ov-color">
-                        <Input
-                          id="ov-color"
-                          type="color"
-                          value={selected.color || '#0f172a'}
-                          onChange={(e) => updateOverlay(selected.id, { color: e.target.value })}
-                        />
-                      </FormField>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(selected.bold)}
-                          onChange={(e) => updateOverlay(selected.id, { bold: e.target.checked })}
-                          className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                        />
-                        Negrito
-                      </label>
-                    </>
+                  <FormField label="Conteúdo" htmlFor="ov-text">
+                    <Textarea
+                      id="ov-text"
+                      rows={4}
+                      value={selected.text || ''}
+                      onChange={(e) => updateOverlay(selected.id, { text: e.target.value })}
+                    />
+                  </FormField>
+                  {selected.originalText != null && selected.text !== selected.originalText ? (
+                    <p className="text-[0.7rem] font-medium text-emerald-700">
+                      Original: “{selected.originalText}”
+                    </p>
                   ) : null}
-
-                  {(selected.kind === 'rect' || selected.kind === 'highlight' || selected.kind === 'erase') && (
-                    <FormField label="Cor de preenchimento" htmlFor="ov-fill">
-                      <Input
-                        id="ov-fill"
-                        type="color"
-                        value={selected.fill || '#0ea5e9'}
-                        onChange={(e) => updateOverlay(selected.id, { fill: e.target.value })}
-                      />
-                    </FormField>
-                  )}
-
+                  <FormField label="Tamanho da fonte" htmlFor="ov-size">
+                    <Input
+                      id="ov-size"
+                      type="number"
+                      min={6}
+                      max={96}
+                      value={Math.round(selected.fontSize || 14)}
+                      onChange={(e) =>
+                        updateOverlay(selected.id, {
+                          fontSize: Math.max(6, Number(e.target.value) || 14)
+                        })
+                      }
+                    />
+                  </FormField>
+                  <FormField label="Cor" htmlFor="ov-color">
+                    <Input
+                      id="ov-color"
+                      type="color"
+                      value={selected.color || '#0f172a'}
+                      onChange={(e) => updateOverlay(selected.id, { color: e.target.value })}
+                    />
+                  </FormField>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(selected.bold)}
+                      onChange={(e) => updateOverlay(selected.id, { bold: e.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600"
+                    />
+                    Negrito
+                  </label>
                   <Button
                     variant="danger"
                     size="sm"
@@ -590,7 +689,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                     icon={Trash2}
                     onClick={() => removeOverlay(selected.id)}
                   >
-                    Remover objeto
+                    Remover este texto
                   </Button>
                 </div>
               )}
