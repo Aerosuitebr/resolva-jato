@@ -79,7 +79,7 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   const [zoom, setZoom] = useState(100);
   const [fontStatus, setFontStatus] = useState('');
   const [drag, setDrag] = useState<{
-    mode: 'move' | 'resize' | 'create';
+    mode: 'move' | 'resize' | 'create' | 'pending';
     id?: string;
     startX: number;
     startY: number;
@@ -141,7 +141,8 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
             const manual = prev.overlays.filter((o) => !o.fromPdf);
             return {
               ...prev,
-              overlays: [...graphics, ...texts, ...manual],
+              // Gráficos por cima do texto para o logo não ficar sob caixas de título.
+              overlays: [...texts, ...graphics, ...manual],
               textLayerReady: true
             };
           });
@@ -343,6 +344,20 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     if (!drag) return;
     const pt = relativePoint(e.clientX, e.clientY);
 
+    if (drag.mode === 'pending' && drag.id && drag.orig) {
+      const dist = Math.abs(pt.x - drag.startX) + Math.abs(pt.y - drag.startY);
+      if (dist < 0.9) return;
+      movedDuringDrag.current = true;
+      setDrag({ ...drag, mode: 'move' });
+      const dx = pt.x - drag.startX;
+      const dy = pt.y - drag.startY;
+      updateOverlay(drag.id, {
+        x: Math.min(100 - drag.orig.w, Math.max(0, drag.orig.x + dx)),
+        y: Math.min(100 - drag.orig.h, Math.max(0, drag.orig.y + dy))
+      });
+      return;
+    }
+
     if (drag.mode === 'create' && drag.id && drag.orig) {
       const x = Math.min(drag.startX, pt.x);
       const y = Math.min(drag.startY, pt.y);
@@ -392,6 +407,9 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
   }
 
   function onBoardPointerUp() {
+    if (drag?.mode === 'pending' && drag.id && drag.orig?.kind === 'text' && !movedDuringDrag.current) {
+      beginEditText(drag.id);
+    }
     setDrag(null);
   }
 
@@ -402,7 +420,14 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
     if (tool !== 'select') return;
     movedDuringDrag.current = false;
     const pt = relativePoint(e.clientX, e.clientY);
-    setDrag({ mode: 'move', id: overlay.id, startX: pt.x, startY: pt.y, orig: overlay });
+    // Texto: clique edita; só vira arraste depois de mover de verdade.
+    setDrag({
+      mode: overlay.kind === 'text' ? 'pending' : 'move',
+      id: overlay.id,
+      startX: pt.x,
+      startY: pt.y,
+      orig: overlay
+    });
     boardRef.current?.setPointerCapture(e.pointerId);
   }
 
@@ -626,17 +651,26 @@ export function PageEditor({ page, source, onSave, onClose }: PageEditorProps) {
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedId(overlay.id);
+                      // Edição de texto principal no pointerUp (pending→edit);
+                      // fallback se o click chegar sem drag.
                       if (
                         overlay.kind === 'text' &&
                         tool === 'select' &&
-                        !movedDuringDrag.current
+                        !movedDuringDrag.current &&
+                        editingId !== overlay.id
                       ) {
                         beginEditText(overlay.id);
                       }
                     }}
                     className={cn(
                       'absolute box-border bg-transparent',
-                      isSelected || isEditing ? 'z-20' : 'z-10',
+                      overlay.kind === 'image' || overlay.kind === 'line'
+                        ? isSelected
+                          ? 'z-30'
+                          : 'z-[18]'
+                        : isSelected || isEditing
+                          ? 'z-20'
+                          : 'z-10',
                       overlay.kind === 'text' && !isEditing && 'cursor-text hover:ring-1 hover:ring-sky-400/70',
                       overlay.kind !== 'text' && tool === 'select' && 'cursor-move hover:ring-1 hover:ring-sky-400/70',
                       (isSelected || isEditing) && 'ring-2 ring-sky-500',

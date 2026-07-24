@@ -167,20 +167,28 @@ export async function extractPageTextOverlays(
     const tx = pdfjs.Util.transform(viewport.transform, item.transform);
     const fontHeight = Math.hypot(tx[2], tx[3]) || Math.hypot(tx[0], tx[1]) || 12;
     const scaleX = Math.hypot(tx[0], tx[1]) || 1;
-    const width = Math.max(fontHeight * 0.4, (item.width || 0) * scaleX);
+    const reportedWidth = Math.max(0, (item.width || 0) * scaleX);
+    // Estimativa por caracteres evita caixas que atravessam a página (bug comum do width do pdf.js).
+    const estimatedWidth = Math.max(str.trim().length, 1) * fontHeight * 0.56;
+    let width = reportedWidth > 0 ? reportedWidth : estimatedWidth;
+    if (width > estimatedWidth * 1.65) width = estimatedWidth * 1.12;
+    if (width < estimatedWidth * 0.45) width = estimatedWidth;
     // Baseline → topo da caixa (viewport já tem Y para baixo).
-    const height = Math.max(fontHeight * 0.9, fontHeight);
+    const height = Math.max(fontHeight * 0.95, fontHeight);
     const xPdf = tx[4];
-    const yPdf = tx[5] - height;
+    const yPdf = tx[5] - height * 0.82;
 
-    const padX = Math.max(0.4, width * 0.02);
-    const padY = Math.max(0.35, height * 0.08);
+    const padX = Math.max(0.25, fontHeight * 0.04);
+    const padY = Math.max(0.2, fontHeight * 0.06);
     const x = ((xPdf - padX) / viewport.width) * 100;
     const y = ((yPdf - padY) / viewport.height) * 100;
     const w = ((width + padX * 2) / viewport.width) * 100;
     const h = ((height + padY * 2) / viewport.height) * 100;
 
     if (w <= 0.05 || h <= 0.05) continue;
+    // Descarta caixas patológicas (>45% da página para um trecho curto).
+    if (w > 45 && str.trim().length <= 24) continue;
+    if (w > 70) continue;
 
     const resolved = resolveFontFromPdfName(item.fontName);
     const bold = isBoldPdfFont(item.fontName);
