@@ -1,5 +1,4 @@
 import { MessageCircleMore, Quote } from 'lucide-react';
-import { LiveStatsBar } from '@/components/marketing/live-stats-bar';
 import { cn } from '@/lib/utils';
 
 const TESTIMONIALS = [
@@ -47,8 +46,6 @@ export function TestimonialsSection({ className }: { className?: string }) {
             Comentários reais publicados pela comunidade depois de conhecer o produto.
           </p>
         </div>
-
-        <LiveStatsBar className="mt-8" />
 
         <ul className="mt-8 grid gap-5 lg:grid-cols-2">
           {TESTIMONIALS.map((item, index) => (

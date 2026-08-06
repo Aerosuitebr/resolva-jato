@@ -1,0 +1,20 @@
+metric,value
+period,28_days
+property,sc-domain:resolvajato.com.br
+collected_at,2026-08-04
+clicks,4
+impressions,461
+ctr_percent,0.9
+avg_position,71.2
+
+page,clicks,impressions
+https://resolvajato.com.br/es/tools/pix,2,3
+https://resolvajato.com.br/,1,5
+https://resolvajato.com.br/recibo-de-aluguel,1,2
+
+query,clicks,impressions
+calculo rescisão,0,9
+correcao de redacao,0,8
+você entra fernando e sai pessoa,0,7
+propostas comerciais online,0,7
+gerador de propostas,0,7

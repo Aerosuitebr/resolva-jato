@@ -2,10 +2,26 @@
 
 Pacote operacional para publicar hoje. Textos em `colar/`, imagens e vídeo em `assets/`.
 
+**Marca:** sempre `Resolva Jato` + `resolvajato.com.br` (ver `MARCA-COMPLETA.md`).
+Não use só “Resolva” ou “RJ” em copy pública.
+
 Legenda de status:
 - FEITO: executado por automação / ops
 - COLAR: exige sua conta (1 clique / copiar)
 - BLOQUEADO: precisa login ou ação humana no navegador
+
+---
+
+## 0) GSC hoje (04/ago) · COLAR
+
+**Guia:** `HOJE-2026-08-04-GSC.md`
+**Console:** https://search.google.com/search-console?resource_id=sc-domain%3Aresolvajato.com.br
+
+1. Reenviar `sitemap.xml` + `sitemaps/index.xml` até status **Sucesso**
+2. Exportar Desempenho · últimos 28 dias (CSV)
+3. Salvar em `docs/divulgacao/exports/` e avisar no chat com os totais
+
+Pré-checagem: sitemaps em HTTP 200 com 152 URLs (curl · 04/ago).
 
 ---
 
@@ -16,7 +32,7 @@ Legenda de status:
 **Imagem:** `assets/calculadora-de-rescisao.png` (ou botão Baixar imagem na calculadora)
 
 Link direto para abrir o WhatsApp com o texto pronto:
-https://wa.me/?text=Demiss%C3%A3o%20ou%20pedido%20de%20conta%3F%0ACalcule%20uma%20estimativa%20de%20saldo%2C%20f%C3%A9rias%2C%2013%C2%BA%2C%20aviso%20e%20FGTS%20em%20minutos.%0AGr%C3%A1tis%2C%20sem%20cadastro%3A%0A%0Ahttps%3A%2F%2Fresolvajato.com.br%2Fcalculadora-de-rescisao%3Futm_source%3Dwhatsapp%26utm_medium%3Dorganic_social%26utm_campaign%3Drescisao_status
+https://wa.me/?text=Resolva%20Jato%20%C2%B7%20demiss%C3%A3o%20ou%20pedido%20de%20conta%3F%0ACalcule%20uma%20estimativa%20de%20saldo%2C%20f%C3%A9rias%2C%2013%C2%BA%2C%20aviso%20e%20FGTS%20em%20minutos.%0AGr%C3%A1tis%2C%20sem%20cadastro%3A%0A%0Ahttps%3A%2F%2Fresolvajato.com.br%2Fcalculadora-de-rescisao%3Futm_source%3Dwhatsapp%26utm_medium%3Dorganic_social%26utm_campaign%3Drescisao_status
 
 Passos: abrir o link → Status → anexar a imagem → publicar.
 
@@ -29,7 +45,7 @@ Passos: abrir o link → Status → anexar a imagem → publicar.
 
 Bio sugerida:
 ```text
-Resolva Jato
+Resolva Jato · resolvajato.com.br
 Orçamento com Pix no WhatsApp
 Cliente aprova. Você recebe.
 Ferramentas grátis pra estudar, trabalhar e vender
@@ -129,6 +145,9 @@ Checklist:
 - [ ] SaaSHub (exige produto em inglês + Register/Login)
 
 Descrição padrão: `colar/06-diretorios-descricao.txt`
+
+**Marca nos diretórios:** campo Nome / Title = `Resolva Jato` (nunca abreviação).
+Ver `MARCA-COMPLETA.md`.
 
 Lusofonia (BR + PT): `LUSOFONIA-BR-PT.md` + `OUTREACH-LUSOFONIA.md` + `colar/17` a `22`
 

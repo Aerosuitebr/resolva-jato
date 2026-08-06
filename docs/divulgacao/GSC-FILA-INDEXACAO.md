@@ -79,6 +79,13 @@ Pedidos feitos nas URLs que não estavam indexadas (landings novas + autoridade 
 
 Sitemaps: `sitemap.xml` + `sitemaps/index.xml` · Processado.
 
+### 04/ago · saúde do sitemap (curl)
+
+- `/sitemap.xml` e `/sitemaps/index.xml` + 6 segmentos: **HTTP 200**
+- Total: **152** URLs no sitemap completo
+- Googlebot/Bingbot: 200 (sem 5xx)
+- Ação: reenviar no GSC e confirmar **Sucesso** · guia `HOJE-2026-08-04-GSC.md`
+
 ### Colar no GSC agora · lote 2 (20 URLs)
 
 Arquivo: `gsc-fila-lote2-2026-08-01.txt`  
