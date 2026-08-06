@@ -36,22 +36,22 @@ export function LiveStatsBar({
     {
       value: formatCount(stats.orcamentosToday),
       label: 'Orçamentos hoje',
-      show: true
+      show: stats.orcamentosToday >= 10
     },
     {
       value: formatCount(stats.orcamentosApprovedWeek),
       label: 'Aprovados na semana',
-      show: true
+      show: stats.orcamentosApprovedWeek >= 10
     },
     {
       value: formatCount(stats.docsGeneratedApprox),
       label: 'Docs gerados',
-      show: stats.docsGeneratedApprox > 0
+      show: stats.docsGeneratedApprox >= 100
     },
     {
       value: formatCount(stats.usersTotal),
       label: 'Contas criadas',
-      show: stats.usersTotal > 0
+      show: stats.usersTotal >= 100
     }
   ].filter((item) => item.show);
 

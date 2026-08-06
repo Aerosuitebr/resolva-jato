@@ -88,12 +88,12 @@ export function AnalyticsScripts() {
       {ready && consent === null && (gaId || clarityId) ? (
         <aside
           aria-label={consentCopy.label}
-          className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:flex sm:items-center sm:gap-5"
+          className="fixed inset-x-2 bottom-2 z-[100] mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur-md sm:bottom-3 sm:flex sm:items-center sm:gap-5 sm:p-4"
         >
-          <p className="flex-1 text-sm leading-6 text-slate-600">
+          <p className="flex-1 text-xs leading-5 text-slate-600 sm:text-sm sm:leading-6">
             {consentCopy.text}
           </p>
-          <div className="mt-3 flex gap-2 sm:mt-0">
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-0 sm:flex">
             <button
               type="button"
               className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"

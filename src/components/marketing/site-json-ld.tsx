@@ -74,7 +74,7 @@ export function SiteJsonLd() {
     url: siteUrl,
     inLanguage: 'pt-BR',
     description:
-      'Ferramentas online grátis para trabalho, estudo e tarefas do dia a dia, com documentos, cálculos, IA e Jato Games.',
+      'Ferramentas online grátis para criar orçamentos com Pix, documentos profissionais e cálculos do dia a dia.',
     publisher: { '@id': `${siteUrl}/#organization` },
     about: { '@id': `${siteUrl}/#organization` }
   };

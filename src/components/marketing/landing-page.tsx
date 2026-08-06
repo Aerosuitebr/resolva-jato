@@ -1,560 +1,101 @@
 import Link from 'next/link';
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ClipboardList,
-  FileText,
-  Gamepad2,
-  GraduationCap,
-  Scale,
-  Search,
-  Wallet
-} from 'lucide-react';
-import { AuthAwareLink } from '@/components/auth/auth-aware-link';
-import { Logo } from '@/components/brand/logo';
+import { ArrowRight, Check, ClipboardCheck, FileCheck2, FileText, MessageCircle, Receipt, Scale, ShieldCheck, Wallet } from 'lucide-react';
+import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { CategoryExplorer } from '@/components/marketing/category-explorer';
-import { HeroDualNiche } from '@/components/marketing/hero-dual-niche';
+import { IntentFinder } from '@/components/marketing/intent-finder';
 import { PromoVideoPlayer } from '@/components/marketing/promo-video-section';
 import { TestimonialsSection } from '@/components/marketing/testimonials-section';
-import { TrustSeals } from '@/components/marketing/trust-seals';
-import { ToolsWatermark } from '@/components/brand/tools-watermark';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SegmentPreference } from '@/components/growth/segment-preference';
-import { MiraFeaturedCta } from '@/components/marketing/mira-featured-cta';
 
-const primaryCtaClass =
-  'h-12 bg-amber-400 px-6 text-base font-bold text-slate-950 shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 transition hover:bg-amber-300 hover:shadow-xl hover:shadow-amber-400/40';
+const primaryCtaClass = 'h-12 bg-amber-400 px-6 text-base font-bold text-slate-950 shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 transition hover:bg-amber-300 hover:shadow-xl';
 
-const OTHER_TOOLS = [
-  {
-    href: '/gerador-de-curriculo',
-    title: 'Currículo',
-    text: 'Layouts profissionais e PDF em um clique.',
-    icon: GraduationCap
-  },
-  {
-    href: '/gerador-de-proposta-comercial',
-    title: 'Proposta comercial',
-    text: 'Cara de agência, totais e validade claros.',
-    icon: FileText
-  },
-  {
-    href: '/gerador-de-contrato',
-    title: 'Contrato',
-    text: 'Modelos editáveis sem fila na papelaria.',
-    icon: Scale
-  },
-  {
-    href: '/para/estudantes',
-    title: 'Capa ABNT',
-    text: 'Escolar e universitária prontas em minutos.',
-    icon: BookOpen
-  },
-  {
-    href: '/gerador-de-recibo',
-    title: 'Recibo',
-    text: 'Valor por extenso e assinatura no PDF.',
-    icon: Wallet
-  },
-  {
-    href: '/gerador-de-qr-code-pix',
-    title: 'Pix avulso',
-    text: 'QR Code e Copia e Cola para cobrar rápido.',
-    icon: ClipboardList
-  }
+const POPULAR_TOOLS = [
+  { href: '/orcamento-com-pix#montar', title: 'Orçamento + Pix', text: 'Cliente aprova no celular', icon: ClipboardCheck },
+  { href: '/gerador-de-recibo', title: 'Recibo', text: 'PDF com valor por extenso', icon: Receipt },
+  { href: '/gerador-de-contrato', title: 'Contrato', text: 'Modelos editáveis', icon: Scale },
+  { href: '/gerador-de-curriculo', title: 'Currículo', text: 'Layouts profissionais', icon: FileText },
+  { href: '/calculadora-de-rescisao', title: 'Rescisão', text: 'Estimativa trabalhista', icon: Wallet }
 ] as const;
-
-function FeatureChecks({
-  items,
-  iconClass = 'text-emerald-600',
-  textClass = 'text-slate-700'
-}: {
-  items: string[];
-  iconClass?: string;
-  textClass?: string;
-}) {
-  return (
-    <ul className="mt-5 space-y-2.5">
-      {items.map((item) => (
-        <li key={item} className={cn('flex items-start gap-3 text-sm leading-6', textClass)}>
-          <Check className={cn('mt-0.5 h-4 w-4 shrink-0', iconClass)} />
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function LandingPage() {
   return (
     <div className="bg-[image:var(--rj-page-bg)]">
-      <section className="relative overflow-hidden bg-[linear-gradient(145deg,#020617_0%,#0f172a_42%,#064e3b_100%)] text-white">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="pointer-events-none absolute -left-24 top-10 hidden h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl rj-animate-drift sm:block" />
+      <section className="relative overflow-hidden bg-[linear-gradient(145deg,#020617_0%,#0f172a_48%,#064e3b_100%)] text-white">
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          <div className="absolute -left-24 top-10 hidden h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl sm:block" />
           <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-amber-400/10 blur-3xl" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(52,211,153,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(52,211,153,0.06)_1px,transparent_1px)] bg-[size:40px_40px] opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-          <ToolsWatermark className="opacity-70" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(52,211,153,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(52,211,153,0.05)_1px,transparent_1px)] bg-[size:40px_40px] opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+          <ToolsWatermark className="opacity-45" />
         </div>
 
-        <div className="relative mx-auto grid max-w-6xl items-stretch gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-12 lg:py-16">
-          <div className="flex h-full max-w-xl flex-col">
-            <div className="rj-animate-fade-up">
-              <Logo variant="hero" />
-            </div>
-            <p className="rj-animate-fade-up mt-6 text-sm font-bold uppercase tracking-[0.2em] text-amber-300">
-              Ferramentas para trabalho, estudo e vida prática
-            </p>
-            <h1 className="rj-display rj-animate-fade-up-delay mt-3 text-[clamp(1.9rem,4.2vw,3.35rem)] font-extrabold leading-[1.08] tracking-tight text-white">
-              Ferramentas online grátis para resolver o dia a dia.
-            </h1>
-            <p className="rj-animate-fade-up-delay-2 mt-4 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">
-              Crie documentos, faça cálculos, organize tarefas, estude melhor e cuide do seu PC.
-              Recursos práticos, organizados por objetivo e disponíveis no navegador.
-            </p>
-            <ul className="rj-animate-fade-up-delay-2 mt-5 space-y-2 text-sm text-slate-200">
-              {[
-                'Mais de 20 ferramentas em um único catálogo',
-                'Conteúdo organizado para 10 perfis profissionais',
-                'Modelos, guias e respostas para concluir cada tarefa'
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5">
-                  <Check className="h-4 w-4 shrink-0 text-amber-300" />
-                  {item}
-                </li>
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 lg:py-20">
+          <div className="max-w-xl">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-amber-300">Trabalho, documentos e cálculos</p>
+            <h1 className="rj-display mt-3 text-[clamp(2.15rem,5vw,3.8rem)] font-extrabold leading-[1.04] tracking-tight text-white">Crie, calcule e envie. Resolva já.</h1>
+            <p className="mt-5 max-w-lg text-base leading-7 text-slate-200 sm:text-lg">Orçamento com aprovação e Pix, recibos, contratos, currículo e calculadoras grátis — direto no navegador, sem burocracia.</p>
+            <ul className="mt-6 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+              {['Experimente sem cadastro', 'Pronto para o WhatsApp', 'Cliente não instala app', 'PDF profissional em minutos'].map((item) => (
+                <li key={item} className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-amber-300" aria-hidden />{item}</li>
               ))}
             </ul>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button asChild size="lg" className={cn(primaryCtaClass, 'w-full sm:w-auto')}>
-                <Link href="/recursos">
-                  Explorar ferramentas
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 w-full border-white/25 bg-white/5 px-6 text-base text-white hover:bg-white/10 sm:w-auto"
-              >
-                <Link href="/biblioteca">Consultar a biblioteca</Link>
-              </Button>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className={cn(primaryCtaClass, 'w-full sm:w-auto')}><Link href="/orcamento-com-pix#montar">Criar orçamento grátis <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild size="lg" variant="outline" className="h-12 w-full border-white/25 bg-white/5 px-6 text-base font-bold text-white hover:bg-white/10 sm:w-auto"><Link href="#ferramentas-populares">Ver ferramentas</Link></Button>
             </div>
-
-            <div className="rj-animate-fade-up-delay-2 mt-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Também no hub
-              </p>
-              <ul className="mt-3 flex flex-wrap gap-2.5">
-                <li>
-                  <Link
-                    href="/games"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/15 px-4 py-2 text-sm font-semibold text-teal-100 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-300/25 hover:text-white hover:shadow-md"
-                  >
-                    <Gamepad2 className="h-3.5 w-3.5" />
-                    Jato Games
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/orcamento-com-pix#montar"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-amber-300/20 hover:text-amber-100 hover:shadow-md"
-                  >
-                    Orçamento com Pix
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/gerador-de-curriculo"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-amber-300/20 hover:text-amber-100 hover:shadow-md"
-                  >
-                    Currículo
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#demo-60s"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-amber-300/20 hover:text-amber-100 hover:shadow-md"
-                  >
-                    Ver o fluxo em 60s
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <p className="mt-4 text-xs text-slate-400">
-              Contratos, currículo, recibos, Pix, cálculos, produtividade, estudos e Jato Games:
-              encontre o próximo passo sem precisar conhecer o nome da ferramenta.
-            </p>
           </div>
-
-          <div className="relative flex h-full min-w-0 flex-col">
-            <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-emerald-400/20 via-transparent to-amber-300/10 blur-2xl" />
-            <HeroDualNiche className="relative h-full" />
-          </div>
+          <IntentFinder />
         </div>
       </section>
 
-      <SegmentPreference />
-
-      <MiraFeaturedCta />
-
-      <section className="border-b border-slate-200 bg-[linear-gradient(135deg,#f0fdfa_0%,#ffffff_45%,#fff7ed_100%)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-12">
-          <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-teal-700">
-              <Gamepad2 className="h-3.5 w-3.5" />
-              Jato Games
-            </p>
-            <h2 className="rj-display mt-2 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
-              Calcule seu eDPI, planeje o SSD e escolha o próximo jogo sem chute.
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              Ferramentas gamer grátis, requisitos de PC, guias de GPU e CPU, setups sugeridos,
-              consoles e lojas confiáveis em uma central feita para decisões rápidas.
-            </p>
+      <section id="ferramentas-populares" className="scroll-mt-28 border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Mais usadas</p><h2 className="rj-display mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Comece pela tarefa, não pelo menu.</h2></div>
+            <Link href="/recursos" className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700 hover:underline">Ver catálogo completo <ArrowRight className="h-4 w-4" /></Link>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            <Button asChild size="lg" className="h-12 bg-teal-600 px-6 font-bold text-white shadow-lg shadow-teal-600/20 hover:bg-teal-500">
-              <Link href="/games/ferramentas/calculadora-edpi">
-                Calcular meu eDPI
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 border-teal-200 bg-white px-6 font-bold text-teal-800 hover:bg-teal-50">
-              <Link href="/games">Explorar Jato Games</Link>
-            </Button>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {POPULAR_TOOLS.map((tool, index) => {
+              const Icon = tool.icon;
+              return <li key={tool.href}><Link href={tool.href} className={cn('group flex h-full flex-col rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md', index === 0 ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-white')}><span className={cn('grid h-11 w-11 place-items-center rounded-xl', index === 0 ? 'bg-amber-400 text-slate-950' : 'bg-emerald-100 text-emerald-800')}><Icon className="h-5 w-5" /></span><span className="mt-4 font-bold text-slate-950">{tool.title}</span><span className="mt-1 text-sm leading-6 text-slate-600">{tool.text}</span><ArrowRight className="mt-4 h-4 w-4 text-emerald-700 transition group-hover:translate-x-1" /></Link></li>;
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-emerald-50/70">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">Produto âncora</p>
+            <h2 className="rj-display mt-3 max-w-xl text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Do preço aprovado ao Pix, no mesmo link.</h2>
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-700">Monte o orçamento, envie no WhatsApp e deixe o cliente aprovar ou pedir ajustes pelo próprio celular.</p>
+            <ul className="mt-6 space-y-3 text-sm text-slate-700">
+              <li className="flex gap-3"><MessageCircle className="mt-0.5 h-5 w-5 text-emerald-700" /> Link pronto para enviar no WhatsApp</li>
+              <li className="flex gap-3"><ClipboardCheck className="mt-0.5 h-5 w-5 text-emerald-700" /> Aprovação sem conta e sem instalar aplicativo</li>
+              <li className="flex gap-3"><Wallet className="mt-0.5 h-5 w-5 text-emerald-700" /> QR Code e Pix Copia e Cola após o aceite</li>
+            </ul>
+            <Button asChild size="lg" className={cn(primaryCtaClass, 'mt-8')}><Link href="/orcamento-com-pix#montar">Experimentar sem cadastro <ArrowRight className="h-4 w-4" /></Link></Button>
+          </div>
+          <div id="demo-60s" className="scroll-mt-28 rounded-[28px] border border-emerald-200 bg-white p-3 shadow-xl shadow-emerald-900/10 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-4 px-1"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Veja em 60 segundos</p><p className="mt-1 text-sm text-slate-600">O fluxo completo, sem criar conta.</p></div><FileCheck2 className="h-8 w-8 text-emerald-600" /></div>
+            <PromoVideoPlayer compact />
           </div>
         </div>
       </section>
 
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">
-                Um lugar só
-              </p>
-              <h2 className="rj-display mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                Ache a ferramenta certa em segundos, não em abas.
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                Filtre pela sua área e veja o arsenal completo abrir na hora, sem sair da página.
-              </p>
-            </div>
-            <Button asChild size="lg" variant="outline" className="h-12 shrink-0 self-start sm:self-auto">
-              <Link href="/recursos">
-                Ver todas as ferramentas
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="mt-10">
-            <CategoryExplorer />
-          </div>
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">Um lugar só</p><h2 className="rj-display mt-2 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-950">Encontre a ferramenta certa em segundos.</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">Trabalho e dinheiro primeiro; documentos, carreira e organização quando você precisar.</p></div><Button asChild size="lg" variant="outline" className="h-12 shrink-0 self-start sm:self-auto"><Link href="/recursos">Todas as ferramentas <ArrowRight className="h-4 w-4" /></Link></Button></div>
+          <div className="mt-9"><CategoryExplorer /></div>
         </div>
       </section>
 
       <TestimonialsSection />
 
-      <section id="demo-60s" className="scroll-mt-20 border-b border-slate-200 bg-slate-950 text-white">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12 lg:py-16">
-          <div>
-            <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-300">Em 60 segundos</p>
-            <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Do orçamento ao Pix, no WhatsApp.
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-300">
-              Veja o fluxo completo antes de criar a conta. Se o vídeo não carregar, a demo ao vivo
-              acima já mostra o produto.
-            </p>
-          </div>
-          <PromoVideoPlayer compact />
-        </div>
-      </section>
-
-      <section className="border-b border-slate-200 bg-emerald-50/70">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-emerald-800">
-              Produto âncora
-            </p>
-            <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Cada link enviado vira uma chance de fechar.
-            </h2>
-            <FeatureChecks
-              items={[
-                'Cliente aprova ou pede ajuste no próprio celular',
-                'Pix gerado na hora para mandar no WhatsApp',
-                'Página limpa, sem instalar app'
-              ]}
-            />
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild className={cn(primaryCtaClass)} size="lg">
-                <Link href="/orcamento-com-pix#montar">
-                  <ClipboardList className="h-4 w-4" />
-                  Criar orçamento grátis
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 border-emerald-300 bg-white px-6 font-bold text-emerald-900 hover:bg-emerald-50"
-              >
-                <Link href="/gerador-de-qr-code-pix#gerar">
-                  <Wallet className="h-4 w-4" />
-                  Só gerar Pix
-                </Link>
-              </Button>
-            </div>
-          </div>
-          <div className="rounded-[28px] border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-              Por que isso viraliza
-            </p>
-            <ul className="mt-4 space-y-4 text-sm leading-6 text-slate-700">
-              <li className="flex gap-3">
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-                  1
-                </span>
-                Você manda o link para o cliente. Ele já vê o valor profissional.
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-                  2
-                </span>
-                Aprovar + Pix reduz a conversa interminável de “me manda o preço”.
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-                  3
-                </span>
-                O cliente sente o produto. Muitos voltam para criar o deles.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-          <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
-            Para quem é
-          </p>
-          <h2 className="rj-display mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Uma entrada clara por perfil.
-          </h2>
-          <ul className="mt-10 grid gap-4 md:grid-cols-3">
-            {[
-              {
-                href: '/para/mei',
-                title: 'MEI',
-                text: 'Cobrar com orçamento + Pix e emitir recibo sem burocracia.'
-              },
-              {
-                href: '/para/freelancers',
-                title: 'Freelancers',
-                text: 'Proposta, contrato e cobrança com cara de agência.'
-              },
-              {
-                href: '/para/estudantes',
-                title: 'Estudantes',
-                text: 'Peças acadêmicas, fichamentos, estudos de caso, redação, ABNT e currículo.'
-              }
-            ].map((persona) => (
-              <li key={persona.href}>
-                <Link
-                  href={persona.href}
-                  className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-5 transition hover:border-emerald-300 hover:bg-white hover:shadow-sm"
-                >
-                  <p className="text-base font-bold text-slate-900 group-hover:text-emerald-800">
-                    {persona.title}
-                  </p>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{persona.text}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                    Ver página
-                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 text-sm text-slate-500">
-            Também:{' '}
-            <Link href="/orcamento-com-pix" className="font-semibold text-sky-700 hover:underline">
-              orçamento com Pix
-            </Link>
-            ,{' '}
-            <Link href="/gerador-de-curriculo" className="font-semibold text-sky-700 hover:underline">
-              currículo
-            </Link>
-            ,{' '}
-            <Link href="/gerador-de-contrato" className="font-semibold text-sky-700 hover:underline">
-              contrato
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
-
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-          <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
-            Também resolve
-          </p>
-          <h2 className="rj-display mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Depois do Pix, o restante do escritório.
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-            Currículo, proposta, contrato e capa ABNT com a mesma qualidade. Documentos
-            profissionais grátis (com marca Resolva Jato). Premium remove qualquer referência.
-          </p>
-          <ul className="mt-10 flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
-            {OTHER_TOOLS.map((tool) => (
-              <li key={tool.href} className="w-[240px] shrink-0 snap-start sm:w-auto">
-                <AuthAwareLink
-                  href={tool.href}
-                  className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-5 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white hover:shadow-md"
-                >
-                  <tool.icon className="h-5 w-5 text-sky-700" />
-                  <p className="mt-3 text-base font-bold text-slate-900 group-hover:text-sky-800">
-                    {tool.title}
-                  </p>
-                  <p className="mt-1.5 flex-1 text-sm leading-6 text-slate-600">{tool.text}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-sky-700">
-                    Abrir
-                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                  </span>
-                </AuthAwareLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-          <div className="flex flex-col justify-center">
-            <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
-              Totalmente grátis
-            </p>
-            <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Gere documentos profissionais sem pagar nada.
-            </h2>
-            <ul className="mt-5 space-y-2.5 text-sm text-slate-700">
-              {[
-                'Orçamento, recibo, contrato, currículo e mais',
-                'PDF limpo, pronto para imprimir ou enviar',
-                'Sem cartão e sem burocracia'
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5">
-                  <Check className="h-4 w-4 shrink-0 text-sky-600" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <TrustSeals className="mt-8" />
-          </div>
-
-          <div className="overflow-hidden rounded-[28px] border border-slate-800 bg-[linear-gradient(135deg,#0f172a_0%,#064e3b_55%,#047857_100%)] p-8 text-white">
-            <p className="text-sm font-semibold text-emerald-200">Resolva Jato</p>
-            <h3 className="rj-display mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Escritório digital gratuito
-            </h3>
-            <p className="mt-4 text-sm leading-7 text-slate-200">
-              Crie a conta, preencha e baixe. Orçamento com Pix, recibo, proposta, contrato e capa
-              ABNT, com cara profissional, de graça.
-            </p>
-            <ul className="mt-6 space-y-3 text-sm text-slate-100">
-              {[
-                'Documentos em PDF profissionais',
-                'Fluxo pensado para WhatsApp',
-                'Busca de recursos sempre aberta'
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5">
-                  <Check className="h-4 w-4 shrink-0 text-amber-300" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 flex flex-col gap-3">
-              <Button asChild size="lg" className="w-full bg-white font-bold text-slate-950 hover:bg-emerald-50">
-                <Link href="/recursos">
-                  Gerar documento grátis
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="text-center text-sm text-emerald-100">
-                Duas gerações livres sem conta. Depois, cadastro para continuar.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-16 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-20">
-          <div className="max-w-2xl">
-            <p className="rj-display text-sm font-bold uppercase tracking-[0.2em] text-sky-700">
-              Busca gratuita
-            </p>
-            <h2 className="rj-display mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Centenas de links úteis, sem cadastro.
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              A busca continua 100% grátis. E as ferramentas de documentos também: use quando
-              precisar gerar um PDF profissional.
-            </p>
-          </div>
-          <Button asChild size="lg" variant="outline" className="h-12 shrink-0">
-            <Link href="/busca">
-              Abrir busca gratuita
-              <Search className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="relative overflow-hidden rounded-[32px] bg-slate-950 px-6 py-12 text-white sm:px-12">
-          <div className="pointer-events-none absolute -right-10 top-0 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
-          <div className="relative max-w-2xl">
-            <h2 className="rj-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Pronto para gerar documentos profissionais grátis?
-            </h2>
-            <ul className="mt-5 space-y-2 text-sm text-slate-300">
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                Analise a redação do ENEM ou gere cobrança Pix
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                Monte orçamento, currículo, recibo e contrato no mesmo lugar
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                2 gerações grátis sem conta; depois continue com cadastro
-              </li>
-            </ul>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button asChild size="lg" className={cn('h-12', primaryCtaClass)}>
-                <Link href="/corretor-de-redacao-enem">
-                  Analisar redação
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 border-white/25 bg-white/5 text-white hover:bg-white/10"
-              >
-                <Link href="/gerador-de-qr-code-pix">Gerar cobrança Pix</Link>
-              </Button>
-            </div>
-            <TrustSeals tone="dark" className="mt-8" />
-          </div>
+      <section className="bg-slate-950 text-white">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 sm:px-6 md:grid-cols-[1fr_auto]">
+          <div><p className="inline-flex items-center gap-2 text-sm font-bold text-emerald-300"><ShieldCheck className="h-5 w-5" /> Grátis para começar · sem cartão</p><h2 className="rj-display mt-3 text-3xl font-extrabold">Qual tarefa você quer tirar da frente agora?</h2><p className="mt-3 text-sm leading-7 text-slate-300">Crie um documento profissional ou encontre a calculadora certa em poucos cliques.</p></div>
+          <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row"><Button asChild size="lg" className={primaryCtaClass}><Link href="/orcamento-com-pix#montar">Criar orçamento <ArrowRight className="h-4 w-4" /></Link></Button><Button asChild size="lg" variant="outline" className="h-12 border-white/25 bg-white/5 px-6 font-bold text-white hover:bg-white/10"><Link href="/recursos">Explorar ferramentas</Link></Button></div>
         </div>
       </section>
     </div>

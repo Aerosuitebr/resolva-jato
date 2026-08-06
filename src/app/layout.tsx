@@ -18,11 +18,11 @@ const bingVerification = process.env.BING_SITE_VERIFICATION;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Resolva Jato | Ferramentas online grátis para o dia a dia',
+    default: 'Resolva Jato | Orçamento, documentos e calculadoras grátis',
     template: '%s | Resolva Jato'
   },
   description:
-    'Ferramentas online grátis para trabalho, estudo e tarefas do dia a dia: contratos, recibos, currículo, Pix, cálculos, documentos, IA e Jato Games.',
+    'Crie orçamento com aprovação e Pix, recibos, contratos, currículo e cálculos grátis. Ferramentas práticas, prontas para usar e enviar no WhatsApp.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   },
   ...(staging ? { robots: stagingRobots() } : {}),
   openGraph: {
-    title: 'Resolva Jato | Ferramentas online grátis para o dia a dia',
-    description: 'Documentos, cálculos, estudo, produtividade e games em ferramentas práticas que funcionam no navegador.',
+    title: 'Resolva Jato | Orçamento, documentos e calculadoras grátis',
+    description: 'Crie, calcule e envie: orçamento com Pix, recibos, contratos, currículo e ferramentas grátis direto no navegador.',
     locale: 'pt_BR',
     type: 'website',
     url: siteUrl,
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Resolva Jato | Ferramentas online grátis',
-    description: 'Resolva trabalho, estudo e tarefas práticas com ferramentas gratuitas no navegador.'
+    title: 'Resolva Jato | Crie, calcule e envie',
+    description: 'Orçamento com Pix, documentos profissionais e calculadoras grátis, prontos para usar no celular.'
   },
   keywords: [
     'orçamento com pix',

@@ -5,6 +5,7 @@ const baseURL = process.env.E2E_BASE_URL?.trim() || 'https://staging.resolvajato
 const cfAccessHeaders: Record<string, string> = {};
 const cfClientId = process.env.E2E_CF_ACCESS_CLIENT_ID?.trim();
 const cfClientSecret = process.env.E2E_CF_ACCESS_CLIENT_SECRET?.trim();
+const browserExecutable = process.env.E2E_BROWSER_EXECUTABLE?.trim();
 if (cfClientId && cfClientSecret) {
   cfAccessHeaders['CF-Access-Client-Id'] = cfClientId;
   cfAccessHeaders['CF-Access-Client-Secret'] = cfClientSecret;
@@ -25,8 +26,9 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: process.env.E2E_NO_VIDEO === '1' ? 'off' : 'retain-on-failure',
     extraHTTPHeaders: cfAccessHeaders,
+    ...(browserExecutable ? { launchOptions: { executablePath: browserExecutable } } : {}),
     ...devices['Desktop Chrome']
   },
   outputDir: 'test-results'
